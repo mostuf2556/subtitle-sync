@@ -1,29 +1,6 @@
-# Welcome to your Lovable project
+# YouTube Companion
 
-This project was built with [Lovable](https://lovable.dev).
-
-## Build with Lovable
-
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
-
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
-```
-
-## Built with
-
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
+A companion app that plays a YouTube video alongside translated subtitles read aloud.
+The video pauses at each subtitle segment, the subtitle is spoken via text-to-speech in your chosen language, then playback resumes.
+This lets you watch a video while listening to its translated narration in real time.
+Built on TanStack Start with React, and powered by Lovable AI for translation and text-to-speech.
