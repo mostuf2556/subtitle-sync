@@ -145,11 +145,12 @@ function Index() {
               {STRATEGIES.map((s) => (
                 <button key={s.id} onClick={() => setStrategy(s.id)} title={s.desc}
                   className={`rounded-md border px-2 py-1.5 ${strategy === s.id ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-accent"}`}>
-                  {s.name}
+                  {s.name}{s.parallel ? " ⇄" : ""}
                 </button>
               ))}
             </div>
-            <p className="text-xs text-muted-foreground mt-2">{STRATEGIES.find((s) => s.id === strategy)?.desc}</p>
+            <p className="text-xs text-muted-foreground mt-2">{STRATEGIES.find((s) => s.id === strategy)?.desc} · {rows.length} rows</p>
+            <p className="text-xs text-muted-foreground mt-1">⇄ = uses all parallel subtitles, not just one.</p>
             <label className="flex items-center gap-2 mt-3">Timing from
               <select value={pivot} onChange={(e) => setPivot(e.target.value)} className="rounded-md border border-input bg-background px-2 py-1">
                 {LANGS.map((l) => <option key={l.code} value={l.code}>{l.name}</option>)}
