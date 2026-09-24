@@ -30,7 +30,7 @@ export function parseCues(j: Json3): Cue[] {
     out.push({ start, end: start + (e.dDurationMs ?? 0), text });
   }
   // Clip overlaps (ASR tracks overlap the next cue).
-  for (let i = 0; i < out.length - 1; i++) out[i].end = Math.min(out[i].end, out[i + 1].start);
+  for (let i = 0; i < out.length - 1; i++) out[i]!.end = Math.min(out[i]!.end, out[i + 1]!.start);
   return out;
 }
 
@@ -78,20 +78,20 @@ export function sections(pivot: Cue[], strategy: Strategy): { start: number; end
 
 /** Align every track into the pivot's time sections; tokens are bucketed by timestamp. */
 export function align(tracks: Record<string, Json3>, pivot: string, strategy: Strategy): Row[] {
-  const secs = sections(parseCues(tracks[pivot]), strategy);
+  const secs = sections(parseCues(tracks[pivot] ?? {}), strategy);
   const rows: Row[] = secs.map((s) => ({ ...s, texts: {} }));
   if (!rows.length) return rows;
   // Make sections contiguous so no token falls between rows.
-  for (let i = 0; i < rows.length - 1; i++) rows[i].end = rows[i + 1].start;
+  for (let i = 0; i < rows.length - 1; i++) rows[i]!.end = rows[i + 1]!.start;
   for (const [lang, j] of Object.entries(tracks)) {
     let r = 0;
     for (const tk of tokens(j)) {
-      while (r < rows.length - 1 && tk.t >= rows[r + 1].start) r++;
-      rows[r].texts[lang] = (rows[r].texts[lang] ?? "") + tk.text;
+      while (r < rows.length - 1 && tk.t >= rows[r + 1]!.start) r++;
+      rows[r]!.texts[lang] = (rows[r]!.texts[lang] ?? "") + tk.text;
     }
   }
   for (const row of rows)
-    for (const k of Object.keys(row.texts)) row.texts[k] = row.texts[k].replace(/\s+/g, " ").trim();
+    for (const k of Object.keys(row.texts)) row.texts[k] = row.texts[k]!.replace(/\s+/g, " ").trim();
   return rows;
 }
 

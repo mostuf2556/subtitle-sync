@@ -94,7 +94,7 @@ function Index() {
         const langs = LANGS.filter((l) => spoken.includes(l.code));
         for (const l of langs) {
           setSpeakingLang(l.code);
-          await speak(rows[prev].texts[l.code] ?? "", l.tts, rate);
+          await speak(rows[prev]?.texts[l.code] ?? "", l.tts, rate);
         }
         setSpeakingLang(null);
         busy.current = false;
