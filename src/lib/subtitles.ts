@@ -39,10 +39,11 @@ function tokens(j: Json3): Token[] {
   for (const e of j.events ?? []) {
     if (!e.segs) continue;
     const base = e.tStartMs ?? 0;
-    for (const s of e.segs) {
-      const text = (s.utf8 ?? "").replace(/\s+/g, " ");
+    e.segs.forEach((s, i) => {
+      // Cue boundaries are word boundaries: prefix the first segment with a space.
+      const text = (i === 0 ? " " : "") + (s.utf8 ?? "").replace(/\s+/g, " ");
       if (text.trim()) out.push({ t: base + (s.tOffsetMs ?? 0), text });
-    }
+    });
   }
   return out.sort((a, b) => a.t - b.t);
 }
