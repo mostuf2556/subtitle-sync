@@ -202,7 +202,7 @@ function Index() {
               variant={theme === option ? "default" : "ghost"}
               onClick={() => setTheme(option)}
               aria-pressed={theme === option}
-              title={`${option === "dark-blue" ? "Dark blue" : option[0].toUpperCase() + option.slice(1)} theme`}
+              title={`${option === "dark-blue" ? "Dark blue" : option === "light" ? "Light" : "Dark"} theme`}
               className="gap-1.5 capitalize"
             >
               {option === "light" ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
