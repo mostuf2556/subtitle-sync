@@ -27,6 +27,15 @@ declare global {
 
 type SpeechProgress = { lang: string; row: number; start: number; end: number } | null;
 type Theme = "light" | "dark" | "dark-blue";
+type PanelId = "player" | "playback" | "parser" | "languages" | "subtitles";
+
+const PANELS: { id: PanelId; title: string }[] = [
+  { id: "player", title: "Video" },
+  { id: "playback", title: "Playback" },
+  { id: "parser", title: "Parser" },
+  { id: "languages", title: "Languages" },
+  { id: "subtitles", title: "Parallel subtitles" },
+];
 
 function speak(
   text: string,
@@ -71,8 +80,13 @@ function Index() {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [theme, setTheme] = useState<Theme>("light");
   const [pauseMode, setPauseMode] = useState(true);
+  const [autoFocus, setAutoFocus] = useState(true);
+  const [showVideoSubtitles, setShowVideoSubtitles] = useState(true);
+  const [panelOrder, setPanelOrder] = useState<PanelId[]>(() => PANELS.map((panel) => panel.id));
+  const [openPanels, setOpenPanels] = useState<Record<PanelId, boolean>>({ player: true, playback: true, parser: true, languages: true, subtitles: true });
   const [active, setActive] = useState(-1);
   const [speakingLang, setSpeakingLang] = useState<string | null>(null);
+  const [speakingRow, setSpeakingRow] = useState(-1);
   const [speechProgress, setSpeechProgress] = useState<SpeechProgress>(null);
 
   useEffect(() => {
@@ -141,6 +155,7 @@ function Index() {
          const langs = orderedLangs.filter((l) => spoken.includes(l.code));
         for (const l of langs) {
           setSpeakingLang(l.code);
+          setSpeakingRow(prev);
            await speak(
              rows[prev]?.texts[l.code] ?? "",
              l.tts,
@@ -151,6 +166,7 @@ function Index() {
            );
         }
         setSpeakingLang(null);
+        setSpeakingRow(-1);
         busy.current = false;
         p.playVideo();
       }
@@ -159,8 +175,9 @@ function Index() {
   }, []);
 
   useEffect(() => {
+    if (!autoFocus) return;
     document.querySelector(`[data-row="${active}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" });
-  }, [active]);
+  }, [active, autoFocus]);
 
   const seek = (r: Row, i: number) => {
     speechSynthesis.cancel();
@@ -180,6 +197,20 @@ function Index() {
       if (index < 0 || next < 0 || next >= current.length) return current;
       const copy = [...current];
       [copy[index], copy[next]] = [copy[next]!, copy[index]!];
+      return copy;
+    });
+  };
+
+  const movePanel = (id: PanelId, direction: -1 | 1) => {
+    setPanelOrder((current) => {
+      const index = current.indexOf(id);
+      const next = index + direction;
+      if (index < 0 || next < 0 || next >= current.length) return current;
+      const copy = [...current];
+      const adjacent = copy[next];
+      if (!adjacent) return current;
+      copy[index] = adjacent;
+      copy[next] = id;
       return copy;
     });
   };
@@ -212,97 +243,72 @@ function Index() {
         </div>
       </header>
 
-      <div className="grid lg:grid-cols-[minmax(0,520px)_1fr] gap-6 p-6">
-        <aside className="space-y-5 lg:sticky lg:top-6 self-start">
-          <div className="aspect-video rounded-lg overflow-hidden bg-muted"><div ref={playerEl} className="w-full h-full" /></div>
+      <div className="grid items-start gap-4 p-4 md:p-6 lg:grid-cols-2">
+        {panelOrder.map((panelId, panelIndex) => {
+          const panel = PANELS.find((candidate) => candidate.id === panelId);
+          if (!panel) return null;
+          return (
+            <AccordionSection
+              key={panelId}
+              title={panel.title}
+              open={openPanels[panelId]}
+              onOpenChange={(open) => setOpenPanels((current) => ({ ...current, [panelId]: open }))}
+              onMoveUp={() => movePanel(panelId, -1)}
+              onMoveDown={() => movePanel(panelId, 1)}
+              canMoveUp={panelIndex > 0}
+              canMoveDown={panelIndex < panelOrder.length - 1}
+              wide={panelId === "subtitles"}
+            >
+              {panelId === "player" && (
+                <div className="relative aspect-video overflow-hidden bg-muted">
+                  <div ref={playerEl} className="h-full w-full" />
+                  {showVideoSubtitles && speakingLang && speakingRow >= 0 && (
+                    <div className="pointer-events-none absolute inset-x-3 top-3 text-center" aria-live="polite">
+                      <p dir={RTL.has(speakingLang) ? "rtl" : "ltr"} className="inline-block max-w-[92%] rounded-md bg-foreground/90 px-3 py-2 text-base font-medium text-background shadow-lg md:text-lg">
+                        <HighlightedSubtitle text={rows[speakingRow]?.texts[speakingLang] ?? ""} progress={speechProgress?.row === speakingRow && speechProgress.lang === speakingLang ? speechProgress : null} />
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
-          <div className="rounded-lg border border-border bg-card p-4 text-sm">
-            {speakingLang ? (
-              <p>Speaking <b>{LANGS.find((l) => l.code === speakingLang)?.name}</b>…</p>
-            ) : (
-              <p className="text-muted-foreground">Press play. {pauseMode ? "The video pauses after each section and speaks it." : "Continuous playback."}</p>
-            )}
-          </div>
+              {panelId === "playback" && (
+                <div className="space-y-3">
+                  {speakingLang ? <p>Speaking <b>{LANGS.find((l) => l.code === speakingLang)?.name}</b>…</p> : <p className="text-muted-foreground">Press play. {pauseMode ? "The video pauses after each section and speaks it." : "Continuous playback."}</p>}
+                  <label className="flex items-center gap-2"><input type="checkbox" checked={pauseMode} onChange={(e) => setPauseMode(e.target.checked)} /> Pause &amp; speak after each section</label>
+                  <label className="flex items-center gap-2"><input type="checkbox" checked={autoFocus} onChange={(e) => setAutoFocus(e.target.checked)} /> Auto-focus and scroll to current subtitle</label>
+                  <label className="flex items-center gap-2"><input type="checkbox" checked={showVideoSubtitles} onChange={(e) => setShowVideoSubtitles(e.target.checked)} /> Show spoken subtitle over video</label>
+                </div>
+              )}
 
-          <Section title="Parser">
-            <div className="grid grid-cols-3 gap-2">
-              {STRATEGIES.map((s) => (
-                <button key={s.id} onClick={() => setStrategy(s.id)} title={s.desc}
-                  className={`rounded-md border px-2 py-1.5 ${strategy === s.id ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-accent"}`}>
-                  {s.name}{s.parallel ? " ⇄" : ""}
-                </button>
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">{STRATEGIES.find((s) => s.id === strategy)?.desc} · {rows.length} rows</p>
-            <p className="text-xs text-muted-foreground mt-1">⇄ = uses all parallel subtitles, not just one.</p>
-            <label className="flex items-center gap-2 mt-3">Timing from
-              <select value={pivot} onChange={(e) => setPivot(e.target.value)} className="rounded-md border border-input bg-background px-2 py-1">
-                {LANGS.map((l) => <option key={l.code} value={l.code}>{l.name}</option>)}
-              </select>
-            </label>
-          </Section>
+              {panelId === "parser" && (
+                <>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {STRATEGIES.map((s) => <Button key={s.id} type="button" size="sm" variant={strategy === s.id ? "default" : "outline"} onClick={() => setStrategy(s.id)} title={s.desc}>{s.name}{s.parallel ? " ⇄" : ""}</Button>)}
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">{STRATEGIES.find((s) => s.id === strategy)?.desc} · {rows.length} rows</p>
+                  <p className="mt-1 text-xs text-muted-foreground">⇄ = uses all parallel subtitles, not just one.</p>
+                  <label className="mt-3 flex items-center gap-2">Timing from <select value={pivot} onChange={(e) => setPivot(e.target.value)} className="rounded-md border border-input bg-background px-2 py-1">{LANGS.map((l) => <option key={l.code} value={l.code}>{l.name}</option>)}</select></label>
+                </>
+              )}
 
-          <Section title="Languages">
-            <table className="w-full">
-              <thead><tr className="text-xs text-muted-foreground"><th className="text-left font-normal">Language</th><th className="font-normal">Show</th><th className="font-normal">Speak</th><th className="font-normal">Order</th></tr></thead>
-              <tbody>
-                {orderedLangs.map((l, index) => (
-                  <tr key={l.code}>
-                    <td className="py-1">{l.name}</td>
-                    <td className="text-center"><input type="checkbox" checked={shown.includes(l.code)} onChange={() => toggle(shown, setShown, l.code)} /></td>
-                    <td className="text-center"><input type="checkbox" checked={spoken.includes(l.code)} onChange={() => toggle(spoken, setSpoken, l.code)} /></td>
-                    <td><div className="flex justify-center gap-1">
-                      <Button type="button" variant="ghost" size="icon" disabled={index === 0} onClick={() => moveLanguage(l.code, -1)} title={`Move ${l.name} earlier`} aria-label={`Move ${l.name} earlier`}><ChevronUp aria-hidden="true" /></Button>
-                      <Button type="button" variant="ghost" size="icon" disabled={index === orderedLangs.length - 1} onClick={() => moveLanguage(l.code, 1)} title={`Move ${l.name} later`} aria-label={`Move ${l.name} later`}><ChevronDown aria-hidden="true" /></Button>
-                    </div></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <label className="flex items-center gap-2 mt-3"><input type="checkbox" checked={pauseMode} onChange={(e) => setPauseMode(e.target.checked)} /> Pause &amp; speak after each section</label>
-            <div className="mt-4 space-y-3 border-t border-border pt-3">
-              {orderedLangs.filter((lang) => spoken.includes(lang.code)).map((lang) => {
-                const languageVoices = voices.filter((voice) => voice.lang.replace("_", "-").startsWith(lang.tts.slice(0, 2)));
-                return <div key={lang.code} className="space-y-1.5">
-                  <div className="flex items-center justify-between"><span className="font-medium">{lang.name}</span><span className="tabular-nums text-muted-foreground">{(rates[lang.code] ?? 1).toFixed(1)}×</span></div>
-                  <input aria-label={`${lang.name} speech rate`} type="range" min={0.6} max={1.4} step={0.1} value={rates[lang.code] ?? 1} onChange={(e) => setRates((current) => ({ ...current, [lang.code]: Number(e.target.value) }))} className="w-full" />
-                  <select aria-label={`${lang.name} voice`} value={voiceSelections[lang.code] ?? ""} onChange={(e) => setVoiceSelections((current) => ({ ...current, [lang.code]: e.target.value }))} className="w-full rounded-md border border-input bg-background px-2 py-1.5">
-                    <option value="">Device default</option>
-                    {languageVoices.map((voice) => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name}</option>)}
-                  </select>
-                </div>;
-              })}
-            </div>
-          </Section>
-        </aside>
+              {panelId === "languages" && (
+                <>
+                  <table className="w-full">
+                    <thead><tr className="text-xs text-muted-foreground"><th className="text-left font-normal">Language</th><th className="font-normal">Show</th><th className="font-normal">Speak</th><th className="font-normal">Order</th></tr></thead>
+                    <tbody>{orderedLangs.map((l, index) => <tr key={l.code}><td className="py-1">{l.name}</td><td className="text-center"><input type="checkbox" checked={shown.includes(l.code)} onChange={() => toggle(shown, setShown, l.code)} /></td><td className="text-center"><input type="checkbox" checked={spoken.includes(l.code)} onChange={() => toggle(spoken, setSpoken, l.code)} /></td><td><div className="flex justify-center gap-1"><Button type="button" variant="ghost" size="icon" disabled={index === 0} onClick={() => moveLanguage(l.code, -1)} title={`Move ${l.name} earlier`} aria-label={`Move ${l.name} earlier`}><ChevronUp aria-hidden="true" /></Button><Button type="button" variant="ghost" size="icon" disabled={index === orderedLangs.length - 1} onClick={() => moveLanguage(l.code, 1)} title={`Move ${l.name} later`} aria-label={`Move ${l.name} later`}><ChevronDown aria-hidden="true" /></Button></div></td></tr>)}</tbody>
+                  </table>
+                  <div className="mt-4 space-y-3 border-t border-border pt-3">{orderedLangs.filter((lang) => spoken.includes(lang.code)).map((lang) => {
+                    const languageVoices = voices.filter((voice) => voice.lang.replace("_", "-").startsWith(lang.tts.slice(0, 2)));
+                    return <div key={lang.code} className="space-y-1.5"><div className="flex items-center justify-between"><span className="font-medium">{lang.name}</span><span className="tabular-nums text-muted-foreground">{(rates[lang.code] ?? 1).toFixed(1)}×</span></div><input aria-label={`${lang.name} speech rate`} type="range" min={0.6} max={1.4} step={0.1} value={rates[lang.code] ?? 1} onChange={(e) => setRates((current) => ({ ...current, [lang.code]: Number(e.target.value) }))} className="w-full" /><select aria-label={`${lang.name} voice`} value={voiceSelections[lang.code] ?? ""} onChange={(e) => setVoiceSelections((current) => ({ ...current, [lang.code]: e.target.value }))} className="w-full rounded-md border border-input bg-background px-2 py-1.5"><option value="">Device default</option>{languageVoices.map((voice) => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name}</option>)}</select></div>;
+                  })}</div>
+                </>
+              )}
 
-        <main className="rounded-lg border border-border bg-card overflow-hidden">
-          {!tracks ? <p className="p-6 text-muted-foreground">Loading subtitles…</p> : (
-            <div className="max-h-[calc(100vh-8rem)] overflow-auto">
-              <table className="w-full text-sm border-collapse">
-                <thead className="sticky top-0 bg-secondary z-10">
-                  <tr>
-                    <th className="px-3 py-2 text-left font-medium w-24">Time</th>
-                    {cols.map((l) => <th key={l.code} className="px-3 py-2 text-left font-medium">{l.name}</th>)}
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((r, i) => (
-                    <tr key={i} data-row={i} onClick={() => seek(r, i)}
-                      className={`cursor-pointer border-t border-border align-top ${i === active ? "bg-accent" : "hover:bg-muted"}`}>
-                      <td className="px-3 py-2 tabular-nums text-muted-foreground whitespace-nowrap">{fmt(r.start)}–{fmt(r.end)}</td>
-                      {cols.map((l) => (
-                        <td key={l.code} dir={RTL.has(l.code) ? "rtl" : "ltr"} className="px-3 py-2 leading-relaxed">
-                          <HighlightedSubtitle text={r.texts[l.code] ?? ""} progress={speechProgress?.row === i && speechProgress.lang === l.code ? speechProgress : null} />
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </main>
+              {panelId === "subtitles" && (!tracks ? <p className="p-2 text-muted-foreground">Loading subtitles…</p> : <div className="max-h-[calc(100vh-8rem)] overflow-auto"><table className="w-full border-collapse text-sm"><thead className="sticky top-0 z-10 bg-secondary"><tr><th className="w-24 px-3 py-2 text-left font-medium">Time</th>{cols.map((l) => <th key={l.code} className="px-3 py-2 text-left font-medium">{l.name}</th>)}</tr></thead><tbody>{rows.map((r, i) => <tr key={i} data-row={i} onClick={() => seek(r, i)} className={`cursor-pointer border-t border-border align-top ${i === active ? "bg-accent" : "hover:bg-muted"}`}><td className="whitespace-nowrap px-3 py-2 tabular-nums text-muted-foreground">{fmt(r.start)}–{fmt(r.end)}</td>{cols.map((l) => <td key={l.code} dir={RTL.has(l.code) ? "rtl" : "ltr"} className="px-3 py-2 leading-relaxed"><HighlightedSubtitle text={r.texts[l.code] ?? ""} progress={speechProgress?.row === i && speechProgress.lang === l.code ? speechProgress : null} /></td>)}</tr>)}</tbody></table></div>)}
+            </AccordionSection>
+          );
+        })}
       </div>
     </div>
   );
@@ -313,11 +319,16 @@ function HighlightedSubtitle({ text, progress }: { text: string; progress: Exclu
   return <>{text.slice(0, progress.start)}<mark className="rounded-sm bg-highlight px-0.5 text-highlight-foreground">{text.slice(progress.start, progress.end)}</mark>{text.slice(progress.end)}</>;
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function AccordionSection({ title, children, open, onOpenChange, onMoveUp, onMoveDown, canMoveUp, canMoveDown, wide = false }: { title: string; children: React.ReactNode; open: boolean; onOpenChange: (open: boolean) => void; onMoveUp: () => void; onMoveDown: () => void; canMoveUp: boolean; canMoveDown: boolean; wide?: boolean }) {
   return (
-    <section className="rounded-lg border border-border bg-card p-4 text-sm">
-      <h2 className="text-xs uppercase tracking-wider text-muted-foreground mb-3">{title}</h2>
-      {children}
-    </section>
+    <details open={open} onToggle={(event) => onOpenChange(event.currentTarget.open)} className={`overflow-hidden rounded-lg border border-border bg-card text-sm ${wide ? "lg:col-span-2" : ""}`}>
+      <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 marker:hidden">
+        <ChevronDown aria-hidden="true" className={`size-4 transition-transform ${open ? "rotate-180" : ""}`} />
+        <h2 className="mr-auto text-xs uppercase tracking-wider text-muted-foreground">{title}</h2>
+        <Button type="button" variant="ghost" size="icon" disabled={!canMoveUp} onClick={(event) => { event.preventDefault(); onMoveUp(); }} aria-label={`Move ${title} earlier`} title={`Move ${title} earlier`}><ChevronUp aria-hidden="true" /></Button>
+        <Button type="button" variant="ghost" size="icon" disabled={!canMoveDown} onClick={(event) => { event.preventDefault(); onMoveDown(); }} aria-label={`Move ${title} later`} title={`Move ${title} later`}><ChevronDown aria-hidden="true" /></Button>
+      </summary>
+      <div className="border-t border-border p-4">{children}</div>
+    </details>
   );
 }

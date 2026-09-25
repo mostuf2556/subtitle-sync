@@ -6,7 +6,7 @@
 - [x] Add configurable subtitle and speech language order.
 - [x] Update README task status after each completed implementation.
 
-- [ ] Make player, status, parser, languages, and subtitle table collapsible and reorderable.
-- [ ] Add an auto-focus and scroll-to-position toggle.
-- [ ] Add a current spoken-subtitle overlay toggle for the video.
+- [x] Make player, status, parser, languages, and subtitle table collapsible and reorderable.
+- [x] Add an auto-focus and scroll-to-position toggle.
+- [x] Add a current spoken-subtitle overlay toggle for the video.
 - [ ] Verify the new controls on desktop and mobile.
