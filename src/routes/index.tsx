@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, ChevronUp, Moon, Sun } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { align, fmt, LANGS, RTL, STRATEGIES, type Json3, type Row, type Strategy } from "@/lib/subtitles";
 
 const VIDEO = "L2Ryrr6txwA";
@@ -23,15 +25,36 @@ declare global {
   interface Window { YT?: { Player: new (el: HTMLElement, o: object) => YTPlayer }; onYouTubeIframeAPIReady?: () => void }
 }
 
-function speak(text: string, lang: string, rate: number) {
+type SpeechProgress = { lang: string; row: number; start: number; end: number } | null;
+type Theme = "light" | "dark" | "dark-blue";
+
+function speak(
+  text: string,
+  lang: string,
+  rate: number,
+  voiceURI: string,
+  row: number,
+  onProgress: (value: SpeechProgress) => void,
+) {
   return new Promise<void>((res) => {
     if (!text) return res();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = lang;
     u.rate = rate;
-    const v = speechSynthesis.getVoices().find((x) => x.lang.replace("_", "-").startsWith(lang.slice(0, 2)));
+    const voices = speechSynthesis.getVoices();
+    const v = voices.find((x) => x.voiceURI === voiceURI)
+      ?? voices.find((x) => x.lang.replace("_", "-").startsWith(lang.slice(0, 2)));
     if (v) u.voice = v;
-    u.onend = u.onerror = () => res();
+    u.onboundary = (event) => {
+      if (event.name !== "word") return;
+      const remainder = text.slice(event.charIndex);
+      const wordLength = event.charLength || remainder.match(/^\S+/)?.[0].length || 1;
+      onProgress({ lang: lang.slice(0, 2), row, start: event.charIndex, end: event.charIndex + wordLength });
+    };
+    u.onend = u.onerror = () => {
+      onProgress(null);
+      res();
+    };
     speechSynthesis.speak(u);
   });
 }
@@ -42,10 +65,33 @@ function Index() {
   const [strategy, setStrategy] = useState<Strategy>("sentence");
   const [shown, setShown] = useState<string[]>(["en", "he", "it"]);
   const [spoken, setSpoken] = useState<string[]>(["en", "it"]);
-  const [rate, setRate] = useState(1);
+  const [languageOrder, setLanguageOrder] = useState(() => LANGS.map((lang) => lang.code));
+  const [rates, setRates] = useState<Record<string, number>>(() => Object.fromEntries(LANGS.map((lang) => [lang.code, 1])));
+  const [voiceSelections, setVoiceSelections] = useState<Record<string, string>>({});
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [theme, setTheme] = useState<Theme>("light");
   const [pauseMode, setPauseMode] = useState(true);
   const [active, setActive] = useState(-1);
   const [speakingLang, setSpeakingLang] = useState<string | null>(null);
+  const [speechProgress, setSpeechProgress] = useState<SpeechProgress>(null);
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem("parallel-subtitles-theme");
+    if (saved === "light" || saved === "dark" || saved === "dark-blue") setTheme(saved);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.remove("dark", "dark-blue");
+    if (theme !== "light") document.documentElement.classList.add(theme);
+    window.localStorage.setItem("parallel-subtitles-theme", theme);
+  }, [theme]);
+
+  useEffect(() => {
+    const refreshVoices = () => setVoices(window.speechSynthesis.getVoices());
+    refreshVoices();
+    window.speechSynthesis.addEventListener("voiceschanged", refreshVoices);
+    return () => window.speechSynthesis.removeEventListener("voiceschanged", refreshVoices);
+  }, []);
 
   useEffect(() => {
     Promise.all(LANGS.map((l) => fetch(`/fixtures/${VIDEO}/${l.code}.json`).then((r) => r.json()).then((j) => [l.code, j] as const)))
@@ -55,8 +101,9 @@ function Index() {
   const rows = useMemo<Row[]>(() => (tracks ? align(tracks, pivot, strategy) : []), [tracks, pivot, strategy]);
 
   // Keep latest values for the polling loop.
-  const st = useRef({ rows, spoken, rate, pauseMode });
-  st.current = { rows, spoken, rate, pauseMode };
+  const orderedLangs = languageOrder.map((code) => LANGS.find((lang) => lang.code === code)).filter((lang): lang is (typeof LANGS)[number] => Boolean(lang));
+  const st = useRef({ rows, spoken, rates, voiceSelections, pauseMode, orderedLangs });
+  st.current = { rows, spoken, rates, voiceSelections, pauseMode, orderedLangs };
 
   const playerEl = useRef<HTMLDivElement>(null);
   const player = useRef<YTPlayer | null>(null);
@@ -82,7 +129,7 @@ function Index() {
       const p = player.current;
       if (!p?.getCurrentTime || busy.current) return;
       const ms = p.getCurrentTime() * 1000;
-      const { rows, spoken, rate, pauseMode } = st.current;
+       const { rows, spoken, rates, voiceSelections, pauseMode, orderedLangs } = st.current;
       const idx = rows.findIndex((r) => ms >= r.start && ms < r.end);
       setActive(idx);
       const prev = lastRow.current;
@@ -91,10 +138,17 @@ function Index() {
       if (pauseMode && prev >= 0 && idx === prev + 1 && p.getPlayerState() === 1) {
         busy.current = true;
         p.pauseVideo();
-        const langs = LANGS.filter((l) => spoken.includes(l.code));
+         const langs = orderedLangs.filter((l) => spoken.includes(l.code));
         for (const l of langs) {
           setSpeakingLang(l.code);
-          await speak(rows[prev]?.texts[l.code] ?? "", l.tts, rate);
+           await speak(
+             rows[prev]?.texts[l.code] ?? "",
+             l.tts,
+             rates[l.code] ?? 1,
+             voiceSelections[l.code] ?? "",
+             prev,
+             setSpeechProgress,
+           );
         }
         setSpeakingLang(null);
         busy.current = false;
@@ -119,13 +173,43 @@ function Index() {
   const toggle = (list: string[], set: (v: string[]) => void, c: string) =>
     set(list.includes(c) ? list.filter((x) => x !== c) : [...list, c]);
 
-  const cols = LANGS.filter((l) => shown.includes(l.code));
+  const moveLanguage = (code: string, direction: -1 | 1) => {
+    setLanguageOrder((current) => {
+      const index = current.indexOf(code);
+      const next = index + direction;
+      if (index < 0 || next < 0 || next >= current.length) return current;
+      const copy = [...current];
+      [copy[index], copy[next]] = [copy[next]!, copy[index]!];
+      return copy;
+    });
+  };
+
+  const cols = orderedLangs.filter((l) => shown.includes(l.code));
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-border px-6 py-4 flex items-baseline gap-4">
-        <h1 className="font-display text-2xl">Parallel Subtitles</h1>
-        <span className="text-sm text-muted-foreground">video {VIDEO} · {rows.length} sections</span>
+      <header className="flex flex-wrap items-center gap-4 border-b border-border px-6 py-4">
+        <div className="mr-auto flex items-baseline gap-4">
+          <h1 className="font-display text-2xl">Parallel Subtitles</h1>
+          <span className="text-sm text-muted-foreground">video {VIDEO} · {rows.length} sections</span>
+        </div>
+        <div className="flex items-center gap-1 rounded-md border border-border bg-card p-1" aria-label="Color theme">
+          {(["light", "dark", "dark-blue"] as const).map((option) => (
+            <Button
+              key={option}
+              type="button"
+              size="sm"
+              variant={theme === option ? "default" : "ghost"}
+              onClick={() => setTheme(option)}
+              aria-pressed={theme === option}
+              title={`${option === "dark-blue" ? "Dark blue" : option[0].toUpperCase() + option.slice(1)} theme`}
+              className="gap-1.5 capitalize"
+            >
+              {option === "light" ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
+              {option === "dark-blue" ? "Blue" : option}
+            </Button>
+          ))}
+        </div>
       </header>
 
       <div className="grid lg:grid-cols-[minmax(0,520px)_1fr] gap-6 p-6">
@@ -160,22 +244,35 @@ function Index() {
 
           <Section title="Languages">
             <table className="w-full">
-              <thead><tr className="text-xs text-muted-foreground"><th className="text-left font-normal">Language</th><th className="font-normal">Show</th><th className="font-normal">Speak</th></tr></thead>
+              <thead><tr className="text-xs text-muted-foreground"><th className="text-left font-normal">Language</th><th className="font-normal">Show</th><th className="font-normal">Speak</th><th className="font-normal">Order</th></tr></thead>
               <tbody>
-                {LANGS.map((l) => (
+                {orderedLangs.map((l, index) => (
                   <tr key={l.code}>
                     <td className="py-1">{l.name}</td>
                     <td className="text-center"><input type="checkbox" checked={shown.includes(l.code)} onChange={() => toggle(shown, setShown, l.code)} /></td>
                     <td className="text-center"><input type="checkbox" checked={spoken.includes(l.code)} onChange={() => toggle(spoken, setSpoken, l.code)} /></td>
+                    <td><div className="flex justify-center gap-1">
+                      <Button type="button" variant="ghost" size="icon" disabled={index === 0} onClick={() => moveLanguage(l.code, -1)} title={`Move ${l.name} earlier`} aria-label={`Move ${l.name} earlier`}><ChevronUp aria-hidden="true" /></Button>
+                      <Button type="button" variant="ghost" size="icon" disabled={index === orderedLangs.length - 1} onClick={() => moveLanguage(l.code, 1)} title={`Move ${l.name} later`} aria-label={`Move ${l.name} later`}><ChevronDown aria-hidden="true" /></Button>
+                    </div></td>
                   </tr>
                 ))}
               </tbody>
             </table>
             <label className="flex items-center gap-2 mt-3"><input type="checkbox" checked={pauseMode} onChange={(e) => setPauseMode(e.target.checked)} /> Pause &amp; speak after each section</label>
-            <label className="flex items-center gap-2 mt-2">Voice speed
-              <input type="range" min={0.6} max={1.4} step={0.1} value={rate} onChange={(e) => setRate(+e.target.value)} className="flex-1" />
-              <span className="w-8 text-right tabular-nums">{rate.toFixed(1)}</span>
-            </label>
+            <div className="mt-4 space-y-3 border-t border-border pt-3">
+              {orderedLangs.filter((lang) => spoken.includes(lang.code)).map((lang) => {
+                const languageVoices = voices.filter((voice) => voice.lang.replace("_", "-").startsWith(lang.tts.slice(0, 2)));
+                return <div key={lang.code} className="space-y-1.5">
+                  <div className="flex items-center justify-between"><span className="font-medium">{lang.name}</span><span className="tabular-nums text-muted-foreground">{(rates[lang.code] ?? 1).toFixed(1)}×</span></div>
+                  <input aria-label={`${lang.name} speech rate`} type="range" min={0.6} max={1.4} step={0.1} value={rates[lang.code] ?? 1} onChange={(e) => setRates((current) => ({ ...current, [lang.code]: Number(e.target.value) }))} className="w-full" />
+                  <select aria-label={`${lang.name} voice`} value={voiceSelections[lang.code] ?? ""} onChange={(e) => setVoiceSelections((current) => ({ ...current, [lang.code]: e.target.value }))} className="w-full rounded-md border border-input bg-background px-2 py-1.5">
+                    <option value="">Device default</option>
+                    {languageVoices.map((voice) => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name}</option>)}
+                  </select>
+                </div>;
+              })}
+            </div>
           </Section>
         </aside>
 
@@ -195,7 +292,9 @@ function Index() {
                       className={`cursor-pointer border-t border-border align-top ${i === active ? "bg-accent" : "hover:bg-muted"}`}>
                       <td className="px-3 py-2 tabular-nums text-muted-foreground whitespace-nowrap">{fmt(r.start)}–{fmt(r.end)}</td>
                       {cols.map((l) => (
-                        <td key={l.code} dir={RTL.has(l.code) ? "rtl" : "ltr"} className="px-3 py-2 leading-relaxed">{r.texts[l.code] ?? ""}</td>
+                        <td key={l.code} dir={RTL.has(l.code) ? "rtl" : "ltr"} className="px-3 py-2 leading-relaxed">
+                          <HighlightedSubtitle text={r.texts[l.code] ?? ""} progress={speechProgress?.row === i && speechProgress.lang === l.code ? speechProgress : null} />
+                        </td>
                       ))}
                     </tr>
                   ))}
@@ -207,6 +306,11 @@ function Index() {
       </div>
     </div>
   );
+}
+
+function HighlightedSubtitle({ text, progress }: { text: string; progress: Exclude<SpeechProgress, null> | null }) {
+  if (!progress) return text;
+  return <>{text.slice(0, progress.start)}<mark className="rounded-sm bg-highlight px-0.5 text-highlight-foreground">{text.slice(progress.start, progress.end)}</mark>{text.slice(progress.end)}</>;
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
