@@ -1,11 +1,5 @@
 # Tasks
 
-## Task 2: Import and verify the GitHub Actions delivery flows
-
-- [ ] Compare the local workflows with `mostuf2556/Youtubenet6`.
-- [ ] Keep the web demo, GitHub Pages report, and artifact publishing paths connected.
-- [ ] Run the available local quality checks.
-
 ## Task 3: Add dynamic target-language selection to the app
 
 - [ ] Expose a target-language control built from the supported language list.
