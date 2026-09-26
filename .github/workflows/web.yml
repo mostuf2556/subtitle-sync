@@ -35,11 +35,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install Web Dependencies
         timeout-minutes: 3
-        run: npm install
+        run: npm ci
 
       - name: Install Playwright Browsers with OS Dependencies
         timeout-minutes: 3

@@ -5,6 +5,10 @@ The video pauses at each subtitle segment, the subtitle is spoken via text-to-sp
 This lets you watch a video while listening to its translated narration in real time.
 Built on TanStack Start with React, and powered by Lovable AI for translation and text-to-speech.
 
+## Live Demo
+
+[Open the GitHub Pages demo](https://mostuf2556.github.io/subtitle-sync/)
+
 ## Tasks
 
 - [x] Highlight each word as speech reaches its boundary.

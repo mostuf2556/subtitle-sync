@@ -33,9 +33,14 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: Install Web Dependencies for Native Bridge E2E
         timeout-minutes: 3
-        run: npm install
+        run: npm ci
 
       - name: Install Chromium for Native Bridge E2E
         timeout-minutes: 3
@@ -44,11 +49,6 @@ jobs:
       - name: Run Native Bridge Language E2E
         timeout-minutes: 4
         run: npm run test:e2e:emulation
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
 
       - name: Download APK Artifact from Release Workflow
         if: github.event_name == 'workflow_run'
@@ -93,7 +93,7 @@ jobs:
       - name: Install Web Dependencies (Fallback)
         if: steps.stage_apk.outputs.have_apk != 'true'
         timeout-minutes: 3
-        run: npm install
+        run: npm ci
 
       - name: Build Web Application (Fallback)
         if: steps.stage_apk.outputs.have_apk != 'true'
