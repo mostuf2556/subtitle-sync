@@ -1,0 +1,24 @@
+# Tasks
+
+## Task 1: Establish the project work-tracking workflow
+
+- [ ] Rewrite `AGENTS.md` with the task, commit, test, and completion workflow.
+- [ ] Create the task tracking files under `docs/`.
+
+## Task 2: Import and verify the GitHub Actions delivery flows
+
+- [ ] Compare the local workflows with `mostuf2556/Youtubenet6`.
+- [ ] Keep the web demo, GitHub Pages report, and artifact publishing paths connected.
+- [ ] Run the available local quality checks.
+
+## Task 3: Add dynamic target-language selection to the app
+
+- [ ] Expose a target-language control built from the supported language list.
+- [ ] Make Android subtitle refreshes follow the selected target languages.
+- [ ] Add Spanish coverage needed by the requested target-language flow.
+
+## Task 4: Align and verify web and Android E2E coverage
+
+- [ ] Update the emulator test to use the current app's controls.
+- [ ] Assert that changing a target language causes a native `tlang` request.
+- [ ] Run the basic checks and record any environment-limited verification.
