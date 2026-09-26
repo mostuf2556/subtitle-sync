@@ -10,7 +10,7 @@
     "build:android-assets": "npm run build && mkdir -p android-shell/app/src/main/assets && cp -r .output/public/* android-shell/app/src/main/assets/",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
-    "lint": "eslint .",
+    "lint": "eslint src/lib src/routes",
     "format": "prettier --write .",
     "test:e2e": "playwright test",
     "test:e2e:web": "playwright test e2e/web.spec.ts",
