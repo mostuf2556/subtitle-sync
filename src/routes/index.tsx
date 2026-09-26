@@ -129,6 +129,7 @@ function Index() {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [theme, setTheme] = useState<Theme>("light");
   const themeWasSelectedRef = useRef(false);
+  const [isHydrated, setIsHydrated] = useState(false);
   const [pauseMode, setPauseMode] = useState(true);
   const [autoFocus, setAutoFocus] = useState(true);
   const [showVideoSubtitles, setShowVideoSubtitles] = useState(true);
@@ -237,6 +238,10 @@ function Index() {
     if (theme !== "light") document.documentElement.classList.add(theme);
     window.localStorage.setItem("parallel-subtitles-theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   useEffect(() => {
     const refreshVoices = () => setVoices(window.speechSynthesis.getVoices());
@@ -382,7 +387,10 @@ function Index() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="flex flex-wrap items-center gap-4 border-b border-border px-6 py-4">
+      <header
+        className="flex flex-wrap items-center gap-4 border-b border-border px-6 py-4"
+        data-app-hydrated={isHydrated ? "true" : undefined}
+      >
         <div className="mr-auto flex items-baseline gap-4">
           <h1 className="font-display text-2xl">Parallel Subtitles</h1>
           <span className="text-sm text-muted-foreground">

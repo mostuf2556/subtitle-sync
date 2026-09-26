@@ -4,7 +4,7 @@ test.describe("Parallel Subtitles web app", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("./");
     await expect(page).toHaveTitle(/Parallel Subtitles/i);
-    await expect(page.locator("header")).toBeVisible();
+    await expect(page.locator('header[data-app-hydrated="true"]')).toBeVisible();
   });
 
   test("loads fixture subtitles and exposes the dynamic target-language list", async ({ page }) => {
