@@ -32,21 +32,10 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js for report preparation
         uses: actions/setup-node@v4
         with:
           node-version: 22
-
-      - name: Normalize package registry URLs
-        run: sed -i -E 's#https?://package-firewall\.replit\.internal/npm/#https://registry.npmjs.org/#g' package-lock.json
-
-      - name: Install Web Dependencies
-        timeout-minutes: 3
-        run: npm ci
-
-      - name: Install Playwright Browsers with OS Dependencies
-        timeout-minutes: 3
-        run: npx playwright install --with-deps chromium
 
       - name: Compute Target Base URL (Deployed Site vs Local Server)
         id: target_url
@@ -72,28 +61,18 @@ jobs:
             echo "use_deployed=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Download Web Build Artifact (Fallback for Local Server)
-        if: steps.target_url.outputs.use_deployed != 'true'
-        uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: web-dist
-          path: dist
-
-      - name: Build Web Application (Fallback for Local Server)
-        if: steps.target_url.outputs.use_deployed != 'true'
-        timeout-minutes: 3
-        run: |
-          if [ ! -f "dist/index.html" ]; then
-            echo "Building web application for local server..."
-            npm run build
-          fi
-
-      - name: Execute Playwright E2E Tests (Web Specs)
+      - name: Execute Playwright E2E Tests in Docker
         timeout-minutes: 4
         env:
           PLAYWRIGHT_BASE_URL: ${{ steps.target_url.outputs.base_url }}
-        run: npx playwright test e2e/web.spec.ts --timeout=60000
+        run: ./docker/manage.sh e2e web --timeout=60000
+
+      - name: Collect Docker test outputs
+        if: always()
+        run: |
+          mkdir -p test-results playwright-report
+          cp -a docker/artifacts/test-results/. test-results/ 2>/dev/null || true
+          cp -a docker/artifacts/playwright-report/. playwright-report/ 2>/dev/null || true
 
       - name: Prepare Video & Step Screenshot Assets
         if: always()

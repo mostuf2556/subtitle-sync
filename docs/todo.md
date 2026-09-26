@@ -1,12 +1,11 @@
 # Current task
 
-## Task 5: Run browser tests in a reproducible Docker environment
+## Task 4: Align and verify web and Android E2E coverage
 
-Provide a Docker/Compose runner modeled on the repository's existing lifecycle-manager pattern so Playwright runs with a fixed browser image and locked dependencies.
+Replace stale selectors and assumptions from the previous app with tests for the current Parallel Subtitles UI. The Android test will inject the native bridge that the WebView provides and assert the selected language codes sent to it.
 
 ## Done looks like
 
-- `./docker/manage.sh build` builds the test image.
-- `./docker/manage.sh e2e web` runs the web suite in Docker.
-- `./docker/manage.sh e2e all` runs all Playwright projects in Docker.
-- Test output is collected under `docker/artifacts/`.
+- Web smoke tests use the current app's title, panels, fixtures, and language selector.
+- Android emulation verifies the bridge receives the selected language list.
+- The Playwright web and emulation projects pass when Chromium is available.

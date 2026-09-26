@@ -128,6 +128,7 @@ function Index() {
   const [voiceSelections, setVoiceSelections] = useState<Record<string, string>>({});
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [theme, setTheme] = useState<Theme>("light");
+  const themeWasSelectedRef = useRef(false);
   const [pauseMode, setPauseMode] = useState(true);
   const [autoFocus, setAutoFocus] = useState(true);
   const [showVideoSubtitles, setShowVideoSubtitles] = useState(true);
@@ -226,6 +227,7 @@ function Index() {
   }, [isAndroid, observedUrl, shown, spoken, targetLanguages, pivot]);
 
   useEffect(() => {
+    if (themeWasSelectedRef.current) return;
     const saved = window.localStorage.getItem("parallel-subtitles-theme");
     if (saved === "light" || saved === "dark" || saved === "dark-blue") setTheme(saved);
   }, []);
@@ -398,7 +400,10 @@ function Index() {
               type="button"
               size="sm"
               variant={theme === option ? "default" : "ghost"}
-              onClick={() => setTheme(option)}
+              onClick={() => {
+                themeWasSelectedRef.current = true;
+                setTheme(option);
+              }}
               aria-pressed={theme === option}
               title={`${option === "dark-blue" ? "Dark blue" : option === "light" ? "Light" : "Dark"} theme`}
               className="gap-1.5 capitalize"

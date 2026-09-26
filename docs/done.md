@@ -20,3 +20,10 @@
 - Included selected target languages in Android caption refreshes.
 - Made fixture loading tolerate languages without a bundled demo file.
 - Focused lint and production build passed.
+
+## Task 5: Run browser tests in a reproducible Docker environment
+
+- Added a fixed Playwright Docker image and Compose service under `docker/`.
+- Added `docker/manage.sh` for building and running web, emulation, or all E2E suites.
+- Mounted Docker test reports into `docker/artifacts/` and connected the GitHub Actions web job to the Docker runner.
+- Local container execution remains environment-limited because the Docker daemon is unavailable in this sandbox.

@@ -1,7 +1,7 @@
 services:
   e2e:
     build:
-      context: ..
+      context: .
       dockerfile: docker/Dockerfile
     init: true
     working_dir: /workspace
@@ -10,5 +10,5 @@ services:
       NODE_ENV: test
       PLAYWRIGHT_BASE_URL: ${PLAYWRIGHT_BASE_URL:-}
     volumes:
-      - ./artifacts/test-results:/workspace/test-results
-      - ./artifacts/playwright-report:/workspace/playwright-report
+      - ./docker/artifacts/test-results:/workspace/test-results
+      - ./docker/artifacts/playwright-report:/workspace/playwright-report
