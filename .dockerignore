@@ -1,0 +1,14 @@
+.git
+.cache
+node_modules
+dist
+.output
+.tanstack
+.nitro
+test-results
+playwright-report
+docker/artifacts
+android-shell/.gradle
+android-shell/app/build
+android-shell/app/src/main/assets
+*.log
