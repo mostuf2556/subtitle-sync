@@ -42,6 +42,9 @@ jobs:
         with:
           node-version: 22
 
+      - name: Normalize package registry URLs
+        run: sed -i -E 's#https?://package-firewall\.replit\.internal/npm/#https://registry.npmjs.org/#g' package-lock.json
+
       - name: Install Web Dependencies
         timeout-minutes: 3
         run: npm ci

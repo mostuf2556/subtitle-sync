@@ -38,6 +38,9 @@ jobs:
         with:
           node-version: 22
 
+      - name: Normalize package registry URLs
+        run: sed -i -E 's#https?://package-firewall\.replit\.internal/npm/#https://registry.npmjs.org/#g' package-lock.json
+
       - name: Install Web Dependencies for Native Bridge E2E
         timeout-minutes: 3
         run: npm ci
@@ -89,6 +92,10 @@ jobs:
           path: dist
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Normalize package registry URLs (Fallback)
+        if: steps.stage_apk.outputs.have_apk != 'true'
+        run: sed -i -E 's#https?://package-firewall\.replit\.internal/npm/#https://registry.npmjs.org/#g' package-lock.json
 
       - name: Install Web Dependencies (Fallback)
         if: steps.stage_apk.outputs.have_apk != 'true'
