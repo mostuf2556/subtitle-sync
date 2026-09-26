@@ -5,12 +5,18 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev --host 0.0.0.0 --port 3000",
-    "build": "NODE_ENV=production vite build",
+    "start": "vite preview --host 0.0.0.0 --port 3000",
+    "build": "NODE_ENV=production vite build && rm -rf dist && cp -r .output/public dist",
     "build:android-assets": "npm run build && mkdir -p android-shell/app/src/main/assets && cp -r .output/public/* android-shell/app/src/main/assets/",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test:e2e": "playwright test",
+    "test:e2e:web": "playwright test e2e/web.spec.ts",
+    "test:e2e:emulation": "playwright test e2e/emulation.spec.ts",
+    "test:e2e:all": "playwright test",
+    "test:report:integrity": "node scripts/verify-reports-integrity.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1"

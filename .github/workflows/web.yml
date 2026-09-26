@@ -92,26 +92,6 @@ jobs:
           PLAYWRIGHT_BASE_URL: ${{ steps.target_url.outputs.base_url }}
         run: npx playwright test e2e/web.spec.ts --timeout=60000
 
-      - name: Run Cypress Tests against Deployed Website
-        if: steps.target_url.outputs.use_deployed == 'true'
-        timeout-minutes: 4
-        env:
-          CYPRESS_BASE_URL: ${{ steps.target_url.outputs.base_url }}
-        run: npm run test:cy:report:web
-        continue-on-error: true
-
-      - name: Run Cypress Tests with Local Server (Fallback)
-        if: steps.target_url.outputs.use_deployed != 'true'
-        timeout-minutes: 4
-        uses: cypress-io/github-action@v6
-        with:
-          install: false
-          start: npm start
-          wait-on: 'http://localhost:3000'
-          wait-on-timeout: 30
-          command: npm run test:cy:report:web
-        continue-on-error: true
-
       - name: Prepare Video & Step Screenshot Assets
         if: always()
         run: node scripts/prepare-report.mjs
@@ -136,10 +116,10 @@ jobs:
             test-results/
           retention-days: 14
 
-      - name: Upload Cypress Test Report & Artifacts
+      - name: Upload Pages Report & Artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cypress-e2e-report
+          name: pages-e2e-report
           path: cypress/reports/
           retention-days: 14

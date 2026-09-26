@@ -277,10 +277,15 @@ if (fs.existsSync(playwrightReportDir)) {
   console.log('Created fallback Playwright index.html in cypress/reports/playwright/');
 }
 
-// 4b. Copy built web application into cypress/reports/app
-const distDir = path.join(rootDir, 'dist');
+// 4b. Copy built web application into cypress/reports/app. TanStack Start writes
+// its static output to .output/public; dist remains supported for CI artifacts
+// and older builds.
+const distDir = fs.existsSync(path.join(rootDir, 'dist'))
+  ? path.join(rootDir, 'dist')
+  : path.join(rootDir, '.output', 'public');
 const appDestDir = path.join(reportsDir, 'app');
 if (fs.existsSync(distDir)) {
+  fs.rmSync(appDestDir, { recursive: true, force: true });
   fs.cpSync(distDir, appDestDir, { recursive: true });
   console.log('Copied built web application to cypress/reports/app');
 }
