@@ -590,8 +590,8 @@ function Index() {
                       ))}
                     </select>
                     <p className="text-xs text-muted-foreground">
-                      Select one or more languages. Android fetches each selected translation
-                      track from the observed YouTube captions request.
+                      Select one or more languages. Android fetches each selected translation track
+                      from the observed YouTube captions request.
                     </p>
                   </div>
                   <table className="w-full">
