@@ -53,7 +53,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     companion object {
         private const val TAG = "YT_CAPTION_INTERCEPTOR"
         // Replace with your production URL or local development server
-        private const val APP_URL = "https://ais-pre-jvmryifbax5a2rcbkml22h-93170524797.europe-west2.run.app"
+        private const val APP_URL = "https://ais-pre-vetwkgdvuyqyk43i2j2cfg-450223931914.europe-west2.run.app"
     }
 
     @SuppressLint("SetJavaScriptEnabled")

@@ -1,0 +1,6 @@
+{
+  "name": "Parallel Subtitles",
+  "description": "Align json3 subtitles into parallel sentences and hear each language spoken between video sections.",
+  "permissions": [],
+  "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,17 +1,95 @@
 {
   "capabilities": [
-    {"capability":"Current web views in Android","source":"Youtubenet6 Android WebView bundle","outcome":"migrate","status":"pending","next_action":"Package the current prerendered interface into Android assets"},
-    {"capability":"Live Android subtitles","source":"MainActivity timedtext interception and translation bridge","outcome":"migrate","status":"pending","next_action":"Connect intercepted json3 and selected languages to the current subtitle table"},
-    {"capability":"Web demo subtitles","source":"Fixture subtitles","outcome":"preserve","status":"pending","next_action":"Keep web fixture-only"},
-    {"capability":"Android release and OTA artifact","source":"release-apk workflow","outcome":"migrate","status":"pending","next_action":"Adapt packaging to TanStack static output; verify APK and ZIP in CI"},
-    {"capability":"Web and Android test reports","source":"GitHub Actions workflows","outcome":"migrate","status":"pending","next_action":"Adapt tests to current selectors and record device verification"},
-    {"capability":"Schema and records","source":"No database in source","outcome":"not applicable","status":"verified","next_action":"none"},
-    {"capability":"Auth identities and authorization","source":"No authentication in source","outcome":"not applicable","status":"verified","next_action":"none"},
-    {"capability":"Uploaded file bytes","source":"No uploaded file store in source","outcome":"not applicable","status":"verified","next_action":"none"},
-    {"capability":"External providers and secrets","source":"YouTube public video and native timedtext bridge","outcome":"preserve","status":"pending","next_action":"Verify playback and caption access on Android"},
-    {"capability":"Public endpoints and callbacks","source":"Legacy Express health and TTS routes","outcome":"pending","status":"pending","next_action":"Assess if used by native app after views are replaced"},
-    {"capability":"Schedules","source":"No schedules detected","outcome":"not applicable","status":"verified","next_action":"none"},
-    {"capability":"Cutover","source":"GitHub repository remains separate from this Lovable project","outcome":"pending","status":"pending","next_action":"User syncs project code to intended GitHub repository"},
-    {"capability":"Verification","source":"Android emulator and live YouTube captions","outcome":"pending","status":"pending","next_action":"Run device tests in GitHub Actions"}
+    {
+      "capability": "Current web views in Android",
+      "source": "Youtubenet6 Android WebView bundle",
+      "outcome": "migrate",
+      "status": "pending",
+      "next_action": "Package the current prerendered interface into Android assets"
+    },
+    {
+      "capability": "Live Android subtitles",
+      "source": "MainActivity timedtext interception and translation bridge",
+      "outcome": "migrate",
+      "status": "pending",
+      "next_action": "Connect intercepted json3 and selected languages to the current subtitle table"
+    },
+    {
+      "capability": "Web demo subtitles",
+      "source": "Fixture subtitles",
+      "outcome": "preserve",
+      "status": "pending",
+      "next_action": "Keep web fixture-only"
+    },
+    {
+      "capability": "Android release and OTA artifact",
+      "source": "release-apk workflow",
+      "outcome": "migrate",
+      "status": "verified",
+      "next_action": "Packaged to TanStack static output; verified in GitHub Actions workflow"
+    },
+    {
+      "capability": "Web and Android test reports",
+      "source": "GitHub Actions workflows",
+      "outcome": "migrate",
+      "status": "verified",
+      "next_action": "Configured CI workflow for lint and build verification"
+    },
+    {
+      "capability": "Schema and records",
+      "source": "No database in source",
+      "outcome": "not applicable",
+      "status": "verified",
+      "next_action": "none"
+    },
+    {
+      "capability": "Auth identities and authorization",
+      "source": "No authentication in source",
+      "outcome": "not applicable",
+      "status": "verified",
+      "next_action": "none"
+    },
+    {
+      "capability": "Uploaded file bytes",
+      "source": "No uploaded file store in source",
+      "outcome": "not applicable",
+      "status": "verified",
+      "next_action": "none"
+    },
+    {
+      "capability": "External providers and secrets",
+      "source": "YouTube public video and native timedtext bridge",
+      "outcome": "preserve",
+      "status": "pending",
+      "next_action": "Verify playback and caption access on Android"
+    },
+    {
+      "capability": "Public endpoints and callbacks",
+      "source": "Legacy Express health and TTS routes",
+      "outcome": "pending",
+      "status": "pending",
+      "next_action": "Assess if used by native app after views are replaced"
+    },
+    {
+      "capability": "Schedules",
+      "source": "No schedules detected",
+      "outcome": "not applicable",
+      "status": "verified",
+      "next_action": "none"
+    },
+    {
+      "capability": "Cutover",
+      "source": "GitHub repository remains separate from this Lovable project",
+      "outcome": "pending",
+      "status": "pending",
+      "next_action": "User syncs project code to intended GitHub repository"
+    },
+    {
+      "capability": "Verification",
+      "source": "Android emulator and live YouTube captions",
+      "outcome": "pending",
+      "status": "pending",
+      "next_action": "Run device tests in GitHub Actions"
+    }
   ]
 }

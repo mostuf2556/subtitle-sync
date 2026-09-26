@@ -7,24 +7,61 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-.output
-.vinxi
-.tanstack/**
-.nitro
-*.local
+# Dependencies
+node_modules/
 
-# Wrangler / Cloudflare
-.wrangler/
+# Web build outputs
+dist/
+dist-ssr/
+.output/
+.vinxi/
+.tanstack/
+.nitro/
+build/
+out/
+.next/
+.svelte-kit/
+*.tsbuildinfo
+.eslintcache
+
+# Releases & packaged artifacts
+release-artifacts/
+*.zip
+*.tar.gz
+
+# Environment & local settings
+*.local
+.env
+.env.local
+.env.*.local
 .dev.vars
 
+# Cloudflare / Hosting
+.wrangler/
+
+# Android build outputs & caches
+android-shell/.gradle/
+android-shell/build/
+android-shell/*/build/
+android-shell/app/build/
+android-shell/app/src/main/assets/
+android-shell/local.properties
+android-shell/.cxx/
+android-shell/.externalNativeBuild/
+android-shell/captures/
+*.apk
+*.aab
+*.dex
+*.class
+*.ap_
+cypress/reports
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
+*.iml
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj

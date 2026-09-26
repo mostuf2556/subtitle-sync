@@ -1,7 +1,11 @@
 // json3 subtitle parsing + parallel sentence alignment strategies.
 
 export type Json3 = {
-  events?: { tStartMs?: number; dDurationMs?: number; segs?: { utf8?: string; tOffsetMs?: number }[] }[];
+  events?: {
+    tStartMs?: number;
+    dDurationMs?: number;
+    segs?: { utf8?: string; tOffsetMs?: number }[];
+  }[];
 };
 
 export type Cue = { start: number; end: number; text: string };
@@ -24,7 +28,11 @@ export function parseCues(j: Json3): Cue[] {
   const out: Cue[] = [];
   for (const e of j.events ?? []) {
     if (!e.segs) continue;
-    const text = e.segs.map((s) => s.utf8 ?? "").join("").replace(/\s+/g, " ").trim();
+    const text = e.segs
+      .map((s) => s.utf8 ?? "")
+      .join("")
+      .replace(/\s+/g, " ")
+      .trim();
     if (!text) continue;
     const start = e.tStartMs ?? 0;
     out.push({ start, end: start + (e.dDurationMs ?? 0), text });
@@ -49,21 +57,66 @@ function tokens(j: Json3): Token[] {
 }
 
 export type Strategy =
-  | "cue" | "sentence" | "window"
-  | "consensus" | "punctVote" | "union" | "intersection" | "pause" | "anchors";
+  | "cue"
+  | "sentence"
+  | "window"
+  | "consensus"
+  | "punctVote"
+  | "union"
+  | "intersection"
+  | "pause"
+  | "anchors";
 
 type Sec = { start: number; end: number };
 
 export const STRATEGIES: { id: Strategy; name: string; desc: string; parallel?: boolean }[] = [
-  { id: "sentence", name: "Sentence", desc: "Single track: merge timing-language cues until . ? ! ends a sentence." },
+  {
+    id: "sentence",
+    name: "Sentence",
+    desc: "Single track: merge timing-language cues until . ? ! ends a sentence.",
+  },
   { id: "cue", name: "Cue", desc: "Single track: one row per timing-language cue, as authored." },
-  { id: "window", name: "Window", desc: "Single track: merge timing-language cues into ~7s blocks." },
-  { id: "consensus", name: "Consensus", parallel: true, desc: "Cut where most languages start a cue at (almost) the same moment (±400ms)." },
-  { id: "punctVote", name: "Punct vote", parallel: true, desc: "Cut where at least 2 translations end a sentence (. ? !) at the same moment." },
-  { id: "union", name: "Union", parallel: true, desc: "Cut at every cue start of every language (finest), merging slivers under 1.5s." },
-  { id: "intersection", name: "Intersection", parallel: true, desc: "Cut only where ALL languages share a cue boundary (coarsest, safest)." },
-  { id: "pause", name: "Speech pause", parallel: true, desc: "Cut at silences >500ms in word-timed (ASR) tracks, snapped to a translation cue boundary." },
-  { id: "anchors", name: "Anchors", parallel: true, desc: "Cut where numbers/names (e.g. 16, Bach) appear in all languages — shared tokens anchor the alignment." },
+  {
+    id: "window",
+    name: "Window",
+    desc: "Single track: merge timing-language cues into ~7s blocks.",
+  },
+  {
+    id: "consensus",
+    name: "Consensus",
+    parallel: true,
+    desc: "Cut where most languages start a cue at (almost) the same moment (±400ms).",
+  },
+  {
+    id: "punctVote",
+    name: "Punct vote",
+    parallel: true,
+    desc: "Cut where at least 2 translations end a sentence (. ? !) at the same moment.",
+  },
+  {
+    id: "union",
+    name: "Union",
+    parallel: true,
+    desc: "Cut at every cue start of every language (finest), merging slivers under 1.5s.",
+  },
+  {
+    id: "intersection",
+    name: "Intersection",
+    parallel: true,
+    desc: "Cut only where ALL languages share a cue boundary (coarsest, safest).",
+  },
+  {
+    id: "pause",
+    name: "Speech pause",
+    parallel: true,
+    desc: "Cut at silences >500ms in word-timed (ASR) tracks, snapped to a translation cue boundary.",
+  },
+  {
+    id: "anchors",
+    name: "Anchors",
+    parallel: true,
+    desc: "Cut where numbers/names (e.g. 16, Bach) appear in all languages — shared tokens anchor the alignment.",
+  },
 ];
 
 const SENT_END = /[.?!…。؟]["'»)”]*$/;
@@ -74,7 +127,11 @@ function cluster(points: { t: number; lang: string }[], tol: number) {
   const out: { t: number; langs: Set<string> }[] = [];
   let cur: { ts: number[]; langs: Set<string> } | null = null;
   for (const p of pts) {
-    if (cur && p.t - cur.ts[cur.ts.length - 1]! <= tol) { cur.ts.push(p.t); cur.langs.add(p.lang); continue; }
+    if (cur && p.t - cur.ts[cur.ts.length - 1]! <= tol) {
+      cur.ts.push(p.t);
+      cur.langs.add(p.lang);
+      continue;
+    }
     if (cur) out.push({ t: Math.min(...cur.ts), langs: cur.langs });
     cur = { ts: [p.t], langs: new Set([p.lang]) };
   }
@@ -89,9 +146,13 @@ function fromCuts(cuts: number[], start: number, end: number, minMs = 1500, maxM
   for (const t of sorted) if (t - pts[pts.length - 1]! >= minMs) pts.push(t);
   const secs: Sec[] = [];
   for (let i = 0; i < pts.length; i++) {
-    const s = pts[i]!, e = pts[i + 1] ?? end;
-    if (e - s > maxMs) { const n = Math.ceil((e - s) / maxMs); for (let k = 0; k < n; k++) secs.push({ start: s + ((e - s) * k) / n, end: s + ((e - s) * (k + 1)) / n }); }
-    else secs.push({ start: s, end: e });
+    const s = pts[i]!,
+      e = pts[i + 1] ?? end;
+    if (e - s > maxMs) {
+      const n = Math.ceil((e - s) / maxMs);
+      for (let k = 0; k < n; k++)
+        secs.push({ start: s + ((e - s) * k) / n, end: s + ((e - s) * (k + 1)) / n });
+    } else secs.push({ start: s, end: e });
   }
   return secs;
 }
@@ -103,7 +164,8 @@ function pauseTimes(j: Json3, gapMs: number): number[] {
     if (!e.segs || e.segs.length < 2) continue; // only word-timed events
     const base = e.tStartMs ?? 0;
     for (let i = 1; i < e.segs.length; i++) {
-      const a = base + (e.segs[i - 1]!.tOffsetMs ?? 0), b = base + (e.segs[i]!.tOffsetMs ?? 0);
+      const a = base + (e.segs[i - 1]!.tOffsetMs ?? 0),
+        b = base + (e.segs[i]!.tOffsetMs ?? 0);
       if (b - a >= gapMs) out.push(b);
     }
   }
@@ -111,7 +173,11 @@ function pauseTimes(j: Json3, gapMs: number): number[] {
 }
 
 /** Build time sections from one or more parallel tracks. */
-export function parallelSections(tracks: Record<string, Json3>, pivot: string, strategy: Strategy): Sec[] {
+export function parallelSections(
+  tracks: Record<string, Json3>,
+  pivot: string,
+  strategy: Strategy,
+): Sec[] {
   const all = Object.entries(tracks).map(([lang, j]) => ({ lang, cues: parseCues(j) }));
   const pv = all.find((t) => t.lang === pivot)?.cues ?? [];
   if (["cue", "sentence", "window"].includes(strategy)) return sections(pv, strategy);
@@ -121,13 +187,29 @@ export function parallelSections(tracks: Record<string, Json3>, pivot: string, s
   const starts = all.flatMap((t) => t.cues.map((c) => ({ t: c.start, lang: t.lang })));
   let cuts: number[] = [];
   switch (strategy) {
-    case "union": cuts = starts.map((p) => p.t); break;
-    case "consensus": cuts = cluster(starts, 400).filter((c) => c.langs.size > n / 2).map((c) => c.t); break;
-    case "intersection": cuts = cluster(starts, 400).filter((c) => c.langs.size === n).map((c) => c.t); break;
+    case "union":
+      cuts = starts.map((p) => p.t);
+      break;
+    case "consensus":
+      cuts = cluster(starts, 400)
+        .filter((c) => c.langs.size > n / 2)
+        .map((c) => c.t);
+      break;
+    case "intersection":
+      cuts = cluster(starts, 400)
+        .filter((c) => c.langs.size === n)
+        .map((c) => c.t);
+      break;
     case "punctVote": {
       // Sentence end at cue i → boundary at start of cue i+1.
-      const ends = all.flatMap((t) => t.cues.flatMap((c, i) => (SENT_END.test(c.text) && t.cues[i + 1] ? [{ t: t.cues[i + 1]!.start, lang: t.lang }] : [])));
-      cuts = cluster(ends, 500).filter((c) => c.langs.size >= 2).map((c) => c.t);
+      const ends = all.flatMap((t) =>
+        t.cues.flatMap((c, i) =>
+          SENT_END.test(c.text) && t.cues[i + 1] ? [{ t: t.cues[i + 1]!.start, lang: t.lang }] : [],
+        ),
+      );
+      cuts = cluster(ends, 500)
+        .filter((c) => c.langs.size >= 2)
+        .map((c) => c.t);
       break;
     }
     case "pause": {
@@ -135,8 +217,13 @@ export function parallelSections(tracks: Record<string, Json3>, pivot: string, s
       const snaps = cluster(starts, 1).map((c) => c.t);
       // Snap each silence to the nearest cue start of any language (within 1.2s) so translations split cleanly.
       cuts = gaps.flatMap((g) => {
-        let best = -1, d = 1200;
-        for (const s of snaps) if (Math.abs(s - g) < d) { d = Math.abs(s - g); best = s; }
+        let best = -1,
+          d = 1200;
+        for (const s of snaps)
+          if (Math.abs(s - g) < d) {
+            d = Math.abs(s - g);
+            best = s;
+          }
         return best >= 0 ? [best] : [];
       });
       break;
@@ -144,12 +231,25 @@ export function parallelSections(tracks: Record<string, Json3>, pivot: string, s
     case "anchors": {
       // Tokens (digits, capitalised Latin names) present in every track; cut at the cue start in the pivot where they occur.
       const anchorRe = /\b(\d+|[A-Z][a-z]{2,})\b/g;
-      const sets = all.map((t) => new Set(t.cues.flatMap((c) => [...c.text.matchAll(anchorRe)].map((m) => m[1]!.toLowerCase()))));
+      const sets = all.map(
+        (t) =>
+          new Set(
+            t.cues.flatMap((c) => [...c.text.matchAll(anchorRe)].map((m) => m[1]!.toLowerCase())),
+          ),
+      );
       const eng = all.find((t) => t.lang === "en")?.cues ?? [];
-      const shared = [...(sets[0] ?? [])].filter((w) => sets.every((s) => s.has(w)) || (eng.length && sets.filter((s) => s.has(w)).length >= n - 1));
-      cuts = pv.flatMap((c) => (shared.some((w) => c.text.toLowerCase().includes(w)) ? [c.start] : []));
+      const shared = [...(sets[0] ?? [])].filter(
+        (w) =>
+          sets.every((s) => s.has(w)) ||
+          (eng.length && sets.filter((s) => s.has(w)).length >= n - 1),
+      );
+      cuts = pv.flatMap((c) =>
+        shared.some((w) => c.text.toLowerCase().includes(w)) ? [c.start] : [],
+      );
       // Anchors are sparse — also keep pivot sentence ends so rows stay readable.
-      cuts.push(...pv.flatMap((c, i) => (SENT_END.test(c.text) && pv[i + 1] ? [pv[i + 1]!.start] : [])));
+      cuts.push(
+        ...pv.flatMap((c, i) => (SENT_END.test(c.text) && pv[i + 1] ? [pv[i + 1]!.start] : [])),
+      );
       break;
     }
   }
@@ -192,7 +292,8 @@ export function align(tracks: Record<string, Json3>, pivot: string, strategy: St
     }
   }
   for (const row of rows)
-    for (const k of Object.keys(row.texts)) row.texts[k] = row.texts[k]!.replace(/\s+/g, " ").trim();
+    for (const k of Object.keys(row.texts))
+      row.texts[k] = row.texts[k]!.replace(/\s+/g, " ").trim();
   return rows;
 }
 
