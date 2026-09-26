@@ -19,6 +19,7 @@ export const LANGS: { code: string; name: string; tts: string }[] = [
   { code: "he", name: "Hebrew", tts: "he-IL" },
   { code: "ar", name: "Arabic", tts: "ar-SA" },
   { code: "it", name: "Italian", tts: "it-IT" },
+  { code: "es", name: "Spanish", tts: "es-ES" },
   { code: "ru", name: "Russian", tts: "ru-RU" },
 ];
 

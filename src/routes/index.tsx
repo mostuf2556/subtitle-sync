@@ -120,6 +120,7 @@ function Index() {
   const [strategy, setStrategy] = useState<Strategy>("sentence");
   const [shown, setShown] = useState<string[]>(["en", "he", "it"]);
   const [spoken, setSpoken] = useState<string[]>(["en", "it"]);
+  const [targetLanguages, setTargetLanguages] = useState<string[]>(["he", "it"]);
   const [languageOrder, setLanguageOrder] = useState(() => LANGS.map((lang) => lang.code));
   const [rates, setRates] = useState<Record<string, number>>(() =>
     Object.fromEntries(LANGS.map((lang) => [lang.code, 1])),
@@ -193,7 +194,7 @@ function Index() {
     if (!isAndroid || !observedUrl) return;
     const shell = nativeShell();
     if (!shell) return;
-    const selected = [...new Set([...shown, ...spoken, pivot])];
+    const selected = [...new Set([...shown, ...spoken, ...targetLanguages, pivot])];
     let cancelled = false;
     // The Android bridge is synchronous; schedule languages separately to let the UI paint.
     const fetchTracks = async () => {
@@ -222,7 +223,7 @@ function Index() {
     return () => {
       cancelled = true;
     };
-  }, [isAndroid, observedUrl, shown, spoken, pivot]);
+  }, [isAndroid, observedUrl, shown, spoken, targetLanguages, pivot]);
 
   useEffect(() => {
     const saved = window.localStorage.getItem("parallel-subtitles-theme");
@@ -247,10 +248,17 @@ function Index() {
     Promise.all(
       LANGS.map((l) =>
         fetch(`/fixtures/${DEMO_VIDEO}/${l.code}.json`)
-          .then((r) => r.json())
-          .then((j) => [l.code, j] as const),
+          .then((response) => (response.ok ? response.json() : null))
+          .then((j) => (j ? ([l.code, j] as const) : null))
+          .catch(() => null),
       ),
-    ).then((e) => setTracks(Object.fromEntries(e)));
+    ).then((entries) =>
+      setTracks(
+        Object.fromEntries(
+          entries.filter((entry): entry is readonly [string, Json3] => entry !== null),
+        ),
+      ),
+    );
   }, [isAndroid]);
 
   const rows = useMemo<Row[]>(
@@ -555,6 +563,37 @@ function Index() {
 
               {panelId === "languages" && (
                 <>
+                  <div className="mb-4 space-y-2 border-b border-border pb-4">
+                    <label htmlFor="target-language-select" className="font-medium">
+                      Target languages
+                    </label>
+                    <select
+                      id="target-language-select"
+                      aria-label="Target languages"
+                      multiple
+                      size={Math.min(LANGS.length, 6)}
+                      value={targetLanguages}
+                      onChange={(event) => {
+                        const next = Array.from(
+                          event.target.selectedOptions,
+                          (option) => option.value,
+                        );
+                        setTargetLanguages(next);
+                        setShown(next);
+                      }}
+                      className="w-full rounded-md border border-input bg-background px-2 py-1.5"
+                    >
+                      {LANGS.map((lang) => (
+                        <option key={lang.code} value={lang.code}>
+                          {lang.name}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-muted-foreground">
+                      Select one or more languages. Android fetches each selected translation
+                      track from the observed YouTube captions request.
+                    </p>
+                  </div>
                   <table className="w-full">
                     <thead>
                       <tr className="text-xs text-muted-foreground">
