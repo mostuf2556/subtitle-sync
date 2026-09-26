@@ -3,8 +3,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { align, fmt, LANGS, RTL, STRATEGIES, type Json3, type Row, type Strategy } from "@/lib/subtitles";
+import { decodeInterceptedCaption, nativeShell, parseJson3, parseVideoId, timedTextVideoId } from "@/lib/native-captions";
 
-const VIDEO = "L2Ryrr6txwA";
+const DEMO_VIDEO = "L2Ryrr6txwA";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -22,7 +23,7 @@ export const Route = createFileRoute("/")({
 
 type YTPlayer = { playVideo(): void; pauseVideo(): void; seekTo(s: number, a: boolean): void; getCurrentTime(): number; getPlayerState(): number };
 declare global {
-  interface Window { YT?: { Player: new (el: HTMLElement, o: object) => YTPlayer }; onYouTubeIframeAPIReady?: () => void }
+  interface Window { YT?: { Player: new (el: HTMLElement, o: object) => YTPlayer }; onYouTubeIframeAPIReady?: () => void; onNativeCaptionsInterceptedBase64?: (payload: string) => void; onNativeSharedLinkReceived?: (url: string) => void; __pendingSharedLink?: string }
 }
 
 type SpeechProgress = { lang: string; row: number; start: number; end: number } | null;
@@ -69,6 +70,11 @@ function speak(
 }
 
 function Index() {
+  const [isAndroid, setIsAndroid] = useState(false);
+  const [videoId, setVideoId] = useState(DEMO_VIDEO);
+  const [videoInput, setVideoInput] = useState("");
+  const [captionStatus, setCaptionStatus] = useState("");
+  const [observedUrl, setObservedUrl] = useState("");
   const [tracks, setTracks] = useState<Record<string, Json3> | null>(null);
   const [pivot, setPivot] = useState("he");
   const [strategy, setStrategy] = useState<Strategy>("sentence");
@@ -90,6 +96,67 @@ function Index() {
   const [speechProgress, setSpeechProgress] = useState<SpeechProgress>(null);
 
   useEffect(() => {
+    const shell = nativeShell();
+    if (!shell) return;
+    setIsAndroid(true);
+    const openLink = (link: string) => {
+      const id = parseVideoId(link);
+      if (id) { setVideoId(id); setVideoInput(link); }
+    };
+    window.onNativeSharedLinkReceived = openLink;
+    if (window.__pendingSharedLink) openLink(window.__pendingSharedLink);
+    const query = new URLSearchParams(location.search).get("url");
+    if (query) openLink(query);
+    return () => { delete window.onNativeSharedLinkReceived; };
+  }, []);
+
+  useEffect(() => {
+    if (!isAndroid) return;
+    setTracks(null);
+    setObservedUrl("");
+    setCaptionStatus("Waiting for YouTube captions. Play the video and enable captions if necessary.");
+    const shell = nativeShell();
+    const captured = shell?.getLastObservedTimedTextUrl();
+    if (captured && timedTextVideoId(captured) === videoId) setObservedUrl(captured);
+    window.onNativeCaptionsInterceptedBase64 = (encoded) => {
+      const payload = decodeInterceptedCaption(encoded);
+      if (!payload || timedTextVideoId(payload.url) !== videoId) return;
+      setObservedUrl(payload.url);
+      const lang = new URL(payload.url).searchParams.get("tlang") ?? new URL(payload.url).searchParams.get("lang");
+      const json = parseJson3(payload.rawData);
+      if (lang && json && LANGS.some((l) => l.code === lang)) setTracks((prev) => ({ ...prev, [lang]: json }));
+    };
+    return () => { delete window.onNativeCaptionsInterceptedBase64; };
+  }, [isAndroid, videoId]);
+
+  useEffect(() => {
+    if (!isAndroid || !observedUrl) return;
+    const shell = nativeShell();
+    if (!shell) return;
+    const selected = [...new Set([...shown, ...spoken, pivot])];
+    let cancelled = false;
+    // The Android bridge is synchronous; schedule languages separately to let the UI paint.
+    const fetchTracks = async () => {
+      const next: Record<string, Json3> = {};
+      for (const code of selected) {
+        await new Promise<void>((resolve) => setTimeout(resolve, 0));
+        if (cancelled) return;
+        try {
+          const json = parseJson3(shell.fetchTranslatedCaptionsWithUrl(observedUrl, code, "json3"));
+          if (json) next[code] = json;
+        } catch { /* The observed URL may expire; wait for a new intercepted URL. */ }
+      }
+      if (!cancelled) {
+        setTracks((previous) => ({ ...previous, ...next }));
+        setCaptionStatus(Object.keys(next).length ? `${Object.keys(next).length} live language tracks loaded.` : "No live captions returned. Enable captions on the video or try another video.");
+      }
+    };
+    setCaptionStatus("Fetching live subtitles for selected languages…");
+    void fetchTracks();
+    return () => { cancelled = true; };
+  }, [isAndroid, observedUrl, shown, spoken, pivot]);
+
+  useEffect(() => {
     const saved = window.localStorage.getItem("parallel-subtitles-theme");
     if (saved === "light" || saved === "dark" || saved === "dark-blue") setTheme(saved);
   }, []);
@@ -108,9 +175,10 @@ function Index() {
   }, []);
 
   useEffect(() => {
-    Promise.all(LANGS.map((l) => fetch(`/fixtures/${VIDEO}/${l.code}.json`).then((r) => r.json()).then((j) => [l.code, j] as const)))
+    if (isAndroid) return;
+    Promise.all(LANGS.map((l) => fetch(`/fixtures/${DEMO_VIDEO}/${l.code}.json`).then((r) => r.json()).then((j) => [l.code, j] as const)))
       .then((e) => setTracks(Object.fromEntries(e)));
-  }, []);
+  }, [isAndroid]);
 
   const rows = useMemo<Row[]>(() => (tracks ? align(tracks, pivot, strategy) : []), [tracks, pivot, strategy]);
 
@@ -128,8 +196,8 @@ function Index() {
     const init = () => {
       if (!playerEl.current || !window.YT) return;
       player.current = new window.YT.Player(playerEl.current, {
-        videoId: VIDEO,
-        playerVars: { rel: 0, cc_load_policy: 0, playsinline: 1 },
+        videoId,
+        playerVars: { rel: 0, cc_load_policy: isAndroid ? 1 : 0, playsinline: 1 },
       });
     };
     if (window.YT?.Player) init();
@@ -171,8 +239,8 @@ function Index() {
         p.playVideo();
       }
     }, 150);
-    return () => { clearInterval(iv); speechSynthesis.cancel(); };
-  }, []);
+    return () => { clearInterval(iv); speechSynthesis.cancel(); player.current?.destroy?.(); player.current = null; };
+  }, [videoId, isAndroid]);
 
   useEffect(() => {
     if (!autoFocus) return;
@@ -222,7 +290,7 @@ function Index() {
       <header className="flex flex-wrap items-center gap-4 border-b border-border px-6 py-4">
         <div className="mr-auto flex items-baseline gap-4">
           <h1 className="font-display text-2xl">Parallel Subtitles</h1>
-          <span className="text-sm text-muted-foreground">video {VIDEO} · {rows.length} sections</span>
+           <span className="text-sm text-muted-foreground">video {videoId} · {rows.length} sections · {isAndroid ? "live Android captions" : "fixture demo"}</span>
         </div>
         <div className="flex items-center gap-1 rounded-md border border-border bg-card p-1" aria-label="Color theme">
           {(["light", "dark", "dark-blue"] as const).map((option) => (
@@ -260,7 +328,9 @@ function Index() {
               wide={panelId === "subtitles"}
             >
               {panelId === "player" && (
-                <div className="relative aspect-video overflow-hidden bg-muted">
+                 <div>
+                 {isAndroid && <form className="flex gap-2 p-3" onSubmit={(event) => { event.preventDefault(); const id = parseVideoId(videoInput); if (id) setVideoId(id); else setCaptionStatus("Enter a valid YouTube link or video ID."); }}><input aria-label="YouTube video URL or ID" value={videoInput} onChange={(event) => setVideoInput(event.target.value)} placeholder="YouTube link or video ID" className="min-w-0 flex-1 rounded-md border border-input bg-background px-2 py-1" /><Button type="submit">Load video</Button></form>}
+                 <div className="relative aspect-video overflow-hidden bg-muted">
                   <div ref={playerEl} className="h-full w-full" />
                   {showVideoSubtitles && speakingLang && speakingRow >= 0 && (
                     <div className="pointer-events-none absolute inset-x-3 top-3 text-center" aria-live="polite">
@@ -268,6 +338,8 @@ function Index() {
                         <HighlightedSubtitle text={rows[speakingRow]?.texts[speakingLang] ?? ""} progress={speechProgress?.row === speakingRow && speechProgress.lang === speakingLang ? speechProgress : null} />
                       </p>
                     </div>
+                 {isAndroid && <p role="status" className="px-3 py-2 text-sm text-muted-foreground">{captionStatus}</p>}
+                 </div>
                   )}
                 </div>
               )}
@@ -288,7 +360,7 @@ function Index() {
                   </div>
                   <p className="mt-2 text-xs text-muted-foreground">{STRATEGIES.find((s) => s.id === strategy)?.desc} · {rows.length} rows</p>
                   <p className="mt-1 text-xs text-muted-foreground">⇄ = uses all parallel subtitles, not just one.</p>
-                  <label className="mt-3 flex items-center gap-2">Timing from <select value={pivot} onChange={(e) => setPivot(e.target.value)} className="rounded-md border border-input bg-background px-2 py-1">{LANGS.map((l) => <option key={l.code} value={l.code}>{l.name}</option>)}</select></label>
+                   <label className="mt-3 flex items-center gap-2">Timing from <select value={pivot} onChange={(e) => setPivot(e.target.value)} className="rounded-md border border-input bg-background px-2 py-1">{LANGS.map((l) => <option key={l.code} value={l.code}>{l.name}</option>)}</select></label>
                 </>
               )}
 
