@@ -1,10 +1,5 @@
 # Tasks
 
-## Task 1: Establish the project work-tracking workflow
-
-- [ ] Rewrite `AGENTS.md` with the task, commit, test, and completion workflow.
-- [ ] Create the task tracking files under `docs/`.
-
 ## Task 2: Import and verify the GitHub Actions delivery flows
 
 - [ ] Compare the local workflows with `mostuf2556/Youtubenet6`.

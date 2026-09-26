@@ -1,12 +1,13 @@
 # Current task
 
-## Task 1: Establish the project work-tracking workflow
+## Task 2: Import and verify the GitHub Actions delivery flows
 
-Rewrite the agent guidance in `AGENTS.md` and add the task ledger files required by the user's requested workflow. This task is documentation-only and must be committed before validation.
+Compare the local workflows with `mostuf2556/Youtubenet6`, then make the smallest compatibility fixes needed for this TanStack Start project so the web demo, GitHub Pages reports, and downstream Android/web checks can run.
 
 ## Done looks like
 
-- `AGENTS.md` states the task breakdown, commit, test, and move-to-done sequence.
-- `docs/tasks.md` contains the planned work.
-- `docs/todo.md` describes only the active task.
-- `docs/done.md` exists for completed task entries.
+- The requested workflows are present and checked against the source repository.
+- Build artifacts use the paths expected by the downstream workflows.
+- Report preparation includes the built web demo.
+- The package scripts used by workflows exist.
+- Local quality checks pass where the environment permits.
