@@ -33,6 +33,18 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Install Web Dependencies for Native Bridge E2E
+        timeout-minutes: 3
+        run: npm install
+
+      - name: Install Chromium for Native Bridge E2E
+        timeout-minutes: 3
+        run: npx playwright install chromium
+
+      - name: Run Native Bridge Language E2E
+        timeout-minutes: 4
+        run: npm run test:e2e:emulation
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
