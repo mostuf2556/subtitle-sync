@@ -3,13 +3,58 @@
 <head>
   <meta charset="UTF-8">
   <title>YouTube Viewer — Hebrew Subtitles Mini Demo</title>
-  <meta http-equiv="refresh" content="0; url=../app/index.html">
-  <script>window.location.replace('../app/index.html');</script>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #090d16;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .demo-card {
+      width: min(680px, calc(100% - 32px));
+      padding: 32px;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      background: #111827;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    }
+    .eyebrow {
+      margin: 0 0 12px;
+      color: #38bdf8;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    h1 { margin: 0 0 24px; font-size: clamp(1.6rem, 4vw, 2.25rem); }
+    .subtitle {
+      display: grid;
+      gap: 8px;
+      padding: 20px;
+      border-radius: 12px;
+      background: #090d16;
+      border: 1px solid #334155;
+      font-size: 1.15rem;
+      line-height: 1.5;
+    }
+    .translation { color: #38bdf8; }
+    a { color: #38bdf8; }
+  </style>
 </head>
-<body style="background:#090d16;color:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding:2.5rem;max-width:700px;margin:0 auto;">
-  <h2>Redirecting to Live Web Application...</h2>
-  <p><a href="../app/index.html" style="color:#38bdf8;">Click here if not redirected automatically.</a></p>
-  <!-- Required by E2E integrity test scripts -->
-  <div id="demo-sub-primary" style="display: none; visibility: hidden;">שלום עולם - שלום לך ארץ נהדרת</div>
+<body>
+  <main class="demo-card">
+    <p class="eyebrow">Subtitle Learning Demo</p>
+    <h1>YouTube Viewer — Hebrew Subtitles</h1>
+    <div class="subtitle" aria-label="Subtitle example">
+      <div id="demo-sub-primary">שלום עולם - שלום לך ארץ נהדרת</div>
+      <div class="translation">Hello world — hello wonderful land</div>
+    </div>
+    <p>Return to the <a href="../index.html">interactive test runner</a>.</p>
+  </main>
 </body>
 </html>
