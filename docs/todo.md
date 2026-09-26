@@ -1,12 +1,11 @@
 # Current task
 
-## Task 3: Add dynamic target-language selection to the app
+## Task 4: Align and verify web and Android E2E coverage
 
-Expose a target-language control built from the supported language list and make Android subtitle refreshes follow the selected languages. Include Spanish because the requested emulator flow changes to `tlang=es`.
+Replace stale selectors and assumptions from the previous app with tests for the current Parallel Subtitles UI. The Android test will inject the native bridge that the WebView provides and assert the selected language codes sent to it.
 
 ## Done looks like
 
-- The Languages panel has a labeled target-language control with dynamic options.
-- Selecting a target language includes it in Android subtitle requests.
-- The web fixture loader tolerates languages without a bundled fixture.
-- The app builds and the focused lint scope passes.
+- Web smoke tests use the current app's title, panels, fixtures, and language selector.
+- Android emulation verifies the bridge receives the selected language list.
+- The Playwright web and emulation projects pass when Chromium is available.
