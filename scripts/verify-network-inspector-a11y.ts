@@ -80,6 +80,29 @@ assert.ok(
 );
 console.log("✅ PASS: Android-native fullscreen layout and back navigation integration verified");
 
+// 6. Verify Accordion Architecture in Detail View (Eliminating Overlapping / Stacked Elements)
+console.log("6. Checking Detail View Accordion Architecture...");
+assert.ok(
+  content.includes("openDetailAccordions"),
+  "Must maintain accordion state for detail sections",
+);
+assert.ok(
+  content.includes("Expand All") && content.includes("Collapse All"),
+  "Must provide Expand All and Collapse All accordion controls",
+);
+assert.ok(
+  content.includes("Request Overview & URL") &&
+    content.includes("Query Parameters Breakdown") &&
+    content.includes("Response Body (First 250 Chars Accordion)") &&
+    content.includes("Complete Formatted Request Export"),
+  "Must isolate overview, params, response body, and raw export in distinct accordion elements",
+);
+assert.ok(
+  content.includes("aria-expanded"),
+  "Accordion headers must include aria-expanded attribute for accessibility",
+);
+console.log("✅ PASS: Detail view accordion elements eliminate overlapping and crowded UI");
+
 console.log("====================================================");
 console.log("🎉 ALL Network Inspector Accessibility & Readability tests PASSED!");
 console.log("====================================================");

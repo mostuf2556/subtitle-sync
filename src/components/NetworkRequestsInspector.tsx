@@ -23,7 +23,8 @@ import {
   Code2,
   ListFilter,
   ArrowLeft,
-  Share2,
+  SlidersHorizontal,
+  ChevronUp,
 } from "lucide-react";
 import {
   useNetworkRequests,
@@ -58,6 +59,37 @@ export const NetworkRequestsInspector: React.FC<Props> = ({
   const [isMinimized, setIsMinimized] = useState(false);
   const [activeMobileTab, setActiveMobileTab] = useState<"list" | "detail">("list");
   const [liveAnnouncement, setLiveAnnouncement] = useState("");
+
+  // Controlled Accordion Sections in Detail View to prevent clutter / overlapping elements
+  const [openDetailAccordions, setOpenDetailAccordions] = useState<{
+    overview: boolean;
+    params: boolean;
+    body: boolean;
+    raw: boolean;
+  }>({
+    overview: true,
+    params: true,
+    body: true,
+    raw: false,
+  });
+
+  const toggleDetailAccordion = (key: keyof typeof openDetailAccordions) => {
+    setOpenDetailAccordions((prev) => {
+      const next = !prev[key];
+      announce(`${key} section ${next ? "expanded" : "collapsed"}`);
+      return { ...prev, [key]: next };
+    });
+  };
+
+  const setAllDetailAccordions = (open: boolean) => {
+    setOpenDetailAccordions({
+      overview: open,
+      params: open,
+      body: open,
+      raw: open,
+    });
+    announce(open ? "All detail sections expanded" : "All detail sections collapsed");
+  };
 
   const modalRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -486,7 +518,7 @@ export const NetworkRequestsInspector: React.FC<Props> = ({
           </div>
         </header>
 
-        {/* Scrollable Filter Chips Bar (Android Material 3 Horizontal Scrolling) */}
+        {/* Scrollable Filter Chips Bar */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 px-4 sm:px-6 py-2.5 bg-neutral-950/70 border-b border-neutral-800 shrink-0">
           <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
             <span className="text-xs text-neutral-400 font-medium flex items-center gap-1 shrink-0" id="filter-type-label">
@@ -568,7 +600,7 @@ export const NetworkRequestsInspector: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Mobile View Segmented Tab Bar (Visible on mobile screens) */}
+        {/* Mobile View Segmented Tab Bar */}
         <div className="flex md:hidden items-center border-b border-neutral-800 bg-neutral-950 px-4 py-2 shrink-0">
           <div className="flex w-full rounded-xl bg-neutral-850 p-1 border border-neutral-800">
             <button
@@ -605,7 +637,7 @@ export const NetworkRequestsInspector: React.FC<Props> = ({
             tabIndex={0}
             aria-label="Captured Network Requests"
             onKeyDown={handleListKeyDown}
-            className={`md:col-span-6 lg:col-span-5 overflow-y-auto p-3 sm:p-4 space-y-2.5 bg-neutral-950/30 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500/50 ${
+            className={`md:col-span-6 lg:col-span-5 overflow-y-auto p-3 sm:p-4 space-y-3 bg-neutral-950/30 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500/50 ${
               activeMobileTab === "list" ? "block" : "hidden md:block"
             }`}
           >
@@ -657,16 +689,15 @@ export const NetworkRequestsInspector: React.FC<Props> = ({
                         setActiveMobileTab("detail");
                       }
                     }}
-                    className={`p-3 sm:p-3.5 rounded-xl border text-xs transition-all space-y-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 active:scale-[0.99] ${
+                    className={`p-3 sm:p-3.5 rounded-xl border text-xs transition-all space-y-2.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 active:scale-[0.99] ${
                       isSelected
                         ? "bg-blue-950/50 border-blue-600 shadow-md ring-1 ring-blue-500/40"
                         : "bg-neutral-900/60 border-neutral-800 hover:bg-neutral-850 hover:border-neutral-700"
                     }`}
                   >
-                    {/* Item Header Bar */}
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                    {/* Header Row: Status, Method, Type, Duration & Copy */}
+                    <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        {/* Status Code with Distinct Icon */}
                         <span
                           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-mono font-bold text-xs ${
                             req.isPending
@@ -694,53 +725,16 @@ export const NetworkRequestsInspector: React.FC<Props> = ({
                           )}
                         </span>
 
-                        {/* HTTP Method */}
                         <span className="font-mono font-bold text-xs text-neutral-200 px-1.5 py-0.5 bg-neutral-800 rounded border border-neutral-700">
                           {req.method}
                         </span>
 
-                        {/* Request Type */}
                         <span className="text-[11px] font-mono text-neutral-400 uppercase tracking-wider">
                           {req.type}
                         </span>
-
-                        {/* tlang Language Highlight Tag */}
-                        {tlang && tlangInfo && (
-                          <span
-                            data-testid={`tlang-tag-${req.id}`}
-                            data-status={tlangInfo.status}
-                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold border ${tlangInfo.colorClass}`}
-                            title={`Target Translation Language: ${tlangName} (${tlang}) — ${tlangInfo.label}`}
-                          >
-                            <Globe className="w-3.5 h-3.5" />
-                            <span>
-                              tlang: {tlang} ({tlangName}) [{tlangInfo.label}]
-                            </span>
-                          </span>
-                        )}
-
-                        {/* Good fetch green badge */}
-                        {tlang && isSuccessfulFetch(req) && (
-                          <span
-                            data-testid={`good-fetch-badge-${tlang}`}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                            title={`Successfully fetched subtitles for ${tlangName || tlang}`}
-                          >
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
-                            <span>Good Fetch</span>
-                          </span>
-                        )}
-
-                        {/* Empty response badge for 200 status */}
-                        {isBodyEmpty && (
-                          <span className="px-2 py-0.5 rounded-md text-xs font-mono font-medium bg-rose-950/70 text-rose-300 border border-rose-800/70">
-                            empty body — 0 chars
-                          </span>
-                        )}
                       </div>
 
-                      {/* Right side: Duration + Quick Copy */}
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 shrink-0">
                         {req.duration !== undefined && (
                           <span className="text-xs font-mono text-neutral-300 flex items-center gap-1">
                             <Clock className="w-3.5 h-3.5 text-neutral-400" />
@@ -772,7 +766,43 @@ export const NetworkRequestsInspector: React.FC<Props> = ({
                       </div>
                     </div>
 
-                    {/* Word-wrapped URL with highlighted tlang */}
+                    {/* Dedicated Target Language & Empty Badges Row (Prevents Stacking On Top of Other Elements) */}
+                    {(tlang || isBodyEmpty) && (
+                      <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                        {tlang && tlangInfo && (
+                          <span
+                            data-testid={`tlang-tag-${req.id}`}
+                            data-status={tlangInfo.status}
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold border ${tlangInfo.colorClass}`}
+                            title={`Target Translation Language: ${tlangName} (${tlang}) — ${tlangInfo.label}`}
+                          >
+                            <Globe className="w-3.5 h-3.5" />
+                            <span>
+                              tlang: {tlang} ({tlangName}) [{tlangInfo.label}]
+                            </span>
+                          </span>
+                        )}
+
+                        {tlang && isSuccessfulFetch(req) && (
+                          <span
+                            data-testid={`good-fetch-badge-${tlang}`}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                            title={`Successfully fetched subtitles for ${tlangName || tlang}`}
+                          >
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Good Fetch</span>
+                          </span>
+                        )}
+
+                        {isBodyEmpty && (
+                          <span className="px-2 py-0.5 rounded-md text-xs font-mono font-medium bg-rose-950/70 text-rose-300 border border-rose-800/70">
+                            empty body — 0 chars
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Word-wrapped URL */}
                     <div className="font-mono text-xs text-neutral-300 break-all whitespace-pre-wrap break-words leading-relaxed select-text bg-neutral-950/50 p-2.5 rounded-lg border border-neutral-800/70">
                       {renderHighlightedUrl(req.url)}
                     </div>
@@ -834,16 +864,16 @@ export const NetworkRequestsInspector: React.FC<Props> = ({
             )}
           </div>
 
-          {/* Right Column: Request Detail View */}
+          {/* Right Column: Request Detail View (Accordion-Structured to Prevent Overlapping Elements) */}
           <div
-            className={`md:col-span-6 lg:col-span-7 overflow-y-auto p-4 sm:p-6 space-y-5 text-sm bg-neutral-900/50 ${
+            className={`md:col-span-6 lg:col-span-7 overflow-y-auto p-4 sm:p-6 space-y-4 text-sm bg-neutral-900/50 ${
               activeMobileTab === "detail" ? "block" : "hidden md:block"
             }`}
           >
             {selectedRequest ? (
               <>
-                {/* Detail Header & Action Buttons */}
-                <div className="flex items-center justify-between border-b border-neutral-800 pb-4 flex-wrap gap-3">
+                {/* Detail Header Bar & Quick Accordion Expansion Controls */}
+                <div className="flex items-center justify-between border-b border-neutral-800 pb-3 flex-wrap gap-2.5">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span
                       className={`px-2.5 py-1 rounded-md font-mono font-bold text-xs ${
@@ -862,7 +892,7 @@ export const NetworkRequestsInspector: React.FC<Props> = ({
                       {selectedRequest.method}
                     </span>
 
-                    {/* Target Language Highlight Tag */}
+                    {/* Target Language Tag in Header */}
                     {extractTlang(selectedRequest.url) && (
                       <span
                         data-testid="detail-tlang-tag"
@@ -876,7 +906,7 @@ export const NetworkRequestsInspector: React.FC<Props> = ({
                       </span>
                     )}
 
-                    {/* Good Fetch Badge */}
+                    {/* Good Fetch Badge in Header */}
                     {extractTlang(selectedRequest.url) && isSuccessfulFetch(selectedRequest) && (
                       <span
                         data-testid="detail-good-fetch-badge"
@@ -888,130 +918,170 @@ export const NetworkRequestsInspector: React.FC<Props> = ({
                     )}
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-2">
+                  {/* Accordion Expand/Collapse All Toggles */}
+                  <div className="flex items-center gap-1.5">
                     <button
-                      id="copy-full-request-button"
-                      data-testid="copy-full-request-button"
                       type="button"
-                      onClick={() =>
-                        handleCopyText(formatRequestForClipboard(selectedRequest), "request")
-                      }
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-750 text-neutral-200 text-xs font-medium border border-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 transition active:scale-95"
-                      title="Copy complete formatted request to clipboard"
+                      onClick={() => setAllDetailAccordions(true)}
+                      className="px-2.5 py-1 text-xs font-medium rounded-md bg-neutral-800 hover:bg-neutral-750 text-neutral-300 border border-neutral-700 transition"
+                      title="Expand all accordion panels"
                     >
-                      {copiedDetail === "request" ? (
-                        <>
-                          <Check className="w-4 h-4 text-emerald-400" />
-                          <span className="text-emerald-300 font-semibold">Copied Request!</span>
-                        </>
-                      ) : (
-                        <>
-                          <FileText className="w-4 h-4 text-neutral-300" />
-                          <span>Copy Full Request</span>
-                        </>
-                      )}
+                      Expand All
                     </button>
-
                     <button
                       type="button"
-                      onClick={() => handleCopyText(selectedRequest.url, "url")}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-750 text-neutral-200 text-xs font-medium border border-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 transition active:scale-95"
-                      title="Copy Request URL"
+                      onClick={() => setAllDetailAccordions(false)}
+                      className="px-2.5 py-1 text-xs font-medium rounded-md bg-neutral-800 hover:bg-neutral-750 text-neutral-300 border border-neutral-700 transition"
+                      title="Collapse all accordion panels"
                     >
-                      {copiedDetail === "url" ? (
-                        <>
-                          <Check className="w-4 h-4 text-emerald-400" />
-                          <span className="text-emerald-300 font-semibold">Copied URL</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-4 h-4 text-neutral-300" />
-                          <span>Copy URL</span>
-                        </>
-                      )}
+                      Collapse All
                     </button>
                   </div>
                 </div>
 
-                {/* Key Request Metadata Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                  <div className="p-3 rounded-xl bg-neutral-950 border border-neutral-800">
-                    <span className="text-neutral-400 block text-xs font-medium">Type</span>
-                    <span className="font-mono text-neutral-100 font-semibold text-xs sm:text-sm">{selectedRequest.type}</span>
-                  </div>
-                  <div className="p-3 rounded-xl bg-neutral-950 border border-neutral-800">
-                    <span className="text-neutral-400 block text-xs font-medium">Duration</span>
-                    <span className="font-mono text-neutral-100 font-semibold text-xs sm:text-sm">
-                      {selectedRequest.duration !== undefined ? `${selectedRequest.duration} ms` : "—"}
-                    </span>
-                  </div>
-                  <div className="p-3 rounded-xl bg-neutral-950 border border-neutral-800">
-                    <span className="text-neutral-400 block text-xs font-medium">Status</span>
-                    <span className="font-mono text-neutral-100 font-semibold text-xs sm:text-sm">
-                      {selectedRequest.isPending ? "Pending" : selectedRequest.status || "Error"}
-                    </span>
-                  </div>
-                  <div className="p-3 rounded-xl bg-neutral-950 border border-neutral-800">
-                    <span className="text-neutral-400 block text-xs font-medium">Target Lang</span>
-                    <span className="font-mono text-neutral-100 font-semibold text-xs sm:text-sm">
-                      {extractTlang(selectedRequest.url) || "None"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Full Word-Wrapped URL Section */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-neutral-300 text-xs font-semibold uppercase tracking-wider">
-                    <span>Full Request URL</span>
-                    <span className="text-neutral-400 font-mono text-[11px]">Word-Wrapped</span>
-                  </div>
-                  <div
-                    data-testid="detail-full-url"
-                    className="p-3.5 rounded-xl bg-neutral-950 border border-neutral-800 font-mono text-xs sm:text-sm text-neutral-200 break-all whitespace-pre-wrap break-words leading-relaxed select-text"
+                {/* ACCORDION 1: Request Overview, URL & Metadata */}
+                <div className="border border-neutral-800 rounded-xl bg-neutral-950/70 overflow-hidden shadow-sm">
+                  <button
+                    type="button"
+                    onClick={() => toggleDetailAccordion("overview")}
+                    className="w-full flex items-center justify-between p-3.5 bg-neutral-900/80 hover:bg-neutral-850 text-left transition select-none"
+                    aria-expanded={openDetailAccordions.overview}
                   >
-                    {renderHighlightedUrl(selectedRequest.url)}
-                  </div>
-                </div>
-
-                {/* Structured Query Parameters Table */}
-                {parsedQueryParams.length > 0 && (
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-neutral-300 text-xs font-semibold uppercase tracking-wider">
-                      <span>Query Parameters Breakdown</span>
-                      <span className="text-neutral-400 font-mono text-[11px]">{parsedQueryParams.length} params</span>
+                    <div className="flex items-center gap-2">
+                      <ChevronDown
+                        className={`w-4 h-4 text-neutral-400 transition-transform duration-200 ${
+                          openDetailAccordions.overview ? "rotate-180" : ""
+                        }`}
+                      />
+                      <span className="text-neutral-200 font-bold text-xs uppercase tracking-wider">
+                        Request Overview & URL
+                      </span>
                     </div>
-                    <div className="rounded-xl border border-neutral-800 overflow-hidden bg-neutral-950">
-                      <div className="max-h-52 overflow-y-auto">
-                        <table className="w-full text-left border-collapse text-xs font-mono">
-                          <thead>
-                            <tr className="border-b border-neutral-800 bg-neutral-900/60 text-neutral-400 text-[11px]">
-                              <th className="py-2.5 px-3 font-semibold">Parameter</th>
-                              <th className="py-2.5 px-3 font-semibold">Value</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-neutral-850">
-                            {parsedQueryParams.map((p, idx) => (
-                              <tr
-                                key={idx}
-                                className={p.isHighlighted ? "bg-amber-950/20" : "hover:bg-neutral-900/40"}
-                              >
-                                <td className={`py-2 px-3 font-bold ${p.isHighlighted ? "text-amber-300" : "text-neutral-400"}`}>
-                                  {p.key}
-                                </td>
-                                <td className={`py-2 px-3 break-all whitespace-pre-wrap break-words ${p.isHighlighted ? "text-amber-200 font-semibold" : "text-neutral-200"}`}>
-                                  {p.value}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono text-neutral-400">
+                        {selectedRequest.type} · {selectedRequest.duration ?? "—"}ms
+                      </span>
+                    </div>
+                  </button>
+
+                  {openDetailAccordions.overview && (
+                    <div className="p-4 space-y-3.5 border-t border-neutral-800">
+                      {/* Metadata Grid */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <div className="p-2.5 rounded-lg bg-neutral-900/90 border border-neutral-800">
+                          <span className="text-neutral-400 block text-xs">Type</span>
+                          <span className="font-mono text-neutral-100 font-semibold text-xs truncate block">{selectedRequest.type}</span>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-neutral-900/90 border border-neutral-800">
+                          <span className="text-neutral-400 block text-xs">Duration</span>
+                          <span className="font-mono text-neutral-100 font-semibold text-xs">
+                            {selectedRequest.duration !== undefined ? `${selectedRequest.duration} ms` : "—"}
+                          </span>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-neutral-900/90 border border-neutral-800">
+                          <span className="text-neutral-400 block text-xs">Status</span>
+                          <span className="font-mono text-neutral-100 font-semibold text-xs">
+                            {selectedRequest.isPending ? "Pending" : selectedRequest.status || "Error"}
+                          </span>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-neutral-900/90 border border-neutral-800">
+                          <span className="text-neutral-400 block text-xs">Target Lang</span>
+                          <span className="font-mono text-neutral-100 font-semibold text-xs">
+                            {extractTlang(selectedRequest.url) || "None"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Full URL with Word-Wrap & Copy Button */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-neutral-300 text-xs font-semibold uppercase tracking-wider">
+                          <span>Full URL</span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyText(selectedRequest.url, "url")}
+                            className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 font-sans font-medium"
+                          >
+                            {copiedDetail === "url" ? (
+                              <>
+                                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                <span className="text-emerald-300">Copied URL!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3.5 h-3.5" />
+                                <span>Copy URL</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                        <div
+                          data-testid="detail-full-url"
+                          className="p-3 rounded-lg bg-neutral-950 border border-neutral-800 font-mono text-xs sm:text-sm text-neutral-200 break-all whitespace-pre-wrap break-words leading-relaxed select-text"
+                        >
+                          {renderHighlightedUrl(selectedRequest.url)}
+                        </div>
                       </div>
                     </div>
+                  )}
+                </div>
+
+                {/* ACCORDION 2: Structured Query Parameters Table */}
+                {parsedQueryParams.length > 0 && (
+                  <div className="border border-neutral-800 rounded-xl bg-neutral-950/70 overflow-hidden shadow-sm">
+                    <button
+                      type="button"
+                      onClick={() => toggleDetailAccordion("params")}
+                      className="w-full flex items-center justify-between p-3.5 bg-neutral-900/80 hover:bg-neutral-850 text-left transition select-none"
+                      aria-expanded={openDetailAccordions.params}
+                    >
+                      <div className="flex items-center gap-2">
+                        <ChevronDown
+                          className={`w-4 h-4 text-neutral-400 transition-transform duration-200 ${
+                            openDetailAccordions.params ? "rotate-180" : ""
+                          }`}
+                        />
+                        <span className="text-neutral-200 font-bold text-xs uppercase tracking-wider">
+                          Query Parameters Breakdown
+                        </span>
+                      </div>
+                      <span className="text-xs font-mono font-medium px-2 py-0.5 rounded bg-neutral-800 text-neutral-300 border border-neutral-700">
+                        {parsedQueryParams.length} params
+                      </span>
+                    </button>
+
+                    {openDetailAccordions.params && (
+                      <div className="border-t border-neutral-800">
+                        <div className="max-h-60 overflow-y-auto">
+                          <table className="w-full text-left border-collapse text-xs font-mono">
+                            <thead>
+                              <tr className="border-b border-neutral-800 bg-neutral-900/60 text-neutral-400 text-[11px]">
+                                <th className="py-2.5 px-3.5 font-semibold">Parameter</th>
+                                <th className="py-2.5 px-3.5 font-semibold">Value</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-neutral-850">
+                              {parsedQueryParams.map((p, idx) => (
+                                <tr
+                                  key={idx}
+                                  className={p.isHighlighted ? "bg-amber-950/20" : "hover:bg-neutral-900/40"}
+                                >
+                                  <td className={`py-2 px-3.5 font-bold ${p.isHighlighted ? "text-amber-300" : "text-neutral-400"}`}>
+                                    {p.key}
+                                  </td>
+                                  <td className={`py-2 px-3.5 break-all whitespace-pre-wrap break-words ${p.isHighlighted ? "text-amber-200 font-semibold" : "text-neutral-200"}`}>
+                                    {p.value}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {/* Error Banner */}
+                {/* Optional Error Alert Box */}
                 {selectedRequest.error && (
                   <div className="p-3.5 rounded-xl bg-rose-950/40 border border-rose-800/80 text-rose-200 flex items-start gap-3">
                     <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-rose-400" />
@@ -1024,9 +1094,9 @@ export const NetworkRequestsInspector: React.FC<Props> = ({
                   </div>
                 )}
 
-                {/* Response Body Accordion & Viewer */}
+                {/* ACCORDION 3: Response Body (First 250 Chars Accordion) */}
                 <details
-                  className="border border-neutral-800 rounded-xl bg-neutral-950/60 overflow-hidden"
+                  className="border border-neutral-800 rounded-xl bg-neutral-950/70 overflow-hidden shadow-sm"
                   open
                 >
                   <summary className="flex items-center justify-between p-3.5 cursor-pointer bg-neutral-900/80 hover:bg-neutral-850 select-none transition">
@@ -1069,7 +1139,7 @@ export const NetworkRequestsInspector: React.FC<Props> = ({
                                   return next;
                                 });
                               }}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 transition"
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 transition active:scale-95"
                             >
                               {showFullBody ? (
                                 <>
@@ -1139,6 +1209,58 @@ export const NetworkRequestsInspector: React.FC<Props> = ({
                     </div>
                   </div>
                 </details>
+
+                {/* ACCORDION 4: Complete Formatted Request Export */}
+                <div className="border border-neutral-800 rounded-xl bg-neutral-950/70 overflow-hidden shadow-sm">
+                  <button
+                    type="button"
+                    onClick={() => toggleDetailAccordion("raw")}
+                    className="w-full flex items-center justify-between p-3.5 bg-neutral-900/80 hover:bg-neutral-850 text-left transition select-none"
+                    aria-expanded={openDetailAccordions.raw}
+                  >
+                    <div className="flex items-center gap-2">
+                      <ChevronDown
+                        className={`w-4 h-4 text-neutral-400 transition-transform duration-200 ${
+                          openDetailAccordions.raw ? "rotate-180" : ""
+                        }`}
+                      />
+                      <span className="text-neutral-200 font-bold text-xs uppercase tracking-wider">
+                        Complete Formatted Request Export
+                      </span>
+                    </div>
+
+                    <button
+                      id="copy-full-request-button"
+                      data-testid="copy-full-request-button"
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCopyText(formatRequestForClipboard(selectedRequest), "request");
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-neutral-800 hover:bg-neutral-750 text-neutral-200 text-xs font-medium border border-neutral-700 transition"
+                    >
+                      {copiedDetail === "request" ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="text-emerald-300 font-semibold">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="w-3.5 h-3.5 text-neutral-300" />
+                          <span>Copy Full Request</span>
+                        </>
+                      )}
+                    </button>
+                  </button>
+
+                  {openDetailAccordions.raw && (
+                    <div className="p-3.5 border-t border-neutral-800 bg-neutral-950">
+                      <pre className="font-mono text-xs text-neutral-300 whitespace-pre-wrap break-all break-words leading-relaxed select-text max-h-56 overflow-y-auto">
+                        {formatRequestForClipboard(selectedRequest)}
+                      </pre>
+                    </div>
+                  )}
+                </div>
               </>
             ) : (
               <div className="p-12 text-center text-neutral-400 space-y-2">
