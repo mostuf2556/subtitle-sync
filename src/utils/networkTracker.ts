@@ -139,6 +139,19 @@ export function isSuccessfulFetch(req: NetworkRequestRecord): boolean {
 }
 
 /**
+ * Check if a language has already been successfully fetched with status 200 and body > 0.
+ * Rule: never try to fetch if response is ok and size of response body is more than 0.
+ */
+export function hasSuccessfulFetchForLang(langCode: string): boolean {
+  if (!langCode) return false;
+  const target = langCode.toLowerCase().trim();
+  return requests.some((r) => {
+    const tlang = extractTlang(r.url)?.toLowerCase().trim();
+    return tlang === target && isSuccessfulFetch(r);
+  });
+}
+
+/**
  * Extracts target translation language code ('tlang' query param) from a URL if present
  */
 export function extractTlang(url: string): string | null {

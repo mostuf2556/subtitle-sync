@@ -103,6 +103,54 @@ assert.ok(
 );
 console.log("✅ PASS: Detail view accordion elements eliminate overlapping and crowded UI");
 
+// 7. Verify Each Accordion Section Titled Based on tlang Value
+console.log("7. Checking that each accordion section title incorporates tlang value...");
+assert.ok(
+  content.includes("tlangAccordionLabel"),
+  "NetworkRequestsInspector must compute dynamic tlangAccordionLabel",
+);
+assert.ok(
+  content.includes("Request Overview & URL — [{tlangAccordionLabel}]"),
+  "Request Overview & URL accordion title must incorporate tlang value",
+);
+assert.ok(
+  content.includes("Query Parameters Breakdown — [{tlangAccordionLabel}]"),
+  "Query Parameters Breakdown accordion title must incorporate tlang value",
+);
+assert.ok(
+  content.includes("Response Body (First 250 Chars Accordion) — [{tlangAccordionLabel}]"),
+  "Response Body accordion title must incorporate tlang value",
+);
+assert.ok(
+  content.includes("Complete Formatted Request Export — [{tlangAccordionLabel}]"),
+  "Complete Formatted Request Export accordion title must incorporate tlang value",
+);
+assert.ok(
+  content.includes("First 250 chars: [{tlang ? `tlang: ${tlang}` : \"base\"}]"),
+  "List item response preview accordion title must incorporate tlang value",
+);
+console.log("✅ PASS: All accordion section titles dynamically incorporate tlang value");
+
+// 8. Verify Compact View in Requests List (Lang, Status, Duration, Size, and Icon-Only Copy Button)
+console.log("8. Checking Compact Requests List layout (Lang, Status, Duration, Size, Icon Copy)...");
+assert.ok(
+  content.includes("formatPayloadSize"),
+  "Must include formatPayloadSize helper for elegant response size presentation",
+);
+assert.ok(
+  content.includes("sizeText"),
+  "Must display response payload size in compact view",
+);
+assert.ok(
+  content.includes("req.duration !== undefined"),
+  "Must display request duration in compact view",
+);
+assert.ok(
+  content.includes("copy-request-button-") && content.includes("<Copy className=\"w-3.5 h-3.5"),
+  "Must use space-saving icon-only copy button on list items",
+);
+console.log("✅ PASS: Compact view with lang, HTTP status, duration, size, and icon copy button verified");
+
 console.log("====================================================");
 console.log("🎉 ALL Network Inspector Accessibility & Readability tests PASSED!");
 console.log("====================================================");

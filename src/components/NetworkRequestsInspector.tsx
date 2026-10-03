@@ -42,6 +42,12 @@ interface Props {
   isAndroid?: boolean;
 }
 
+const formatPayloadSize = (chars?: number | null): string => {
+  if (chars === undefined || chars === null || chars === 0) return "0 B";
+  if (chars < 1024) return `${chars} B`;
+  return `${(chars / 1024).toFixed(1)} KB`;
+};
+
 export const NetworkRequestsInspector: React.FC<Props> = ({
   isOpen,
   onClose,
@@ -217,6 +223,12 @@ export const NetworkRequestsInspector: React.FC<Props> = ({
       (filtered.length > 0 ? filtered[0] : null)
     );
   }, [filtered, selectedId]);
+
+  const selectedTlang = selectedRequest ? extractTlang(selectedRequest.url) : null;
+  const selectedTlangName = selectedTlang ? getLanguageName(selectedTlang) : null;
+  const tlangAccordionLabel = selectedTlang
+    ? `tlang: ${selectedTlang}${selectedTlangName && selectedTlangName !== selectedTlang ? ` (${selectedTlangName})` : ""}`
+    : "tlang: none (base)";
 
   useEffect(() => {
     if (selectedRequest && selectedRequest.id !== selectedId) {
@@ -670,6 +682,10 @@ export const NetworkRequestsInspector: React.FC<Props> = ({
                   req.status === 200 &&
                   (!req.fullResponseBody || req.fullResponseBody.trim() === "");
 
+                const payloadSize =
+                  req.fullResponseBody?.length ?? (req.responseBodyPreview?.length || 0);
+                const sizeText = isBodyEmpty ? "0 B" : formatPayloadSize(payloadSize);
+
                 return (
                   <div
                     key={req.id}
@@ -689,17 +705,18 @@ export const NetworkRequestsInspector: React.FC<Props> = ({
                         setActiveMobileTab("detail");
                       }
                     }}
-                    className={`p-3 sm:p-3.5 rounded-xl border text-xs transition-all space-y-2.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 active:scale-[0.99] ${
+                    className={`p-2.5 sm:p-3 rounded-xl border text-xs transition-all space-y-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 active:scale-[0.99] ${
                       isSelected
                         ? "bg-blue-950/50 border-blue-600 shadow-md ring-1 ring-blue-500/40"
                         : "bg-neutral-900/60 border-neutral-800 hover:bg-neutral-850 hover:border-neutral-700"
                     }`}
                   >
-                    {/* Header Row: Status, Method, Type, Duration & Copy */}
-                    <div className="flex items-center justify-between gap-2">
+                    {/* Compact Metrics Row: HTTP Status, Method, Lang, Duration, Size, and Icon-Only Copy Button */}
+                    <div className="flex items-center justify-between gap-1.5 flex-wrap">
                       <div className="flex items-center gap-1.5 flex-wrap">
+                        {/* HTTP Status Code Pill */}
                         <span
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-mono font-bold text-xs ${
+                          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded font-mono font-bold text-[11px] ${
                             req.isPending
                               ? "bg-amber-950 text-amber-300 border border-amber-700"
                               : req.status === 200 && !isBodyEmpty
@@ -709,116 +726,125 @@ export const NetworkRequestsInspector: React.FC<Props> = ({
                         >
                           {req.isPending ? (
                             <>
-                              <Loader2 className="w-3 h-3 animate-spin text-amber-400" />
+                              <Loader2 className="w-2.5 h-2.5 animate-spin text-amber-400" />
                               <span>PENDING</span>
                             </>
                           ) : req.status === 200 && !isBodyEmpty ? (
                             <>
-                              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                              <span>{req.status} OK</span>
+                              <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" />
+                              <span>200</span>
                             </>
                           ) : (
                             <>
-                              <XCircle className="w-3 h-3 text-rose-400" />
+                              <XCircle className="w-2.5 h-2.5 text-rose-400" />
                               <span>{req.status || "ERR"}</span>
                             </>
                           )}
                         </span>
 
-                        <span className="font-mono font-bold text-xs text-neutral-200 px-1.5 py-0.5 bg-neutral-800 rounded border border-neutral-700">
+                        {/* HTTP Method */}
+                        <span className="font-mono font-bold text-[11px] text-neutral-200 px-1 py-0.5 bg-neutral-800 rounded border border-neutral-700">
                           {req.method}
                         </span>
 
-                        <span className="text-[11px] font-mono text-neutral-400 uppercase tracking-wider">
-                          {req.type}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0">
-                        {req.duration !== undefined && (
-                          <span className="text-xs font-mono text-neutral-300 flex items-center gap-1">
-                            <Clock className="w-3.5 h-3.5 text-neutral-400" />
-                            {req.duration}ms
+                        {/* Language Tag */}
+                        {tlang && tlangInfo ? (
+                          <span
+                            data-testid={`tlang-tag-${req.id}`}
+                            data-status={tlangInfo.status}
+                            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold border ${tlangInfo.colorClass}`}
+                            title={`Target Translation Language: ${tlangName} (${tlang}) — ${tlangInfo.label}`}
+                          >
+                            <Globe className="w-3 h-3 shrink-0" />
+                            <span>
+                              tlang: {tlang} ({tlangName}) [{tlangInfo.label}]
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-mono text-neutral-400 bg-neutral-850 border border-neutral-750">
+                            base
                           </span>
                         )}
 
+                        {/* Good Fetch Green Badge */}
+                        {tlang && isSuccessfulFetch(req) && (
+                          <span
+                            data-testid={`good-fetch-badge-${tlang}`}
+                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                            title={`Successfully fetched subtitles for ${tlangName || tlang}`}
+                          >
+                            <Check className="w-3 h-3 text-emerald-400" />
+                            <span>Good</span>
+                          </span>
+                        )}
+
+                        {/* Empty Response Badge */}
+                        {isBodyEmpty && (
+                          <span className="px-1.5 py-0.5 rounded text-[11px] font-mono font-medium bg-rose-950/70 text-rose-300 border border-rose-800/70">
+                            empty body — 0 chars
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Right Side: Duration, Size & Space-Saving Icon-Only Copy Button */}
+                      <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+                        {/* Duration */}
+                        {req.duration !== undefined && (
+                          <span
+                            className="text-[11px] font-mono text-neutral-300 flex items-center gap-0.5 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800"
+                            title={`Duration: ${req.duration}ms`}
+                          >
+                            <Clock className="w-3 h-3 text-neutral-400 shrink-0" />
+                            <span>{req.duration}ms</span>
+                          </span>
+                        )}
+
+                        {/* Payload Size */}
+                        <span
+                          className="text-[11px] font-mono text-neutral-300 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800"
+                          title={`Response size: ${sizeText}`}
+                        >
+                          {sizeText}
+                        </span>
+
+                        {/* Icon-Only Copy Button: Space-Saving & High-Contrast */}
                         <button
                           id={`copy-request-button-${req.id}`}
                           data-testid={`copy-request-button-${req.id}`}
                           type="button"
                           onClick={(e) => handleCopyRequestItem(e, req)}
-                          className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-medium border border-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 transition"
-                          title="Quick copy full request details to clipboard"
+                          className="p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white border border-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 active:scale-90 transition shrink-0"
+                          title={isCopied ? "Copied request details!" : "Quick copy request details"}
                           aria-label={`Copy request ${req.id} details`}
                         >
                           {isCopied ? (
-                            <>
-                              <Check className="w-3.5 h-3.5 text-emerald-400" />
-                              <span className="text-emerald-300 font-semibold">Copied</span>
-                            </>
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
                           ) : (
-                            <>
-                              <Copy className="w-3.5 h-3.5 text-neutral-300" />
-                              <span>Copy</span>
-                            </>
+                            <Copy className="w-3.5 h-3.5 text-neutral-300" />
                           )}
                         </button>
                       </div>
                     </div>
 
-                    {/* Dedicated Target Language & Empty Badges Row (Prevents Stacking On Top of Other Elements) */}
-                    {(tlang || isBodyEmpty) && (
-                      <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                        {tlang && tlangInfo && (
-                          <span
-                            data-testid={`tlang-tag-${req.id}`}
-                            data-status={tlangInfo.status}
-                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold border ${tlangInfo.colorClass}`}
-                            title={`Target Translation Language: ${tlangName} (${tlang}) — ${tlangInfo.label}`}
-                          >
-                            <Globe className="w-3.5 h-3.5" />
-                            <span>
-                              tlang: {tlang} ({tlangName}) [{tlangInfo.label}]
-                            </span>
-                          </span>
-                        )}
-
-                        {tlang && isSuccessfulFetch(req) && (
-                          <span
-                            data-testid={`good-fetch-badge-${tlang}`}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                            title={`Successfully fetched subtitles for ${tlangName || tlang}`}
-                          >
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
-                            <span>Good Fetch</span>
-                          </span>
-                        )}
-
-                        {isBodyEmpty && (
-                          <span className="px-2 py-0.5 rounded-md text-xs font-mono font-medium bg-rose-950/70 text-rose-300 border border-rose-800/70">
-                            empty body — 0 chars
-                          </span>
-                        )}
-                      </div>
-                    )}
-
                     {/* Word-wrapped URL */}
-                    <div className="font-mono text-xs text-neutral-300 break-all whitespace-pre-wrap break-words leading-relaxed select-text bg-neutral-950/50 p-2.5 rounded-lg border border-neutral-800/70">
+                    <div className="font-mono text-[11px] sm:text-xs text-neutral-300 break-all whitespace-pre-wrap break-words leading-relaxed select-text bg-neutral-950/60 p-2 rounded-lg border border-neutral-800/70">
                       {renderHighlightedUrl(req.url)}
                     </div>
 
                     {/* First 250 chars preview accordion */}
                     <div className="text-xs font-mono bg-neutral-950/80 rounded-lg border border-neutral-800 overflow-hidden">
                       <div
-                        className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-neutral-850 transition"
+                        className="flex items-center justify-between px-2.5 py-1.5 cursor-pointer hover:bg-neutral-850 transition"
                         onClick={(e) => toggleListItemExpand(e, req.id)}
                         title="Click to unfold / collapse response preview"
                       >
                         <div className="flex items-center gap-1.5 text-neutral-300 overflow-hidden mr-2">
-                          <ArrowDownLeft className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                          <span className="text-neutral-400 font-medium shrink-0">First 250 chars:</span>
+                          <ArrowDownLeft className="w-3 h-3 text-blue-400 shrink-0" />
+                          <span className="text-neutral-400 font-medium shrink-0 text-[11px]">
+                            First 250 chars: [{tlang ? `tlang: ${tlang}` : "base"}]
+                          </span>
                           {!isItemExpanded && (
-                            <span className="text-emerald-300 font-semibold truncate">
+                            <span className="text-emerald-300 font-semibold truncate text-[11px]">
                               {isBodyEmpty
                                 ? "[Empty response body — 0 chars]"
                                 : req.responseBodyPreview
@@ -834,11 +860,11 @@ export const NetworkRequestsInspector: React.FC<Props> = ({
                           id={`record-accordion-toggle-${req.id}`}
                           data-testid={`record-accordion-toggle-${req.id}`}
                           type="button"
-                          className="text-neutral-400 hover:text-white p-1 rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-400"
+                          className="text-neutral-400 hover:text-white p-0.5 rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-400"
                           aria-label={isItemExpanded ? "Collapse response preview" : "Unfold response preview"}
                         >
                           <ChevronDown
-                            className={`w-4 h-4 transition-transform duration-200 ${
+                            className={`w-3.5 h-3.5 transition-transform duration-200 ${
                               isItemExpanded ? "rotate-180" : ""
                             }`}
                           />
@@ -846,7 +872,7 @@ export const NetworkRequestsInspector: React.FC<Props> = ({
                       </div>
 
                       {isItemExpanded && (
-                        <div className="px-3 py-2.5 border-t border-neutral-800 bg-neutral-950 text-emerald-300 break-all whitespace-pre-wrap break-words select-text max-h-48 overflow-y-auto leading-relaxed">
+                        <div className="px-3 py-2 border-t border-neutral-800 bg-neutral-950 text-emerald-300 break-all whitespace-pre-wrap break-words select-text max-h-48 overflow-y-auto leading-relaxed text-[11px] sm:text-xs">
                           {isBodyEmpty
                             ? "[Empty response body — 0 chars]"
                             : req.responseBodyPreview || (req.isPending ? "loading…" : "[empty]")}
@@ -947,14 +973,14 @@ export const NetworkRequestsInspector: React.FC<Props> = ({
                     className="w-full flex items-center justify-between p-3.5 bg-neutral-900/80 hover:bg-neutral-850 text-left transition select-none"
                     aria-expanded={openDetailAccordions.overview}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <ChevronDown
                         className={`w-4 h-4 text-neutral-400 transition-transform duration-200 ${
                           openDetailAccordions.overview ? "rotate-180" : ""
                         }`}
                       />
                       <span className="text-neutral-200 font-bold text-xs uppercase tracking-wider">
-                        Request Overview & URL
+                        Request Overview & URL — [{tlangAccordionLabel}]
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -1034,14 +1060,14 @@ export const NetworkRequestsInspector: React.FC<Props> = ({
                       className="w-full flex items-center justify-between p-3.5 bg-neutral-900/80 hover:bg-neutral-850 text-left transition select-none"
                       aria-expanded={openDetailAccordions.params}
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <ChevronDown
                           className={`w-4 h-4 text-neutral-400 transition-transform duration-200 ${
                             openDetailAccordions.params ? "rotate-180" : ""
                           }`}
                         />
                         <span className="text-neutral-200 font-bold text-xs uppercase tracking-wider">
-                          Query Parameters Breakdown
+                          Query Parameters Breakdown — [{tlangAccordionLabel}]
                         </span>
                       </div>
                       <span className="text-xs font-mono font-medium px-2 py-0.5 rounded bg-neutral-800 text-neutral-300 border border-neutral-700">
@@ -1100,10 +1126,10 @@ export const NetworkRequestsInspector: React.FC<Props> = ({
                   open
                 >
                   <summary className="flex items-center justify-between p-3.5 cursor-pointer bg-neutral-900/80 hover:bg-neutral-850 select-none transition">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <ChevronDown className="w-4 h-4 text-neutral-400" />
                       <span className="text-neutral-200 font-bold text-xs uppercase tracking-wider">
-                        Response Body (First 250 Chars Accordion)
+                        Response Body (First 250 Chars Accordion) — [{tlangAccordionLabel}]
                       </span>
                     </div>
                     <div>
@@ -1218,14 +1244,14 @@ export const NetworkRequestsInspector: React.FC<Props> = ({
                     className="w-full flex items-center justify-between p-3.5 bg-neutral-900/80 hover:bg-neutral-850 text-left transition select-none"
                     aria-expanded={openDetailAccordions.raw}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <ChevronDown
                         className={`w-4 h-4 text-neutral-400 transition-transform duration-200 ${
                           openDetailAccordions.raw ? "rotate-180" : ""
                         }`}
                       />
                       <span className="text-neutral-200 font-bold text-xs uppercase tracking-wider">
-                        Complete Formatted Request Export
+                        Complete Formatted Request Export — [{tlangAccordionLabel}]
                       </span>
                     </div>
 

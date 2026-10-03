@@ -49,7 +49,11 @@ import {
   setAudioTrackMode,
   repeatSegmentWithAudioTrack,
 } from "@/utils/audioTrackManager";
-import { trackNetworkRequest, useNetworkRequests } from "@/utils/networkTracker";
+import {
+  trackNetworkRequest,
+  useNetworkRequests,
+  hasSuccessfulFetchForLang,
+} from "@/utils/networkTracker";
 import { NetworkRequestsInspector } from "@/components/NetworkRequestsInspector";
 import { ApkReleaseModal } from "@/components/ApkReleaseModal";
 import { SubtitleFetchToast } from "@/components/SubtitleFetchToast";
@@ -348,7 +352,12 @@ function Index() {
       const next: Record<string, Json3> = {};
       for (const code of needed) {
         const cacheKey = `${vid}:${code}`;
-        if (hasCachedTrack(vid, code)) {
+        // Rule 3: Never try to fetch if response is ok and size of response body is more than 0
+        if (
+          hasCachedTrack(vid, code) ||
+          hasSuccessfulFetchForLang(code) ||
+          (tracksRef.current?.[code]?.events?.length || 0) > 0
+        ) {
           const cached = getCachedTrack(vid, code);
           if (cached) {
             next[code] = cached;
@@ -383,6 +392,12 @@ function Index() {
             setCachedTrack(vid, code, json);
             next[code] = json;
             retriesRef.current[code] = 0;
+            setFailedLanguages((prev) => {
+              if (!prev[code]) return prev;
+              const copy = { ...prev };
+              delete copy[code];
+              return copy;
+            });
             if (tracksRef.current) {
               tracksRef.current[code] = json;
             }
@@ -395,25 +410,39 @@ function Index() {
               raw ? "Invalid or non-JSON3/XML caption response" : "Empty caption response",
             );
             retriesRef.current[code] = (retriesRef.current[code] || 0) + 1;
-            if (retriesRef.current[code] <= 3) {
+            // Rule 4: Don't retry more than 3 times for the same request
+            if (retriesRef.current[code] < 3) {
               const delay = 1000 * Math.pow(2, retriesRef.current[code] - 1);
               setTimeout(() => {
-                if (!hasCachedTrack(vid, code) && !tracksRef.current?.[code]) {
+                if (
+                  !hasCachedTrack(vid, code) &&
+                  !hasSuccessfulFetchForLang(code) &&
+                  !tracksRef.current?.[code]
+                ) {
                   void fetchFavoriteLanguageSubtitles([code], activeUrl);
                 }
               }, delay);
+            } else {
+              setFailedLanguages((prev) => ({ ...prev, [code]: retriesRef.current[code] }));
             }
           }
         } catch (err) {
           tracker.fail(String(err));
           retriesRef.current[code] = (retriesRef.current[code] || 0) + 1;
-          if (retriesRef.current[code] <= 3) {
+          // Rule 4: Don't retry more than 3 times for the same request
+          if (retriesRef.current[code] < 3) {
             const delay = 1000 * Math.pow(2, retriesRef.current[code] - 1);
             setTimeout(() => {
-              if (!hasCachedTrack(vid, code) && !tracksRef.current?.[code]) {
+              if (
+                !hasCachedTrack(vid, code) &&
+                !hasSuccessfulFetchForLang(code) &&
+                !tracksRef.current?.[code]
+              ) {
                 void fetchFavoriteLanguageSubtitles([code], activeUrl);
               }
             }, delay);
+          } else {
+            setFailedLanguages((prev) => ({ ...prev, [code]: retriesRef.current[code] }));
           }
         } finally {
           inFlightRef.current.delete(cacheKey);
@@ -431,6 +460,26 @@ function Index() {
       }
     },
     [isAndroid, videoId],
+  );
+
+  const [failedLanguages, setFailedLanguages] = useState<Record<string, number>>({});
+
+  const handleManualRetryLanguage = useCallback(
+    (code: string) => {
+      retriesRef.current[code] = 0;
+      setFailedLanguages((prev) => {
+        const copy = { ...prev };
+        delete copy[code];
+        return copy;
+      });
+      const shell = nativeShell();
+      const activeUrl = observedUrl || shell?.getLastObservedTimedTextUrl() || "";
+      if (activeUrl) {
+        setCaptionStatus(`Manually fetching subtitles for language [${code}]…`);
+        void fetchFavoriteLanguageSubtitles([code], activeUrl);
+      }
+    },
+    [observedUrl, fetchFavoriteLanguageSubtitles],
   );
 
   const handleTargetLanguagesChange = (newTargetLangs: string[]) => {
@@ -731,8 +780,9 @@ function Index() {
     const missingTracks = targetLanguages.filter(
       (code) =>
         !hasCachedTrack(vid, code) &&
+        !hasSuccessfulFetchForLang(code) &&
         !tracksRef.current?.[code] &&
-        (retriesRef.current[code] || 0) < 5,
+        (retriesRef.current[code] || 0) < 3,
     );
     if (missingTracks.length === 0) return;
 
@@ -1761,11 +1811,49 @@ function Index() {
         </div>
       </footer>
 
+      {Object.keys(failedLanguages).length > 0 && (
+        <aside
+          data-testid="failed-languages-banner"
+          className="mx-auto max-w-7xl px-4 py-2.5 my-2 bg-rose-950/70 border border-rose-800 rounded-xl text-rose-200 text-xs flex items-center justify-between gap-3 flex-wrap"
+        >
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-rose-100">
+              Failed to fetch subtitles after 3 attempts:
+            </span>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {Object.keys(failedLanguages).map((lang) => (
+                <span
+                  key={lang}
+                  className="px-2 py-0.5 rounded bg-rose-900/80 font-mono font-bold text-rose-100 border border-rose-700"
+                >
+                  {lang} (3 retries)
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {Object.keys(failedLanguages).map((lang) => (
+              <Button
+                key={lang}
+                type="button"
+                size="sm"
+                data-testid={`manual-retry-btn-${lang}`}
+                onClick={() => handleManualRetryLanguage(lang)}
+                className="h-7 text-xs bg-rose-600 hover:bg-rose-500 text-white font-semibold shadow-sm"
+              >
+                Fetch {lang} Manually
+              </Button>
+            ))}
+          </div>
+        </aside>
+      )}
+
       {debugMode && (
         <NetworkRequestsInspector
           isOpen={networkInspectorOpen}
           onClose={() => setNetworkInspectorOpen(false)}
           isAndroid={isAndroid}
+          onManualRetryLanguage={handleManualRetryLanguage}
         />
       )}
       <ApkReleaseModal isOpen={apkModalOpen} onClose={() => setApkModalOpen(false)} />
