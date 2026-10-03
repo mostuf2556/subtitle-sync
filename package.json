@@ -53,6 +53,7 @@
     "test:clean-network": "tsx scripts/verify-network-clean-records.ts",
     "test:accordion-tags": "tsx scripts/verify-network-accordion-tags.ts",
     "test:network-close": "tsx scripts/verify-network-inspector-close.ts",
+    "test:network-a11y": "tsx scripts/verify-network-inspector-a11y.ts",
     "test:back-navigation": "tsx scripts/verify-android-back-navigation.ts",
     "test:android": "bash scripts/run-android-e2e.sh"
   },

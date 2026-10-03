@@ -545,8 +545,18 @@ function Index() {
   // Handle Android Native Shell and browser history back navigation
   useEffect(() => {
     // 1. Android hardware back button / gesture handler exposed on window
-    (window as Window & { __handleAndroidBack?: () => boolean }).__handleAndroidBack = () => {
+    (
+      window as Window & {
+        __handleAndroidBack?: () => boolean;
+        __handleInspectorBack?: () => boolean;
+      }
+    ).__handleAndroidBack = () => {
       if (networkInspectorOpen) {
+        if (
+          (window as Window & { __handleInspectorBack?: () => boolean }).__handleInspectorBack?.()
+        ) {
+          return true;
+        }
         setNetworkInspectorOpen(false);
         return true;
       }
@@ -1755,6 +1765,7 @@ function Index() {
         <NetworkRequestsInspector
           isOpen={networkInspectorOpen}
           onClose={() => setNetworkInspectorOpen(false)}
+          isAndroid={isAndroid}
         />
       )}
       <ApkReleaseModal isOpen={apkModalOpen} onClose={() => setApkModalOpen(false)} />
