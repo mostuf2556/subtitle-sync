@@ -83,27 +83,15 @@ assert(parsedJson !== null, "Parsed JSON3 must not be null");
 assert.strictEqual(parsedJson.events?.[0]?.segs?.[0]?.utf8, "Authentic dialogue line");
 console.log("✅ PASS: Intercepted base64 payload decoding and JSON3 parsing verified");
 
-// 5. Verify MainActivity.kt has the originalLang check and SUBTITLE_FETCH telemetry
+// 5. Verify MainActivity.kt implements upstream repo2 executeTimedTextRepetition and SUBTITLE_FETCH telemetry
 const mainActivityPath = path.join(
   process.cwd(),
   "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt",
 );
 const mainActivityContent = fs.readFileSync(mainActivityPath, "utf8");
 assert(
-  mainActivityContent.includes('uri.getQueryParameter("lang")'),
-  "MainActivity.kt must inspect original lang parameter to avoid invalid tlang",
-);
-assert(
-  mainActivityContent.includes('val isLang = name.equals("lang", ignoreCase = true)'),
-  "MainActivity.kt must exclude lang in queryParam iteration to prevent duplicate lang parameters",
-);
-assert(
-  mainActivityContent.includes('val originalLang = uri.getQueryParameter("lang")?.takeIf { it.isNotBlank() } ?: "en"'),
-  "MainActivity.kt must provide fallback originalLang ('en') when lang query parameter is missing or blank",
-);
-assert(
-  mainActivityContent.includes('builder.appendQueryParameter("lang", originalLang)'),
-  "MainActivity.kt must append originalLang to builder so lang is always present in repeated requests",
+  mainActivityContent.includes('builder.appendQueryParameter("tlang", targetLang)'),
+  "MainActivity.kt must append targetLang as tlang matching Youtubenet6 repo2 architecture",
 );
 assert(
   mainActivityContent.includes("SUBTITLE_FETCH kind="),
@@ -111,23 +99,18 @@ assert(
 );
 console.log("✅ PASS: MainActivity.kt Kotlin bridge and telemetry verified");
 
-// 5b. Simulate executeTimedTextRepetition behavior matching Kotlin implementation
+// 5b. Simulate executeTimedTextRepetition behavior matching repo2 Kotlin implementation
 function simulateExecuteTimedTextRepetition(base: string, targetLang: string, format: string): string {
   const url = new URL(base);
   const searchParams = new URLSearchParams();
   for (const [key, value] of url.searchParams.entries()) {
-    const isLang = key.toLowerCase() === "lang";
     const isTlang = key.toLowerCase() === "tlang";
     const isFmt = key.toLowerCase() === "fmt" && format.length > 0;
-    if (!isLang && !isTlang && !isFmt) {
+    if (!isTlang && !isFmt) {
       searchParams.append(key, value);
     }
   }
-  const originalLang = url.searchParams.get("lang")?.trim() || "en";
-  searchParams.append("lang", originalLang);
-  if (originalLang.toLowerCase() !== targetLang.toLowerCase()) {
-    searchParams.append("tlang", targetLang);
-  }
+  searchParams.append("tlang", targetLang);
   if (format.length > 0) {
     searchParams.append("fmt", format);
   }
@@ -135,37 +118,36 @@ function simulateExecuteTimedTextRepetition(base: string, targetLang: string, fo
   return url.toString();
 }
 
-// Test case A: Base URL has lang=en, targetLang=es -> should produce lang=en, tlang=es, fmt=json3
+// Test case A: Base URL has lang=en, targetLang=he -> should preserve base query and append tlang=he, fmt=json3
 const testA = simulateExecuteTimedTextRepetition(
   "https://www.youtube.com/api/timedtext?v=L2Ryrr6txwA&lang=en",
-  "es",
+  "he",
   "json3",
 );
 const parsedA = new URL(testA);
-assert.strictEqual(parsedA.searchParams.get("lang"), "en", "Test A lang must be 'en'");
-assert.strictEqual(parsedA.searchParams.get("tlang"), "es", "Test A tlang must be 'es'");
-assert.strictEqual(parsedA.searchParams.getAll("lang").length, 1, "Test A lang must not be duplicated");
+assert.strictEqual(parsedA.searchParams.get("lang"), "en", "Test A lang must be preserved");
+assert.strictEqual(parsedA.searchParams.get("tlang"), "he", "Test A tlang must be 'he'");
 
-// Test case B: Base URL has NO lang parameter, targetLang=es -> should fallback lang=en, tlang=es
+// Test case B: Subsequent fetch for targetLang=it -> should cleanly replace tlang with 'it'
 const testB = simulateExecuteTimedTextRepetition(
-  "https://www.youtube.com/api/timedtext?v=L2Ryrr6txwA&caps=asr",
-  "es",
+  testA,
+  "it",
   "json3",
 );
 const parsedB = new URL(testB);
-assert.strictEqual(parsedB.searchParams.get("lang"), "en", "Test B lang must fallback to 'en'");
-assert.strictEqual(parsedB.searchParams.get("tlang"), "es", "Test B tlang must be 'es'");
+assert.strictEqual(parsedB.searchParams.get("lang"), "en", "Test B lang must be preserved");
+assert.strictEqual(parsedB.searchParams.get("tlang"), "it", "Test B tlang must be 'it'");
 
-// Test case C: Base URL has lang=en, targetLang=en (same lang) -> should omit tlang
+// Test case C: Subsequent fetch for targetLang=es -> should cleanly replace tlang with 'es'
 const testC = simulateExecuteTimedTextRepetition(
-  "https://www.youtube.com/api/timedtext?v=L2Ryrr6txwA&lang=en",
-  "en",
+  testB,
+  "es",
   "json3",
 );
 const parsedC = new URL(testC);
-assert.strictEqual(parsedC.searchParams.get("lang"), "en", "Test C lang must be 'en'");
-assert.strictEqual(parsedC.searchParams.get("tlang"), null, "Test C tlang must not be appended");
-console.log("✅ PASS: executeTimedTextRepetition URL generation simulated and validated across all cases");
+assert.strictEqual(parsedC.searchParams.get("lang"), "en", "Test C lang must be preserved");
+assert.strictEqual(parsedC.searchParams.get("tlang"), "es", "Test C tlang must be 'es'");
+console.log("✅ PASS: executeTimedTextRepetition repo2 URL generation simulated and validated across sequential subtitle fetches");
 
 // 6. Verify no hardcoded default subtitle language
 const appSettingsPath = path.join(process.cwd(), "src/utils/appSettings.ts");
