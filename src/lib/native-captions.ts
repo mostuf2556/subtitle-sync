@@ -17,6 +17,41 @@ export function nativeShell(): NativeShell | null {
   }
 }
 
+// Cache of full translated tracks matching repo2 nativeTrackCache architecture
+// Ensures once a subtitle track is fetched for a video/language, it is NEVER fetched again.
+export const nativeTrackCache = new Map<string, Json3>();
+
+export function normalizeLangKey(langCode: string): string {
+  if (!langCode) return "";
+  const clean = langCode.toLowerCase().split(/[-_]/)[0];
+  return clean === "iw" || clean === "il" ? "he" : clean;
+}
+
+export function hasCachedTrack(videoId: string, langCode: string): boolean {
+  if (!videoId || !langCode) return false;
+  const key = normalizeLangKey(langCode);
+  return (
+    nativeTrackCache.has(`${videoId}:${key}`) || nativeTrackCache.has(`${videoId}:${langCode}`)
+  );
+}
+
+export function getCachedTrack(videoId: string, langCode: string): Json3 | null {
+  if (!videoId || !langCode) return null;
+  const key = normalizeLangKey(langCode);
+  return (
+    nativeTrackCache.get(`${videoId}:${key}`) ||
+    nativeTrackCache.get(`${videoId}:${langCode}`) ||
+    null
+  );
+}
+
+export function setCachedTrack(videoId: string, langCode: string, track: Json3): void {
+  if (!videoId || !langCode || !track) return;
+  const key = normalizeLangKey(langCode);
+  nativeTrackCache.set(`${videoId}:${key}`, track);
+  nativeTrackCache.set(`${videoId}:${langCode}`, track);
+}
+
 export function decodeInterceptedCaption(payload: string): { url: string; rawData: string } | null {
   try {
     const bytes = Uint8Array.from(atob(payload), (char) => char.charCodeAt(0));
@@ -130,17 +165,27 @@ export function buildTranslatedCaptionUrl(
 ): string {
   try {
     const url = new URL(baseUrl);
-    const originalLang = url.searchParams.get("lang");
-    if (originalLang && originalLang.toLowerCase() === targetLanguage.toLowerCase()) {
-      url.searchParams.delete("tlang");
-    } else {
-      url.searchParams.set("tlang", targetLanguage);
-    }
+    url.searchParams.set("tlang", targetLanguage);
     if (format) {
       url.searchParams.set("fmt", format);
     }
     return url.toString();
   } catch {
-    return baseUrl;
+    let modified = baseUrl;
+    if (/[?&]tlang=[^&]*/.test(modified)) {
+      modified = modified.replace(
+        /([?&])tlang=[^&]*/,
+        `$1tlang=${encodeURIComponent(targetLanguage)}`,
+      );
+    } else {
+      const sep = modified.includes("?") ? "&" : "?";
+      modified = `${modified}${sep}tlang=${encodeURIComponent(targetLanguage)}`;
+    }
+    if (/[?&]fmt=[^&]*/.test(modified)) {
+      modified = modified.replace(/([?&])fmt=[^&]*/, `$1fmt=${format}`);
+    } else {
+      modified = `${modified}&fmt=${format}`;
+    }
+    return modified;
   }
 }

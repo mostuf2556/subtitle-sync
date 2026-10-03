@@ -112,6 +112,34 @@ assert.strictEqual(requestedUrls[3].lang, "fr");
 assert(tracks.fr !== undefined, "Tracks must include French");
 console.log("✅ PASS: Dynamically added language 'fr' fetched via tlang and merged into tracks");
 
+// 3. Verify that already fetched subtitles are NEVER refetched (nativeTrackCache guarantee)
+import { getCachedTrack, hasCachedTrack, setCachedTrack } from "../src/lib/native-captions";
+
+const testVideoId = "test_vid_123";
+assert.strictEqual(hasCachedTrack(testVideoId, "he"), false, "Initially track for 'he' should not be cached");
+
+// Cache the fetched track
+setCachedTrack(testVideoId, "he", tracks.he);
+assert.strictEqual(hasCachedTrack(testVideoId, "he"), true, "Track must be marked cached after setCachedTrack");
+assert.deepStrictEqual(getCachedTrack(testVideoId, "he"), tracks.he, "getCachedTrack must return identical parsed JSON3");
+
+// Verify that normalized Hebrew keys ('iw' / 'il') also map to cached track
+assert.strictEqual(hasCachedTrack(testVideoId, "iw"), true, "Normalized key 'iw' must resolve to cached Hebrew track");
+assert.strictEqual(hasCachedTrack(testVideoId, "il"), true, "Normalized key 'il' must resolve to cached Hebrew track");
+
+// Simulate requesting 'he' again:
+const countBefore = requestedUrls.length;
+const isAlreadyCached = hasCachedTrack(testVideoId, "he");
+if (!isAlreadyCached) {
+  mockNativeShell.fetchTranslatedCaptionsWithUrl(baseObservedUrl, "he", "json3");
+}
+assert.strictEqual(
+  requestedUrls.length,
+  countBefore,
+  "A previously fetched subtitle must NEVER be fetched again",
+);
+console.log("✅ PASS: nativeTrackCache prevents redundant duplicate fetches for already loaded subtitles");
+
 console.log("====================================================");
 console.log("📊 DYNAMIC FAVORITE LANGUAGE FETCH: All tests passed!");
 console.log("====================================================");

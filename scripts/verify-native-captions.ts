@@ -12,15 +12,15 @@ console.log("====================================================");
 console.log("🧪 Starting Native Captions & tlang Replacement Test");
 console.log("====================================================");
 
-// 1. Verify URL building when targetLanguage matches original lang
+// 1. Verify URL building matching repo2 buildYouTubeTranslatedTimedTextUrl
 const baseEnUrl = "https://www.youtube.com/api/timedtext?v=L2Ryrr6txwA&lang=en&fmt=json3";
-const sameLangResult = buildTranslatedCaptionUrl(baseEnUrl, "en");
-const parsedSame = new URL(sameLangResult);
+const targetEnResult = buildTranslatedCaptionUrl(baseEnUrl, "en");
+const parsedSame = new URL(targetEnResult);
 
 assert.strictEqual(
   parsedSame.searchParams.get("tlang"),
-  null,
-  "When target language is identical to original lang (en), tlang must NOT be appended",
+  "en",
+  "Target language en must be set as tlang matching repo2",
 );
 assert.strictEqual(
   parsedSame.searchParams.get("lang"),
@@ -28,7 +28,7 @@ assert.strictEqual(
   "Base language parameter must be preserved",
 );
 assert.strictEqual(parsedSame.searchParams.get("fmt"), "json3", "Format parameter must be json3");
-console.log("✅ PASS: Native language fetching strips invalid tlang");
+console.log("✅ PASS: URL building sets tlang and format matching repo2");
 
 // 2. Verify URL building when targetLanguage is different from original lang
 const translatedHebrew = buildTranslatedCaptionUrl(baseEnUrl, "he");

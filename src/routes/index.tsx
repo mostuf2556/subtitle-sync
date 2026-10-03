@@ -27,9 +27,12 @@ import {
 import {
   buildTranslatedCaptionUrl,
   decodeInterceptedCaption,
+  getCachedTrack,
+  hasCachedTrack,
   nativeShell,
   parseJson3,
   parseVideoId,
+  setCachedTrack,
   timedTextVideoId,
 } from "@/lib/native-captions";
 import {
@@ -288,6 +291,7 @@ function Index() {
   const observedUrlRef = useRef(observedUrl);
   observedUrlRef.current = observedUrl;
   const retriesRef = useRef<Record<string, number>>({});
+  const inFlightRef = useRef<Set<string>>(new Set());
 
   const [networkInspectorOpen, setNetworkInspectorOpen] = useState(false);
   const [apkModalOpen, setApkModalOpen] = useState(false);
@@ -306,9 +310,35 @@ function Index() {
       } catch (_e) {
         // ignore malformed URL
       }
+      const vid = videoId || "current";
       const needed = langsToFetch.filter(
-        (code) => code && (!defaultLang || code !== defaultLang) && !tracksRef.current?.[code],
+        (code) =>
+          code &&
+          (!defaultLang || code !== defaultLang) &&
+          !tracksRef.current?.[code] &&
+          !hasCachedTrack(vid, code),
       );
+
+      // Hydrate any already-cached tracks without making native bridge calls
+      const cachedToRestore: Record<string, Json3> = {};
+      for (const code of langsToFetch) {
+        if (!tracksRef.current?.[code] && hasCachedTrack(vid, code)) {
+          const cached = getCachedTrack(vid, code);
+          if (cached) {
+            cachedToRestore[code] = cached;
+            if (tracksRef.current) {
+              tracksRef.current[code] = cached;
+            }
+          }
+        }
+      }
+      if (Object.keys(cachedToRestore).length > 0) {
+        startSubtitlesTransition(() => {
+          setTracks((prev) => ({ ...prev, ...cachedToRestore }));
+          setShown((prev) => Array.from(new Set([...prev, ...Object.keys(cachedToRestore)])));
+        });
+      }
+
       if (needed.length === 0) return;
       notifySubtitleFetch(
         "fetching",
@@ -317,6 +347,27 @@ function Index() {
       );
       const next: Record<string, Json3> = {};
       for (const code of needed) {
+        const cacheKey = `${vid}:${code}`;
+        if (hasCachedTrack(vid, code)) {
+          const cached = getCachedTrack(vid, code);
+          if (cached) {
+            next[code] = cached;
+            if (tracksRef.current) {
+              tracksRef.current[code] = cached;
+            }
+            startSubtitlesTransition(() => {
+              setTracks((prev) => ({ ...prev, [code]: cached }));
+              setShown((prev) => (prev.includes(code) ? prev : [...prev, code]));
+            });
+          }
+          continue;
+        }
+
+        if (inFlightRef.current.has(cacheKey)) {
+          continue;
+        }
+        inFlightRef.current.add(cacheKey);
+
         await new Promise<void>((resolve) => setTimeout(resolve, 0));
         const translatedUrl = buildTranslatedCaptionUrl(activeUrl, code, "json3");
         const tracker = trackNetworkRequest(translatedUrl, "GET", "native_bridge");
@@ -329,8 +380,12 @@ function Index() {
           }
           if (json) {
             tracker.complete(200, raw);
+            setCachedTrack(vid, code, json);
             next[code] = json;
             retriesRef.current[code] = 0;
+            if (tracksRef.current) {
+              tracksRef.current[code] = json;
+            }
             startSubtitlesTransition(() => {
               setTracks((prev) => ({ ...prev, [code]: json! }));
               setShown((prev) => (prev.includes(code) ? prev : [...prev, code]));
@@ -343,7 +398,7 @@ function Index() {
             if (retriesRef.current[code] <= 3) {
               const delay = 1000 * Math.pow(2, retriesRef.current[code] - 1);
               setTimeout(() => {
-                if (!tracksRef.current?.[code]) {
+                if (!hasCachedTrack(vid, code) && !tracksRef.current?.[code]) {
                   void fetchFavoriteLanguageSubtitles([code], activeUrl);
                 }
               }, delay);
@@ -355,11 +410,13 @@ function Index() {
           if (retriesRef.current[code] <= 3) {
             const delay = 1000 * Math.pow(2, retriesRef.current[code] - 1);
             setTimeout(() => {
-              if (!tracksRef.current?.[code]) {
+              if (!hasCachedTrack(vid, code) && !tracksRef.current?.[code]) {
                 void fetchFavoriteLanguageSubtitles([code], activeUrl);
               }
             }, delay);
           }
+        } finally {
+          inFlightRef.current.delete(cacheKey);
         }
       }
       if (Object.keys(next).length > 0) {
@@ -373,7 +430,7 @@ function Index() {
         );
       }
     },
-    [isAndroid],
+    [isAndroid, videoId],
   );
 
   const handleTargetLanguagesChange = (newTargetLangs: string[]) => {
@@ -599,6 +656,11 @@ function Index() {
         setDefaultCaptionsLoaded(true);
       }
       if (lang) {
+        const vid = videoId || "current";
+        setCachedTrack(vid, lang, json);
+        if (tracksRef.current) {
+          tracksRef.current[lang] = json;
+        }
         startSubtitlesTransition(() => {
           setTracks((prev) => ({ ...prev, [lang]: json }));
           setShown((prev) => (prev.includes(lang) ? prev : [...prev, lang]));
@@ -618,10 +680,15 @@ function Index() {
     } catch (_e) {
       // ignore malformed URL
     }
+    const vid = videoId || "current";
     const selected = [
       ...new Set(
         [...targetLanguages, ...shown, ...spoken].filter(
-          (code) => code && (!defaultLang || code !== defaultLang),
+          (code) =>
+            code &&
+            (!defaultLang || code !== defaultLang) &&
+            !hasCachedTrack(vid, code) &&
+            !tracksRef.current?.[code],
         ),
       ),
     ];
@@ -636,6 +703,7 @@ function Index() {
     targetLanguages,
     shown,
     spoken,
+    videoId,
     fetchFavoriteLanguageSubtitles,
   ]);
 
@@ -649,8 +717,12 @@ function Index() {
 
     // 2. Auto-fetch-retry for missing favorite tracks
     if (!isAndroid || !observedUrl) return;
+    const vid = videoId || "current";
     const missingTracks = targetLanguages.filter(
-      (code) => !tracksRef.current?.[code] && (retriesRef.current[code] || 0) < 5,
+      (code) =>
+        !hasCachedTrack(vid, code) &&
+        !tracksRef.current?.[code] &&
+        (retriesRef.current[code] || 0) < 5,
     );
     if (missingTracks.length === 0) return;
 
@@ -659,7 +731,15 @@ function Index() {
     }, 1500);
 
     return () => clearTimeout(retryTimer);
-  }, [isAndroid, observedUrl, targetLanguages, tracks, shown, fetchFavoriteLanguageSubtitles]);
+  }, [
+    isAndroid,
+    observedUrl,
+    targetLanguages,
+    tracks,
+    shown,
+    videoId,
+    fetchFavoriteLanguageSubtitles,
+  ]);
 
   useEffect(() => {
     if (themeWasSelectedRef.current) return;
