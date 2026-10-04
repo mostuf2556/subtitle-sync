@@ -3,9 +3,9 @@
 **Result: FAILED**
 
 - Branch: `main`
-- Commit: `daf056ebe89c947a0bf05bbf14661feb6e475b99`
-- Updated: 2026-10-04 03:50:28 UTC
-- [Open the full GitHub Actions run](https://github.com/mostuf2556/subtitle-sync/actions/runs/37174904646)
+- Commit: `bcdff266d3813f1eda052f83fd336e3ae2f32ac2`
+- Updated: 2026-10-04 04:04:52 UTC
+- [Open the full GitHub Actions run](https://github.com/mostuf2556/subtitle-sync/actions/runs/37175595960)
 
 ## Captured artifacts
 - Screenshot was not captured for this run.
