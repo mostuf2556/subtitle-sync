@@ -14,15 +14,22 @@ class TimedTextReplay(val url: String, headers: Map<String, String>) {
     fun translatedUrl(targetLanguage: String): String {
         require(targetLanguage.isNotBlank()) { "A target language is required" }
         val uri = URI(url)
-        val parts = uri.rawQuery.orEmpty().split("&")
-        val sourceLanguage = parts.firstOrNull { key(it).equals("lang", true) }
-            ?.substringAfter("=", "")?.let(::decode)
-        val retained = parts.filterNot { key(it).equals("tlang", true) }.toMutableList()
-        if (!sourceLanguage.equals(targetLanguage, ignoreCase = true)) {
-            retained.add("tlang=" + URLEncoder.encode(targetLanguage, "UTF-8"))
+        val parts = uri.rawQuery?.split("&")
+            ?: throw IllegalArgumentException("The captured timedtext URL has no query")
+        var foundLanguage = false
+        val updated = parts.map { part ->
+            if (!key(part).equals("lang", true)) {
+                part
+            } else {
+                foundLanguage = true
+                val separator = part.indexOf("=")
+                val rawKey = if (separator < 0) part else part.substring(0, separator)
+                rawKey + "=" + URLEncoder.encode(targetLanguage, "UTF-8")
+            }
         }
+        require(foundLanguage) { "The captured timedtext URL has no lang parameter" }
         return url.substringBefore("?").substringBefore("#") + "?" +
-            retained.joinToString("&") + (uri.rawFragment?.let { "#$it" } ?: "")
+            updated.joinToString("&") + (uri.rawFragment?.let { "#$it" } ?: "")
     }
 
     fun matchesVideo(otherUrl: String): Boolean =
@@ -46,7 +53,12 @@ class TimedTextReplay(val url: String, headers: Map<String, String>) {
             false
         }
 
-        fun isDefault(url: String): Boolean = queryValue(url, "tlang").isNullOrBlank()
+        fun isDefault(url: String, sourceUrl: String? = null): Boolean {
+            if (!queryValue(url, "tlang").isNullOrBlank()) return false
+            if (sourceUrl.isNullOrBlank()) return true
+            if (queryValue(url, "v") != queryValue(sourceUrl, "v")) return true
+            return queryValue(url, "lang").equals(queryValue(sourceUrl, "lang"), ignoreCase = true)
+        }
 
         private fun queryValue(url: String, name: String): String? = try {
             URI(url).rawQuery?.split("&")?.firstOrNull { key(it).equals(name, true) }

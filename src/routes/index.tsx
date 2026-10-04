@@ -1456,7 +1456,7 @@ function Index() {
                     </select>
                     <p className="text-xs text-muted-foreground">
                       {isAndroid
-                        ? "Select desired favorite languages to learn from all 84 supported languages. Android fetches each translation track via tlang."
+                        ? "Select desired favorite languages to learn from all 84 supported languages. Android fetches each translation track by changing the lang query parameter."
                         : `Select favorite languages from available demo tracks (${LANGS.length} available). Main screen controls present only favorite languages.`}
                     </p>
                   </div>

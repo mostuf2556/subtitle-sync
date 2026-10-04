@@ -132,7 +132,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                     }
                     val capturedRequest = TimedTextReplay(url, headers)
                     // A translated player request must not replace the source request.
-                    if (TimedTextReplay.isDefault(url)) observedTimedTextRequest = capturedRequest
+                    val isDefaultRequest =
+                        TimedTextReplay.isDefault(url, observedTimedTextRequest?.url)
+                    if (isDefaultRequest) observedTimedTextRequest = capturedRequest
 
                     try {
                         // Replicate the request with original headers
@@ -145,7 +147,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                         val rawBodyBytes = response.body?.bytes() ?: ByteArray(0)
                         val rawBodyString = String(rawBodyBytes, StandardCharsets.UTF_8)
                         val contentType = response.header("Content-Type", "text/xml; charset=utf-8") ?: "text/xml"
-                        val requestKind = if (android.net.Uri.parse(url).getQueryParameter("tlang").isNullOrBlank()) "default" else "translated"
+                        val requestKind = if (isDefaultRequest) "default" else "translated"
 
                         Log.i(TAG, "Received ${rawBodyBytes.size} bytes of raw caption data.")
                         Log.i(TAG, "SUBTITLE_FETCH kind=$requestKind http=${response.code} bytes=${rawBodyBytes.size} cues=${countCaptionCues(rawBodyString)}")

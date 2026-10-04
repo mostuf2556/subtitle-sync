@@ -107,10 +107,10 @@ export const UI_TEXT = {
   NON_YOUTUBE_LINK_WARNING:
     "The shared link is not a YouTube URL. The app only accepts YouTube links (youtube.com, youtu.be, shorts, live, embed).",
   TLANG_FETCH_SUCCESS: (langs: string[]) =>
-    `Target translations (${langs.join(", ").toUpperCase()}) fetched via tlang`,
+    `Target translations (${langs.join(", ").toUpperCase()}) fetched`,
   TLANG_FETCH_PARTIAL: (succeeded: number, total: number) =>
-    `Target translations via tlang: ${succeeded}/${total} succeeded`,
-  TLANG_FETCH_FAILED: "Target translation via tlang was not available for this track",
+    `Target translations: ${succeeded}/${total} succeeded`,
+  TLANG_FETCH_FAILED: "Target translation was not available for this track",
   LINK_PLACEHOLDER:
     "Paste any YouTube URL (watch, youtu.be, shorts, live, embed, iframe, timestamp, etc.)",
   CLEAR_INPUT: "Clear input",

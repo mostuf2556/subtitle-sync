@@ -142,22 +142,24 @@ assert.strictEqual(
 );
 console.log(`✅ PASS: Native interceptor correctly extracts default video ID: ${extractedVideoId}`);
 
-// Verify translated caption URL generator for favorite languages (he, it, es)
+// Verify translated caption URL generator changes only lang for favorite languages.
 const hebrewTranslatedUrl = buildTranslatedCaptionUrl(simulatedTimedTextUrl, "he", "json3");
-assert(hebrewTranslatedUrl.includes("tlang=he"), "Translated URL must contain tlang=he");
+assert(hebrewTranslatedUrl.includes("lang=he"), "Translated URL must contain lang=he");
+assert(!hebrewTranslatedUrl.includes("tlang="), "Translated URL must not add tlang");
 assert(
   hebrewTranslatedUrl.includes(`v=${DEFAULT_VIDEO_ID}`),
   "Translated URL must preserve default video ID",
 );
 
 const italianTranslatedUrl = buildTranslatedCaptionUrl(simulatedTimedTextUrl, "it", "json3");
-assert(italianTranslatedUrl.includes("tlang=it"), "Translated URL must contain tlang=it");
+assert(italianTranslatedUrl.includes("lang=it"), "Translated URL must contain lang=it");
+assert(!italianTranslatedUrl.includes("tlang="), "Translated URL must not add tlang");
 assert(
   italianTranslatedUrl.includes(`v=${DEFAULT_VIDEO_ID}`),
   "Translated URL must preserve default video ID",
 );
 console.log(
-  "✅ PASS: Android native bridge tlang URL generation verified for default video favorite languages",
+  "✅ PASS: Android native bridge lang URL generation verified for default video favorite languages",
 );
 
 // Verify base64 caption decoding pipeline for default video

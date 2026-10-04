@@ -9,10 +9,10 @@ import {
 } from "../src/lib/native-captions";
 
 console.log("====================================================");
-console.log("🧪 Starting Native Captions & tlang Replacement Test");
+console.log("🧪 Starting Native Captions & lang Replacement Test");
 console.log("====================================================");
 
-// 1. Verify URL building when targetLanguage matches original lang
+// 1. Verify the URL keeps the existing language when it already matches.
 const baseEnUrl = "https://www.youtube.com/api/timedtext?v=L2Ryrr6txwA&lang=en&fmt=json3";
 const sameLangResult = buildTranslatedCaptionUrl(baseEnUrl, "en");
 const parsedSame = new URL(sameLangResult);
@@ -20,41 +20,42 @@ const parsedSame = new URL(sameLangResult);
 assert.strictEqual(
   parsedSame.searchParams.get("tlang"),
   null,
-  "When target language is identical to original lang (en), tlang must NOT be appended",
+  "The new request format must not add tlang",
 );
 assert.strictEqual(
   parsedSame.searchParams.get("lang"),
   "en",
-  "Base language parameter must be preserved",
+  "lang must remain en when the target is en",
 );
 assert.strictEqual(parsedSame.searchParams.get("fmt"), "json3", "Format parameter must be json3");
-console.log("✅ PASS: Native language fetching strips invalid tlang");
+console.log("✅ PASS: Matching target language does not add or alter query parameters");
 
-// 2. Verify URL building when targetLanguage is different from original lang
+// 2. Verify URL building changes lang for alternate target languages.
 const translatedHebrew = buildTranslatedCaptionUrl(baseEnUrl, "he");
 const parsedHe = new URL(translatedHebrew);
 
-assert.strictEqual(
-  parsedHe.searchParams.get("tlang"),
-  "he",
-  "Target language he must be set as tlang",
-);
+assert.strictEqual(parsedHe.searchParams.get("lang"), "he", "Target language he must replace lang");
+assert.strictEqual(parsedHe.searchParams.get("tlang"), null, "tlang must not be added");
 assert.strictEqual(
   parsedHe.searchParams.get("v"),
   "L2Ryrr6txwA",
   "Video ID must be preserved in translated URL",
 );
-console.log("✅ PASS: Translated target language sets tlang correctly (he)");
+console.log("✅ PASS: Translated target language replaces lang correctly (he)");
 
 const translatedSpanish = buildTranslatedCaptionUrl(baseEnUrl, "es");
 const parsedEs = new URL(translatedSpanish);
 
+assert.strictEqual(parsedEs.searchParams.get("lang"), "es", "Target language es must replace lang");
+console.log("✅ PASS: Translated target language replaces lang correctly (es)");
+
+const preservedFormatUrl = new URL(buildTranslatedCaptionUrl(baseEnUrl, "fr", "srv3"));
 assert.strictEqual(
-  parsedEs.searchParams.get("tlang"),
-  "es",
-  "Target language es must be set as tlang",
+  preservedFormatUrl.searchParams.get("fmt"),
+  "json3",
+  "The requested output format must not overwrite the captured fmt parameter",
 );
-console.log("✅ PASS: Translated target language sets tlang correctly (es)");
+console.log("✅ PASS: Existing fmt is preserved even when the bridge receives a format hint");
 
 // 3. Verify video ID extraction
 assert.strictEqual(timedTextVideoId(baseEnUrl), "L2Ryrr6txwA");
@@ -83,73 +84,49 @@ assert(parsedJson !== null, "Parsed JSON3 must not be null");
 assert.strictEqual(parsedJson.events?.[0]?.segs?.[0]?.utf8, "Authentic dialogue line");
 console.log("✅ PASS: Intercepted base64 payload decoding and JSON3 parsing verified");
 
-// 5. Verify MainActivity.kt has target tlang appendage and SUBTITLE_FETCH telemetry
+// 5. Verify MainActivity.kt delegates to the captured-query transformer and emits telemetry.
 const mainActivityPath = path.join(
   process.cwd(),
   "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt",
 );
 const mainActivityContent = fs.readFileSync(mainActivityPath, "utf8");
 assert(
-  mainActivityContent.includes('builder.appendQueryParameter("tlang", targetLang)'),
-  "MainActivity.kt must append targetLang as tlang parameter",
+  mainActivityContent.includes("captured.translatedUrl(targetLang)"),
+  "MainActivity.kt must use the captured request's translated URL",
 );
 assert(
   mainActivityContent.includes("SUBTITLE_FETCH kind="),
   "MainActivity.kt must emit SUBTITLE_FETCH telemetry",
 );
-console.log("✅ PASS: MainActivity.kt Kotlin bridge and telemetry verified");
-
-// 5b. Simulate executeTimedTextRepetition behavior matching Kotlin implementation
-function simulateExecuteTimedTextRepetition(base: string, targetLang: string, format: string): string {
-  const url = new URL(base);
-  const searchParams = new URLSearchParams();
-  for (const [key, value] of url.searchParams.entries()) {
-    const isTlang = key.toLowerCase() === "tlang";
-    const isFmt = key.toLowerCase() === "fmt" && format.length > 0;
-    if (!isTlang && !isFmt) {
-      searchParams.append(key, value);
-    }
-  }
-  searchParams.append("tlang", targetLang);
-  if (format.length > 0) {
-    searchParams.append("fmt", format);
-  }
-  url.search = searchParams.toString();
-  return url.toString();
-}
-
-// Test case A: Base URL has lang=en, targetLang=es -> should produce lang=en, tlang=es, fmt=json3
-const testA = simulateExecuteTimedTextRepetition(
-  "https://www.youtube.com/api/timedtext?v=L2Ryrr6txwA&lang=en",
-  "es",
-  "json3",
+const replayPath = path.join(
+  process.cwd(),
+  "android-shell/app/src/main/java/com/ytviewer/app/TimedTextReplay.kt",
 );
-const parsedA = new URL(testA);
-assert.strictEqual(parsedA.searchParams.get("lang"), "en", "Test A lang must be 'en'");
-assert.strictEqual(parsedA.searchParams.get("tlang"), "es", "Test A tlang must be 'es'");
-assert.strictEqual(parsedA.searchParams.getAll("lang").length, 1, "Test A lang must not be duplicated");
-
-// Test case B: Base URL has lang=en, targetLang=he -> should produce lang=en, tlang=he
-const testB = simulateExecuteTimedTextRepetition(
-  "https://www.youtube.com/api/timedtext?v=L2Ryrr6txwA&lang=en",
-  "he",
-  "json3",
+const replayContent = fs.readFileSync(replayPath, "utf8");
+assert(
+  replayContent.includes('key(part).equals("lang", true)') &&
+    replayContent.includes('URLEncoder.encode(targetLanguage, "UTF-8")') &&
+    replayContent.includes('updated.joinToString("&")'),
+  "TimedTextReplay.kt must replace only lang and preserve raw query components",
 );
-const parsedB = new URL(testB);
-assert.strictEqual(parsedB.searchParams.get("lang"), "en", "Test B lang must be 'en'");
-assert.strictEqual(parsedB.searchParams.get("tlang"), "he", "Test B tlang must be 'he'");
+console.log("✅ PASS: MainActivity.kt and TimedTextReplay.kt native bridge behavior verified");
 
-// Test case C: Base URL with previous tlang=es, swap to targetLang=it -> cleanly replace previous tlang
-const testC = simulateExecuteTimedTextRepetition(
-  testA,
-  "it",
-  "json3",
+// 5b. Validate that signed query fields stay unchanged when the target language changes.
+const signedBase =
+  "https://www.youtube.com/api/timedtext?v=L2Ryrr6txwA&lang=iw&fmt=json3&sparams=ip%2Cexpire&signature=xyz%2F123&key=yt8";
+const signedJapanese = buildTranslatedCaptionUrl(signedBase, "ja");
+assert.strictEqual(
+  signedJapanese,
+  signedBase.replace("lang=iw", "lang=ja"),
+  "Changing language must not serialize or alter the other signed query fields",
 );
-const parsedC = new URL(testC);
-assert.strictEqual(parsedC.searchParams.get("lang"), "en", "Test C lang must be 'en'");
-assert.strictEqual(parsedC.searchParams.get("tlang"), "it", "Test C tlang must be replaced with 'it'");
-assert.strictEqual(parsedC.searchParams.getAll("tlang").length, 1, "Test C must have exactly one tlang");
-console.log("✅ PASS: executeTimedTextRepetition URL generation simulated and validated across all cases");
+const signedItalian = buildTranslatedCaptionUrl(signedJapanese, "it");
+assert.strictEqual(
+  signedItalian,
+  signedBase.replace("lang=iw", "lang=it"),
+  "Changing target language again must replace lang without duplicating parameters",
+);
+console.log("✅ PASS: Signed query fields remain unchanged across target-language changes");
 
 // 6. Verify no hardcoded default subtitle language
 const appSettingsPath = path.join(process.cwd(), "src/utils/appSettings.ts");

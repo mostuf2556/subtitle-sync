@@ -30,7 +30,8 @@ assert(
 console.log("✅ PASS: Source code implements dynamic fetching for newly added favorite languages");
 
 // 2. Simulate dynamic language addition with native shell mock
-const baseObservedUrl = "https://www.youtube.com/api/timedtext?v=n9qwEOsqsoo&lang=en&fmt=json3";
+const baseObservedUrl =
+  "https://www.youtube.com/api/timedtext?v=n9qwEOsqsoo&lang=en&fmt=json3&sparams=ip%2Cexpire&signature=xyz%2F123&key=yt8";
 const requestedUrls: { url: string; lang: string; format: string }[] = [];
 
 const mockNativeShell = {
@@ -76,8 +77,14 @@ for (const code of newlyAdded) {
   assert(!tracks[code], `Track for ${code} should not exist before fetching`);
   const translatedUrl = buildTranslatedCaptionUrl(baseObservedUrl, code, "json3");
   const parsedUrl = new URL(translatedUrl);
-  assert.strictEqual(parsedUrl.searchParams.get("tlang"), "es", "tlang param must equal 'es'");
+  assert.strictEqual(parsedUrl.searchParams.get("lang"), "es", "lang param must equal 'es'");
+  assert.strictEqual(parsedUrl.searchParams.get("tlang"), null, "tlang must not be added");
   assert.strictEqual(parsedUrl.searchParams.get("fmt"), "json3", "fmt param must equal 'json3'");
+  assert.strictEqual(
+    parsedUrl.searchParams.get("signature"),
+    "xyz/123",
+    "signature must be preserved",
+  );
 
   const raw = mockNativeShell.fetchTranslatedCaptionsWithUrl(translatedUrl, code, "json3");
   const json = parseJson3(raw);
@@ -92,7 +99,7 @@ assert.strictEqual(
   "[ES] Dynamically fetched subtitle",
   "Tracks state must contain newly added language cues",
 );
-console.log("✅ PASS: Dynamically added language 'es' fetched via tlang and merged into tracks");
+console.log("✅ PASS: Dynamically added language 'es' fetched via lang and merged into tracks");
 
 // User adds next favorite language: "fr" (French)
 const nextLanguages = ["he", "it", "es", "fr"];
@@ -102,7 +109,9 @@ assert.deepStrictEqual(nextNewlyAdded, ["fr"]);
 for (const code of nextNewlyAdded) {
   const translatedUrl = buildTranslatedCaptionUrl(baseObservedUrl, code, "json3");
   const parsedUrl = new URL(translatedUrl);
-  assert.strictEqual(parsedUrl.searchParams.get("tlang"), "fr");
+  assert.strictEqual(parsedUrl.searchParams.get("lang"), "fr");
+  assert.strictEqual(parsedUrl.searchParams.get("tlang"), null);
+  assert.strictEqual(parsedUrl.searchParams.get("signature"), "xyz/123");
   const raw = mockNativeShell.fetchTranslatedCaptionsWithUrl(translatedUrl, code, "json3");
   tracks[code] = parseJson3(raw);
 }
@@ -110,7 +119,7 @@ for (const code of nextNewlyAdded) {
 assert.strictEqual(requestedUrls.length, 4, "Expected 4 total requests after adding fr");
 assert.strictEqual(requestedUrls[3].lang, "fr");
 assert(tracks.fr !== undefined, "Tracks must include French");
-console.log("✅ PASS: Dynamically added language 'fr' fetched via tlang and merged into tracks");
+console.log("✅ PASS: Dynamically added language 'fr' fetched via lang and merged into tracks");
 
 console.log("====================================================");
 console.log("📊 DYNAMIC FAVORITE LANGUAGE FETCH: All tests passed!");
