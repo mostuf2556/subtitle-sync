@@ -1,9 +1,9 @@
 # YouTube Subtitle & Speech Flow Viewer
 
-[![Build & Release Android APK](https://github.com/mostuf2556/subtitle-sync/actions/workflows/release-apk.yml/badge.svg)](https://github.com/mostuf2556/subtitle-sync/actions/workflows/release-apk.yml)
-[![Web E2E Tests](https://github.com/mostuf2556/subtitle-sync/actions/workflows/web.yml/badge.svg)](https://github.com/mostuf2556/subtitle-sync/actions/workflows/web.yml)
-[![Android Emulator E2E Tests](https://github.com/mostuf2556/subtitle-sync/actions/workflows/emulation.yml/badge.svg)](https://github.com/mostuf2556/subtitle-sync/actions/workflows/emulation.yml)
-[![Publish Web Demo](https://github.com/mostuf2556/subtitle-sync/actions/workflows/deploy-demo.yml/badge.svg)](https://github.com/mostuf2556/subtitle-sync/actions/workflows/deploy-demo.yml)
+[![Build & Release Android APK](https://github.com/baobabitogether1-hash/subtitle-sync/actions/workflows/release-apk.yml/badge.svg)](https://github.com/baobabitogether1-hash/subtitle-sync/actions/workflows/release-apk.yml)
+[![Web E2E Tests](https://github.com/baobabitogether1-hash/subtitle-sync/actions/workflows/web.yml/badge.svg)](https://github.com/baobabitogether1-hash/subtitle-sync/actions/workflows/web.yml)
+[![Android Emulator E2E Tests](https://github.com/baobabitogether1-hash/subtitle-sync/actions/workflows/emulation.yml/badge.svg)](https://github.com/baobabitogether1-hash/subtitle-sync/actions/workflows/emulation.yml)
+[![Publish Web Demo](https://github.com/baobabitogether1-hash/subtitle-sync/actions/workflows/deploy-demo.yml/badge.svg)](https://github.com/baobabitogether1-hash/subtitle-sync/actions/workflows/deploy-demo.yml)
 
 A dedicated Android native shell application for YouTube video learning with synchronized multi-language subtitles, native hardware TTS speech flow, and on-the-fly translation switching. Accompanied by a scoped web companion for automated CI/CD test drivers and live interactive demonstration.
 
@@ -11,12 +11,12 @@ A dedicated Android native shell application for YouTube video learning with syn
 
 ## 📲 Install & Update Android APK via CLI
 
-All releases, version changelogs, and compiled APK artifacts are published on GitHub: [**Browse All Releases**](https://github.com/mostuf2556/subtitle-sync/releases).
+All releases, version changelogs, and compiled APK artifacts are published on GitHub: [**Browse All Releases**](https://github.com/baobabitogether1-hash/subtitle-sync/releases).
 
 To download and install the latest `YouTube-Viewer-debug.apk` directly onto any connected Android device or emulator via ADB without cloning this repository or keeping local build files, run this single command:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/mostuf2556/subtitle-sync/main/update.apk.sh | bash -s -- "https://github.com/mostuf2556/subtitle-sync/releases/latest/download/YouTube-Viewer-debug.apk"
+curl -fsSL https://raw.githubusercontent.com/baobabitogether1-hash/subtitle-sync/main/update.apk.sh | bash -s -- "https://github.com/baobabitogether1-hash/subtitle-sync/releases/latest/download/YouTube-Viewer-debug.apk"
 ```
 
 ### What this command does:
@@ -34,13 +34,13 @@ Access the live web demo, web end-to-end test runner, and Android emulator verif
 
 | Resource                                               | Direct URL                                                                                                                     | Description                                                                                                                                                    |
 | :----------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 🚀 **Web-App Demo Landing Page**                       | [**Open Live Web Demo**](https://mostuf2556.github.io/subtitle-sync/)                                                         | Standalone browser build with responsive playback controls, dual-language subtitles (`top`/`above`/`under`/`bottom`), and instant target language switching.   |
-| 📋 **Mochawesome Test Report**                         | [**Open Mochawesome Report**](https://mostuf2556.github.io/subtitle-sync/mochawesome.html)                                    | Suite breakdown, pass/fail metrics, step timing breakdown, and test assertion logs from Cypress E2E suite.                                                     |
-| 🔍 **Playwright E2E Test Report**                      | [**Open Playwright Report**](https://mostuf2556.github.io/subtitle-sync/playwright/index.html)                                | Network timeline, console events, and action waterfall inspector for web test execution.                                                                       |
-| 📱 **E2E Tests on Android Emulator**                   | [**Open Android Emulator Report**](https://mostuf2556.github.io/subtitle-sync/android-emulator-report.html)                   | Standalone report verifying native WebView `shouldInterceptRequest` on Google Pixel 7 (Android 14 / API 34), Logcat audit, and hardware TTS loop verification. |
-| 📸 **Android Emulator Screenshot**                     | [**View Latest Emulator Screenshot**](https://mostuf2556.github.io/subtitle-sync/screenshots/android-emulator-screenshot.png) | Latest authentic screenshot captured directly from the Android Emulator during CI verification.                                                                |
-| 🧪 **Web E2E Pipeline (CI Runs & Artifacts)**          | [**View Web E2E Test Workflow**](https://github.com/mostuf2556/subtitle-sync/actions/workflows/web.yml)                       | Continuous CI run history, Playwright traces, and Mochawesome build artifacts.                                                                                 |
-| 🤖 **Android Emulator Pipeline (CI Runs & Artifacts)** | [**View Android E2E Workflow**](https://github.com/mostuf2556/subtitle-sync/actions/workflows/emulation.yml)                  | Continuous CI run history, job summary with live Logcat telemetry, and APK binaries.                                                                           |
+| 🚀 **Web-App Demo Landing Page**                       | [**Open Live Web Demo**](https://baobabitogether1-hash.github.io/subtitle-sync/)                                                         | Standalone browser build with responsive playback controls, dual-language subtitles (`top`/`above`/`under`/`bottom`), and instant target language switching.   |
+| 📋 **Mochawesome Test Report**                         | [**Open Mochawesome Report**](https://baobabitogether1-hash.github.io/subtitle-sync/mochawesome.html)                                    | Suite breakdown, pass/fail metrics, step timing breakdown, and test assertion logs from Cypress E2E suite.                                                     |
+| 🔍 **Playwright E2E Test Report**                      | [**Open Playwright Report**](https://baobabitogether1-hash.github.io/subtitle-sync/playwright/index.html)                                | Network timeline, console events, and action waterfall inspector for web test execution.                                                                       |
+| 📱 **E2E Tests on Android Emulator**                   | [**Open Android Emulator Report**](https://baobabitogether1-hash.github.io/subtitle-sync/android-emulator-report.html)                   | Standalone report verifying native WebView `shouldInterceptRequest` on Google Pixel 7 (Android 14 / API 34), Logcat audit, and hardware TTS loop verification. |
+| 📸 **Android Emulator Screenshot**                     | [**View Latest Emulator Screenshot**](https://baobabitogether1-hash.github.io/subtitle-sync/screenshots/android-emulator-screenshot.png) | Latest authentic screenshot captured directly from the Android Emulator during CI verification.                                                                |
+| 🧪 **Web E2E Pipeline (CI Runs & Artifacts)**          | [**View Web E2E Test Workflow**](https://github.com/baobabitogether1-hash/subtitle-sync/actions/workflows/web.yml)                       | Continuous CI run history, Playwright traces, and Mochawesome build artifacts.                                                                                 |
+| 🤖 **Android Emulator Pipeline (CI Runs & Artifacts)** | [**View Android E2E Workflow**](https://github.com/baobabitogether1-hash/subtitle-sync/actions/workflows/emulation.yml)                  | Continuous CI run history, job summary with live Logcat telemetry, and APK binaries.                                                                           |
 
 > **Note on GitHub Pages Availability:**
 > Artifacts, test reports, and demo assets are automatically published to the `gh-pages` branch on every push. To access the live web demo, reports, and screenshot URLs, ensure GitHub Pages is enabled in repository settings:

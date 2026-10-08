@@ -25,6 +25,7 @@ This document maintains the registry of codebase files, their specific roles, ar
 | `src/components/SubtitleFetchToast.tsx`       | Subtitle Fetch Notification   | Popup indicator notifying when subtitle fetching begins and finishes, with quick link to table and mute option.                    |
 | `src/components/VideoInstancesSwiper.tsx`     | Multi-Video Swiper Carousel   | Horizontal swipeable carousel for multi-instance YouTube video elements with slide indicators, touch gestures, and setup guidance. |
 | `src/components/FloatingDraggablePauseButton.tsx` | Floating Setup Pause Button | Draggable fixed-position pause button allowing users to freeze playback, autoscroll, and autofocus during app setup.                 |
+| `src/components/VideoLibraryPanel.tsx`        | Video Library / Watch History UI  | Collapsible panel presenting watched video history cards, search filter, thumbnail previews, active badge, and quick reload. |
 
 ## Feature Utilities (`src/utils/`)
 
@@ -45,6 +46,7 @@ This document maintains the registry of codebase files, their specific roles, ar
 | `src/utils/subtitleNotificationManager.ts` | Subtitle Notification State        | Manages subtitle fetch notifications, auto-dismiss timers, broadcast events, and notification mute state.              |
 | `src/utils/speechVoiceUtils.ts`            | Speech Synthesis Voice Utilities   | Provides voice deduplication, language filtering, and unique React option key generation to eliminate duplicate keys.  |
 | `src/utils/multiVideoPlayerManager.ts`     | Multi-Instance Player Manager      | Manages multiple video element instances, isolated audio-track state per instance, and player registry coordination.   |
+| `src/utils/videoLibraryManager.ts`         | Video Library / History Store      | Manages persistent watch history, default library fallback, search indexing, deduplication, and thumbnail resolution.   |
 
 ## Configuration & Data Fixtures (`src/config/`)
 
@@ -120,5 +122,7 @@ This document maintains the registry of codebase files, their specific roles, ar
 | `scripts/verify-apk-installation-robustness.ts`   | APK Install Robustness & Version Code Verification | Asserts deep purge on collision, downgrade & provider collision handling, standard version in package.json, and releases link in README.               |
 | `scripts/verify-floating-draggable-pause.ts`      | Floating Draggable Pause Verification              | Asserts component contracts, touch & mouse drag clamping, tap-vs-drag discrimination, visual indicators, and accessibility semantics.                   |
 | `scripts/verify-apk-version-and-releases.ts`      | In-App Version & Releases Link Verification        | Asserts version parity across manifests, header version badge, footer all releases link, and modal direct release links.                               |
+| `scripts/verify-audio-track-time-sections.ts`     | Audio-Track Time-Sections Progression Verification | Asserts progression to next time-section, elimination of duplicate replay, pre-seek guard, and audio-track fallback.                                    |
+| `scripts/verify-video-library.ts`                 | Video Library / Watch History Verification         | Validates persistent watch history, default seeding, deduplication, thumbnail resolution, time formatting, and panel integration.                        |
 | `scripts/verify-md-links.ts`                      | Markdown Links Checker                            | Validates that all documentation cross-references and links resolve properly.                                                                          |
 | `scripts/normalize-web-assets.mjs`                | Build Asset Normalizer                            | Adjusts asset paths for GitHub Pages sub-path hosting.                                                                                                 |

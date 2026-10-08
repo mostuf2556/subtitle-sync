@@ -271,6 +271,7 @@ export function executeMultiVideoSegmentSync(
 
     const startTime = Date.now();
     const timeoutMs = durationMs + 8000;
+    let hasStartedNearStart = false;
 
     const checkInterval = setInterval(() => {
       if (checkCancelled && checkCancelled()) {
@@ -287,6 +288,15 @@ export function executeMultiVideoSegmentSync(
 
       try {
         const currentMs = (targetPlayer.getCurrentTime?.() ?? 0) * 1000;
+        if (!hasStartedNearStart) {
+          // Confirm player has arrived near startMs or sufficient time has elapsed for seek to apply
+          if (
+            Math.abs(currentMs - startMs) <= Math.max(1500, durationMs * 0.75) ||
+            Date.now() - startTime >= 350
+          ) {
+            hasStartedNearStart = true;
+          }
+        }
         const elapsed = Math.max(0, currentMs - startMs);
         const percent = Math.min(100, Math.round((elapsed / durationMs) * 100));
 
@@ -294,7 +304,7 @@ export function executeMultiVideoSegmentSync(
           onProgress({ currentMs, totalMs: durationMs, percent });
         }
 
-        if (currentMs >= endMs - 50) {
+        if (hasStartedNearStart && currentMs >= endMs - 50) {
           cleanup();
           resolve();
         }

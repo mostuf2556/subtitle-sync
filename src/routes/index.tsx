@@ -88,6 +88,8 @@ import {
 } from "@/lib/playback-preferences";
 import { ApkReleaseModal } from "@/components/ApkReleaseModal";
 import { SubtitleFetchToast } from "@/components/SubtitleFetchToast";
+import { VideoLibraryPanel } from "@/components/VideoLibraryPanel";
+import { recordVideoWatch } from "@/utils/videoLibraryManager";
 import { notifySubtitleFetch } from "@/utils/subtitleNotificationManager";
 import { getApkReleaseLinks } from "@/utils/apkUpdater";
 import { isValidJsonSubtitleResponse } from "@/utils/subtitleCache";
@@ -141,11 +143,12 @@ declare global {
 
 type SpeechProgress = { lang: string; row: number; start: number; end: number } | null;
 type Theme = "light" | "dark" | "dark-blue";
-type PanelId = "player" | "playback" | "parser" | "languages" | "subtitles";
+type PanelId = "player" | "playback" | "library" | "parser" | "languages" | "subtitles";
 
 const PANELS: { id: PanelId; title: string }[] = [
   { id: "player", title: "Video" },
   { id: "playback", title: "Playback" },
+  { id: "library", title: "Video library" },
   { id: "parser", title: "Parser" },
   { id: "languages", title: "Languages" },
   { id: "subtitles", title: "Parallel subtitles" },
@@ -666,10 +669,47 @@ function Index() {
   const [openPanels, setOpenPanels] = useState<Record<PanelId, boolean>>({
     player: true,
     playback: true,
+    library: true,
     parser: true,
     languages: true,
     subtitles: true,
   });
+
+  const handleSelectLibraryVideo = (newId: string, customUrl?: string) => {
+    if (!newId || newId === videoId) return;
+    cancelSpeech();
+    setTracks(null);
+    setObservedUrl("");
+    setDefaultCaptionsLoaded(false);
+    setActive(-1);
+    setSpeakingLang(null);
+    setSpeakingRow(-1);
+    setSpeechProgress(null);
+    setPlayedRecordsCount(0);
+    playedTtsRecords.current.clear();
+    setVideoId(newId);
+    setVideoInput(newId);
+    if (typeof window !== "undefined") {
+      const currentSearch = new URLSearchParams(window.location.search);
+      if (currentSearch.get("v") !== newId) {
+        currentSearch.set("v", newId);
+        window.history.pushState(
+          { videoId: newId },
+          "",
+          `${window.location.pathname}?${currentSearch.toString()}${window.location.hash}`,
+        );
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (videoId) {
+      recordVideoWatch({
+        id: videoId,
+        originalUrl: `https://www.youtube.com/watch?v=${videoId}`,
+      });
+    }
+  }, [videoId]);
   const [active, setActive] = useState(-1);
   const [speakingLang, setSpeakingLang] = useState<string | null>(null);
   const [speakingRow, setSpeakingRow] = useState(-1);
@@ -1064,6 +1104,7 @@ function Index() {
     audioTrackMode,
     sectionOrder,
     isSetupPaused,
+    baseLanguage,
   });
   st.current = {
     rows,
@@ -1076,6 +1117,7 @@ function Index() {
     audioTrackMode,
     sectionOrder,
     isSetupPaused,
+    baseLanguage,
   };
 
   const playerEl = useRef<HTMLDivElement>(null);
@@ -1155,6 +1197,7 @@ function Index() {
         pauseMode,
         orderedLangs,
         audioTrackMode: isAudioTrackMode,
+        baseLanguage: currentBaseLanguage,
       } = st.current;
       const idx = rows.findIndex((r) => ms >= r.start && ms < r.end);
       setActive(idx);
@@ -1163,7 +1206,7 @@ function Index() {
 
       const getEligibleLangs = (rowIdx: number) => {
         if (rowIdx < 0 || playedTtsRecords.current.has(rowIdx)) return [];
-        return orderedLangs.filter(
+        const matched = orderedLangs.filter(
           (l) =>
             spoken.includes(l.code) &&
             isSubtitleInstanceEligibleForTTS(
@@ -1172,6 +1215,14 @@ function Index() {
               playedTtsRecords.current,
             ),
         );
+        // When audioTrackMode is enabled with no spoken languages selected,
+        // fallback to base / primary language so the original video repeats the section with native audio
+        if (matched.length === 0 && isAudioTrackMode && spoken.length === 0) {
+          const fallbackLang = orderedLangs.find((l) => l.code === currentBaseLanguage) ||
+            orderedLangs[0] || { code: "primary", tts: "en-US", name: "Primary" };
+          return [fallbackLang];
+        }
+        return matched;
       };
 
       const speakRow = async (rowIdx: number) => {
@@ -1266,16 +1317,19 @@ function Index() {
             await speakRow(candidateRow);
             busy.current = false;
             handledRow.current = candidateRow;
-            const resumeTarget =
-              idx >= 0 && rows[idx]?.start
-                ? rows[idx].start / 1000
-                : rows[candidateRow + 1]?.start
-                  ? rows[candidateRow + 1].start / 1000
-                  : p.getCurrentTime();
-            lastMs.current = resumeTarget * 1000;
-            multiVideoPlayerRegistry.unmuteOnly("primary");
-            p.seekTo(resumeTarget, true);
-            p.playVideo();
+            const nextRowIdx = candidateRow + 1;
+            if (nextRowIdx < rows.length && rows[nextRowIdx]) {
+              const nextRow = rows[nextRowIdx];
+              const resumeTarget = nextRow.start / 1000;
+              lastMs.current = resumeTarget * 1000;
+              lastRow.current = nextRowIdx;
+              multiVideoPlayerRegistry.unmuteOnly("primary");
+              p.seekTo(resumeTarget, true);
+              p.playVideo();
+            } else {
+              multiVideoPlayerRegistry.unmuteOnly("primary");
+              p.pauseVideo();
+            }
           }
         }
       }
@@ -1354,6 +1408,7 @@ function Index() {
     busy.current = false;
     lastRow.current = i;
     handledRow.current = -1;
+    playedTtsRecords.current.delete(i);
     lastMs.current = r.start;
     player.current?.seekTo(r.start / 1000, true);
     player.current?.playVideo();
@@ -1781,6 +1836,13 @@ function Index() {
                     Show spoken subtitle over video
                   </label>
                 </div>
+              )}
+
+              {panelId === "library" && (
+                <VideoLibraryPanel
+                  currentVideoId={videoId}
+                  onSelectVideo={handleSelectLibraryVideo}
+                />
               )}
 
               {panelId === "parser" && (

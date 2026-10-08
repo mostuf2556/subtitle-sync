@@ -70,6 +70,8 @@
     "test:apk-robustness": "tsx scripts/verify-apk-installation-robustness.ts",
     "test:floating-pause": "tsx scripts/verify-floating-draggable-pause.ts",
     "test:apk-version": "tsx scripts/verify-apk-version-and-releases.ts",
+    "test:audio-track-time-sections": "tsx scripts/verify-audio-track-time-sections.ts",
+    "test:video-library": "tsx scripts/verify-video-library.ts",
     "test:android": "bash scripts/run-android-e2e.sh"
   },
   "overrides": {

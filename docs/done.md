@@ -1,5 +1,27 @@
 # Done tasks
 
+## Task 41: Video library panel (watch history)
+
+### Subtask 41.1: Implement Video Library / Watch History Panel
+
+- Implemented `src/utils/videoLibraryManager.ts` providing persistent watch history management (`loadVideoLibrary`, `saveVideoLibrary`, `recordVideoWatch`, `removeVideoFromLibrary`, `clearVideoLibrary`) backed by `STORAGE_KEYS.LIBRARY_STORAGE_KEY` with fallback to `DEFAULT_LIBRARY_ITEMS`.
+- Created `src/components/VideoLibraryPanel.tsx` with searchable video cards, high-quality thumbnails (`getVideoThumbnailUrl`), relative watch timestamps (`formatRelativeTime`), quick video selection/load button (`data-testid="library-play-btn"`), currently active indicator badge, individual remove buttons (`data-testid="library-remove-btn"`), and clear library confirmation (`data-testid="library-clear-btn"`).
+- Integrated the Video Library panel into `PANELS` accordion in `src/routes/index.tsx` (`id: "library", title: "Video library"`), allowing users to browse their history and instantly switch videos directly from the sidebar.
+- Added automatic watch history recording (`recordVideoWatch`) in `src/routes/index.tsx` whenever a video ID is loaded or played, updating recent watch timestamps and deduplicating items to keep recent items at the top.
+- Created dedicated verification test suite `scripts/verify-video-library.ts` (`npm run test:video-library`), registered in `package.json`, and documented in `docs/files.md`.
+- Verified all verification suites (`test:video-library`, `test:audio-track-time-sections`, `test:multi-video-audio-sync`), compile check, and ESLint pass with 0 errors and 0 warnings.
+
+## Task 51: Fix Original Video Repeating Same Time-Frame and Not Respecting Subtitle Time-Sections in Audio-Track Mode
+
+### Subtask 51.1: Audio-Track Mode Loop Progression & Accurate Time-Section Resumption
+
+- Replaced the flawed `idx >= 0 && rows[idx]?.start ? rows[idx].start / 1000 : ...` resume target logic in `src/routes/index.tsx`. When section `candidateRow` completes and audio-track repetition finishes, playback advances strictly to `rows[candidateRow + 1].start / 1000` (or cleanly pauses if reaching the final subtitle row). This eliminates the bug where the original video element repeated the same section before proceeding.
+- Added audio-track fallback in `getEligibleLangs` in `src/routes/index.tsx`: when `audioTrackMode` is enabled and no explicit spoken languages are selected, it falls back to the default base language (`baseLanguage` / `primary`), ensuring that subtitle time-sections are respected, paused, and repeated using the original video's native audio even with no secondary languages enabled.
+- Added pre-seek guard (`hasStartedNearStart`) in `executeMultiVideoSegmentSync` in `src/utils/multiVideoPlayerManager.ts`, confirming the player has completed its asynchronous seek near `startMs` before allowing `currentMs >= endMs - 50` completion checks.
+- Cleared row index `i` from `playedTtsRecords` in `seek(r, i)` in `src/routes/index.tsx`, ensuring clicking any row resets its played state and allows it to repeat and play cleanly.
+- Implemented dedicated verification test suite `scripts/verify-audio-track-time-sections.ts` (`npm run test:audio-track-time-sections`) validating section progression, elimination of duplicate replaying, pre-seek guarding, language fallback, and replayability. Registered script in `package.json` and documented in `docs/files.md`.
+- Verified all regression test suites, app compilation, and ESLint pass with 0 errors and 0 warnings.
+
 ## Task 50: Draggable Floating Setup Pause Button with Autofocus, Auto-scroll & Play-Switch Suppression
 
 ### Subtask 50.1: Draggable Floating Pause Component & Drag Handling
@@ -72,6 +94,12 @@
 - Verified `scripts/update-readme.mjs` cleanly rewrites badge links, workflow links, raw curl update commands, and GitHub Pages demo & report URLs when switching between owners and repositories.
 - Created dedicated verification suite `scripts/verify-fork-readme-links.ts` (`npm run test:fork-readme-links`).
 - Registered `test:fork-readme-links` in `package.json` and documented in `docs/files.md`.
+
+### Subtask 47.2: Ensure GitHub Actions E2E Tests Pass and Deploy to GitHub Pages on Forked Repos
+
+- Added `push: branches: [main, master]` triggers to `.github/workflows/web.yml` and `.github/workflows/emulation.yml` in addition to `workflow_run`, enabling forked repositories to automatically execute test pipelines and publish reports to `gh-pages`.
+- Configured resilient artifact deployment across `web.yml`, `deploy-demo.yml`, and `emulation.yml` ensuring all test outputs (`mochawesome.html`, `playwright/`, `android-emulator-report.html`, `screenshots/`) deploy to `gh-pages` with `keep_files: true`.
+- Created dedicated verification test `scripts/verify-fork-ci-workflows.ts` (`npm run test:fork-ci-workflows`) and validated all workflow triggers and deployment configurations.
 
 ## Task 46: Fix E2E Report Generation, CI Workflows & GitHub Pages Staging
 
@@ -160,6 +188,14 @@
 - Enforced `isValidJsonSubtitleResponse(raw)` verification inside the `subtitleRequestModeOrder` mode loop in `fetchFavoriteLanguageSubtitles` in `src/routes/index.tsx`, automatically progressing to the next mode if the first mode yields an invalid response.
 - Created dedicated verification test `scripts/verify-subtitle-api-fallback.ts` (`npm run test:subtitle-api-fallback`), registered in `package.json`, and documented in `docs/files.md`.
 - Rebuilt Android web assets with `npm run build:android-assets` and verified all 17 regression test suites pass with 0 lint warnings.
+
+## Task 40: Support app history (Android back navigation)
+
+### Subtask 40.1: Implement Android back navigation and router/browser history integration
+
+- Implemented `OnBackPressedCallback` in `MainActivity.kt` providing robust handling for Android device back buttons. Dispatches `window.__handleAndroidBack` to WebView and navigates webview history (`webView.goBack()`) if `canGoBack()` is true before defaulting to system exit.
+- In `src/routes/index.tsx`, integrated `popstate` and `window.__handleAndroidBack` handlers allowing users to navigate back through viewed videos, closed panels, and history states without exiting the app.
+- Created dedicated verification test `scripts/verify-android-back-navigation.ts` (`npm run test:back-navigation`), registered in `package.json`, and documented in `docs/files.md`.
 
 ## Task 39: Allow closing the Network Panel
 
