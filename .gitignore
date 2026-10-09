@@ -69,6 +69,10 @@ screenshots/
 !public/screenshots/
 !public/screenshots/*
 !public/assets/*
+*.mp4
+*.webm
+android-emulator-video.mp4
+public/screenshots/android-emulator-video.mp4
 
 # Editor directories and files
 .vscode/*

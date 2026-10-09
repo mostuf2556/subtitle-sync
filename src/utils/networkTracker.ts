@@ -152,6 +152,19 @@ export function extractTlang(url: string): string | null {
 }
 
 /**
+ * Extracts base or replaced language code ('lang' query param) from a URL if present
+ */
+export function extractLang(url: string): string | null {
+  try {
+    const parsed = new URL(url, "https://www.youtube.com");
+    return parsed.searchParams.get("lang");
+  } catch {
+    const match = /[?&]lang=([^&#]+)/i.exec(url);
+    return match ? decodeURIComponent(match[1]) : null;
+  }
+}
+
+/**
  * Formats a network request into a formatted multi-line string for clipboard copy
  */
 export function formatRequestForClipboard(req: NetworkRequestRecord): string {

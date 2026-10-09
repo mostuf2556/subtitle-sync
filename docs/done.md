@@ -1,5 +1,51 @@
 # Done tasks
 
+## Task 53: Android E2E YouTube Share Intent Verification, Screencast Video Recording & GitHub Pages Presentation
+
+### Subtask 53.1: Android E2E YouTube Link Share Testing (Browser & Official YouTube App)
+
+- Implemented comprehensive E2E tests validating that YouTube links shared from either:
+  1. A web browser (via `ACTION_VIEW` with standard watch URLs `watch?v=...`, query parameters like `&t=42s`, shortened `youtu.be/...`, `?si=...`, mobile `m.youtube.com`, YouTube Shorts, embeds, and live streams).
+  2. The official YouTube app (via `ACTION_SEND` with plain URLs or prefixed sharing text like `"Check out this video on YouTube: https://youtu.be/..."`).
+- Validated that `MainActivity.kt` and WebView bridge (`window.onNativeSharedLinkReceived`) cleanly switch to the shared video, reset state, clear cached timedtext, and initiate caption discovery without crashing or reloading the entire webview session.
+- Added browser and YouTube app sharing test cases to `e2e/emulation.spec.ts` and `cypress/e2e/emulation.cy.ts`.
+- Created dedicated verification test suite `scripts/verify-android-share-e2e.ts` covering 16 comprehensive verification checks across intent formats, URL extraction, query parameter parsing, and native-to-web messaging.
+- Registered `"test:android-share-e2e"` script in `package.json` and documented in `docs/files.md`.
+- Verified all 16 test assertions pass cleanly (`npm run test:android-share-e2e`), app compiles (`npm run build`), and ESLint passes with 0 warnings.
+
+### Subtask 53.2: Emulator Screencast Video Recording, Artifact Staging & Report Presentation
+
+- Configured screencast video recording on Android emulator via `adb shell screenrecord /sdcard/android-emulator-video.mp4` in both `scripts/run-android-e2e.sh` and `.github/workflows/emulation.yml`.
+- Implemented clean termination signaling with `SIGINT` / `kill -2` to finalize the MP4 container before pulling the recorded video with `adb pull /sdcard/android-emulator-video.mp4`.
+- Updated `.gitignore` to strictly ignore `*.mp4`, `android-emulator-video.mp4`, and `public/screenshots/android-emulator-video.mp4` to preserve clean repository hygiene on the `main` branch.
+- Updated `.github/workflows/emulation.yml` to stage the video into `gh-pages-staging/screenshots/android-emulator-video.mp4` and upload as a workflow artifact (`android-emulator-screencast-video`), ensuring it is published to GitHub Pages without ever being committed to `main`.
+- Embedded an interactive video player presentation card (`<video controls autoplay muted loop>`) in `public/android-emulator-report.html` alongside the step-by-step screenshots, logcat telemetry, and test reports.
+- Created dedicated verification test suite `scripts/verify-emulator-screencast-report.ts`, registered `"test:emulator-screencast-report"` in `package.json`, and documented in `docs/files.md`.
+- Verified 100% test pass rate across all dedicated test suites, successful app compilation, and zero lint warnings.
+
+## Task 52: Emulator E2E Subtitles Detection & Inspection with YouTube API Fallback, and Empty/Non-JSON Cache Guard Test
+
+### Subtask 52.1: Add Test Ensuring the App Doesn't Cache Empty Response or Non-JSON Response
+
+- Created comprehensive dedicated test suite `scripts/verify-no-cache-empty-or-non-json.ts` testing 22 invalid/empty payload vectors across `isValidJsonSubtitleResponse`, `saveCachedRawJson3`, `saveCachedSubtitles`, and `saveCachedTargetSubtitles`.
+- Asserted rejection of empty strings (`""`), blank whitespace (`"   \n\t "`), `null`, `undefined`, empty arrays, and empty objects.
+- Asserted rejection of non-JSON responses including HTML 404/500 error pages, plaintext error strings, rate limit messages, XML error payloads, malformed JSON, and JSON without text cues.
+- Verified cache write protection: attempting to cache empty or non-JSON responses leaves storage untouched, and existing valid cached subtitles and raw JSON3 are preserved and never overwritten by subsequent empty or corrupt responses.
+- Verified Android native shell (`MainActivity.kt`) contracts: `isValidJsonSubtitle` validation, `saveCaptionToFile` disk write protection, and interception checking.
+- Registered `"test:no-cache-empty-non-json"` in `package.json` and documented in `docs/files.md`.
+### Subtask 52.2: Implement Emulator E2E Testing Default Subtitles Detection, Favorite Languages Fetch, YouTube API tlang/lang Fallback, and Network & Subtitles View Inspection
+
+- Implemented full emulator E2E flow in `e2e/emulation.spec.ts` and `cypress/e2e/emulation.cy.ts` covering:
+  1. Default subtitles detection: native timedtext interception receiving base subtitle stream.
+  2. Favorite languages proactive fetching: automatic requests for favorite languages (Hebrew and Italian) following default caption discovery.
+  3. YouTube API tlang and lang fallback: simulated invalid response on primary `tlang` request automatically triggering the fallback `lang` request which succeeds with valid JSON3 dialogue.
+  4. Network Panel inspection: opening `#network-inspector-modal`, inspecting tracked requests, verifying `tlang` tag, `lang` fallback tag, HTTP status, and response body previews.
+  5. Subtitles view inspection: asserting parallel subtitles table renders columns for default and favorite languages with synchronized dialogue text.
+  6. Per-step screenshot captures (`step1-default-subtitles-detected`, `step2-favorite-languages-fetch`, `step3-youtube-api-tlang-lang-fallback`, `step4-network-panel-inspection`, `step5-subtitles-view-inspection`).
+- Enhanced `public/android-emulator-report.html` for GitHub Pages publication with step-by-step verification cards, status badges, step screenshots, and logcat telemetry.
+- Created dedicated verification test suite `scripts/verify-emulator-e2e-subtitles.ts` (`npm run test:emulator-subtitles-e2e`), registered in `package.json`, and documented in `docs/files.md`.
+- Verified 100% pass across all regression test suites, app compilation, and 0 lint warnings.
+
 ## Task 41: Video library panel (watch history)
 
 ### Subtask 41.1: Implement Video Library / Watch History Panel

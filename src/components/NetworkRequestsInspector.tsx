@@ -22,6 +22,7 @@ import {
   useNetworkRequests,
   clearNetworkRequests,
   extractTlang,
+  extractLang,
   formatRequestForClipboard,
   isSuccessfulFetch,
   type NetworkRequestRecord,
@@ -429,6 +430,8 @@ export const NetworkRequestsInspector: React.FC<Props> = ({ isOpen, onClose }) =
                 const tlang = extractTlang(req.url);
                 const tlangName = getLanguageName(tlang);
                 const tlangInfo = tlang ? getTlangStatusInfo(req, tlang) : null;
+                const langParam = extractLang(req.url);
+                const langParamName = getLanguageName(langParam);
                 const isCopied = copiedId === req.id;
                 const isBodyEmpty =
                   req.status === 200 &&
@@ -477,12 +480,26 @@ export const NetworkRequestsInspector: React.FC<Props> = ({ isOpen, onClose }) =
                           </span>
                         )}
 
-                        {/* Green badge indicator for successfully fetched language */}
-                        {tlang && isSuccessfulFetch(req) && (
+                        {/* lang Language Fallback Tag */}
+                        {!tlang && langParam && (
                           <span
-                            data-testid={`good-fetch-badge-${tlang}`}
+                            data-testid={`lang-tag-${req.id}`}
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border bg-purple-500/20 text-purple-300 border-purple-500/40"
+                            title={`Language: ${langParamName} (${langParam})`}
+                          >
+                            <Globe className="w-3 h-3" />
+                            <span>
+                              lang: {langParam} ({langParamName})
+                            </span>
+                          </span>
+                        )}
+
+                        {/* Green badge indicator for successfully fetched language */}
+                        {(tlang || langParam) && isSuccessfulFetch(req) && (
+                          <span
+                            data-testid={`good-fetch-badge-${tlang || langParam}`}
                             className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                            title={`Successfully fetched subtitles for ${tlangName || tlang}`}
+                            title={`Successfully fetched subtitles for ${tlangName || langParamName || tlang || langParam}`}
                           >
                             <Check className="w-3 h-3 text-emerald-400" />
                             <span>Good Fetch</span>
@@ -635,8 +652,22 @@ export const NetworkRequestsInspector: React.FC<Props> = ({ isOpen, onClose }) =
                       </span>
                     )}
 
+                    {/* Fallback language tag in detail header */}
+                    {!extractTlang(selectedRequest.url) && extractLang(selectedRequest.url) && (
+                      <span
+                        data-testid="detail-lang-tag"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40"
+                      >
+                        <Globe className="w-3 h-3" />
+                        <span>
+                          lang: {extractLang(selectedRequest.url)} (
+                          {getLanguageName(extractLang(selectedRequest.url))})
+                        </span>
+                      </span>
+                    )}
+
                     {/* Good fetch green badge in detail header */}
-                    {extractTlang(selectedRequest.url) && isSuccessfulFetch(selectedRequest) && (
+                    {(extractTlang(selectedRequest.url) || extractLang(selectedRequest.url)) && isSuccessfulFetch(selectedRequest) && (
                       <span
                         data-testid="detail-good-fetch-badge"
                         className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"

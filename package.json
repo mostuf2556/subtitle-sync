@@ -58,6 +58,7 @@
     "test:network-close": "tsx scripts/verify-network-inspector-close.ts",
     "test:back-navigation": "tsx scripts/verify-android-back-navigation.ts",
     "test:valid-json-cache": "tsx scripts/verify-valid-json-cache-guard.ts",
+    "test:no-cache-empty-non-json": "tsx scripts/verify-no-cache-empty-or-non-json.ts",
     "test:subtitle-api-fallback": "tsx scripts/verify-subtitle-api-fallback.ts",
     "test:playwright-locators": "tsx scripts/verify-playwright-locators.ts",
     "test:hotfix": "tsx scripts/verify-hotfix-links-and-actions.ts",
@@ -72,6 +73,9 @@
     "test:apk-version": "tsx scripts/verify-apk-version-and-releases.ts",
     "test:audio-track-time-sections": "tsx scripts/verify-audio-track-time-sections.ts",
     "test:video-library": "tsx scripts/verify-video-library.ts",
+    "test:emulator-subtitles-e2e": "tsx scripts/verify-emulator-e2e-subtitles.ts",
+    "test:android-share-e2e": "tsx scripts/verify-android-share-e2e.ts",
+    "test:emulator-screencast-report": "tsx scripts/verify-emulator-screencast-report.ts",
     "test:android": "bash scripts/run-android-e2e.sh"
   },
   "overrides": {

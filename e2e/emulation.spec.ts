@@ -19,7 +19,7 @@ async function deliverDefaultCaptions(page: Page) {
     const payload = {
       url,
       rawData: JSON.stringify({
-        events: [{ tStartMs: 0, dDurationMs: 4000, segs: [{ utf8: "Default caption line" }] }],
+        events: [{ tStartMs: 0, dDurationMs: 4000, segs: [{ utf8: "Default caption line dialog" }] }],
       }),
     };
     nativeWindow.onNativeCaptionsInterceptedBase64?.(btoa(JSON.stringify(payload)));
@@ -36,6 +36,7 @@ test.describe("Android native subtitle emulation", () => {
           fetchTranslatedCaptionsWithUrl(url: string, language: string, format: string): string;
         };
         __nativeCaptionRequests?: NativeCaptionRequest[];
+        __failTlangOnce?: boolean;
       };
 
       nativeWindow.__nativeCaptionRequests = [];
@@ -44,6 +45,10 @@ test.describe("Android native subtitle emulation", () => {
         getLastObservedTimedTextUrl: () => url,
         fetchTranslatedCaptionsWithUrl: (requestUrl, language, format) => {
           nativeWindow.__nativeCaptionRequests?.push({ url: requestUrl, language, format });
+          // If URL contains tlang and __failTlangOnce is active, return invalid response to trigger lang fallback
+          if (nativeWindow.__failTlangOnce && requestUrl.includes("tlang=")) {
+            return "<html><body>404 Not Found</body></html>";
+          }
           const events = [];
           for (let i = 0; i < 15; i++) {
             events.push({
@@ -128,5 +133,104 @@ test.describe("Android native subtitle emulation", () => {
     const paginationBar = page.getByTestId("android-subtitles-pagination-bar");
     await expect(paginationBar).toBeVisible();
     await expect(paginationBar).toContainText("First 10 lines of favorite languages");
+  });
+
+  test("emulator: detects default subtitles, fetches favorite languages with tlang & lang fallback, and inspects via network panel and subtitles view", async ({
+    page,
+  }) => {
+    // Enable debug mode first to expose the Network Inspector button
+    const debugModeToggle = page.getByTestId("debug-mode-toggle");
+    if (await debugModeToggle.isVisible()) {
+      if (!(await debugModeToggle.isChecked())) {
+        await debugModeToggle.check();
+      }
+    }
+
+    // Configure bridge to fail tlang so fallback to lang is executed
+    await page.evaluate(() => {
+      const win = window as typeof window & { __failTlangOnce?: boolean };
+      win.__failTlangOnce = true;
+    });
+
+    // Step 1: Detection of fetching the default subtitles
+    expect(await getNativeCaptionRequests(page)).toEqual([]);
+    await deliverDefaultCaptions(page);
+    await page.screenshot({ path: "cypress/screenshots/step1-default-subtitles-detected.png", fullPage: false }).catch(() => {});
+
+    // Step 2 & 3: Following it, fetching requests of subtitles of favorited languages with tlang & lang fallback
+    await expect
+      .poll(async () => (await getNativeCaptionRequests(page)).length, { timeout: 10000 })
+      .toBeGreaterThanOrEqual(2);
+
+    const nativeRequests = await getNativeCaptionRequests(page);
+    // Assert tlang attempt was made
+    const tlangAttempt = nativeRequests.find((r) => r.url.includes("tlang="));
+    expect(tlangAttempt).toBeTruthy();
+    // Assert fallback to lang request occurred
+    const langFallbackAttempt = nativeRequests.find((r) => !r.url.includes("tlang=") && r.url.includes("lang="));
+    expect(langFallbackAttempt).toBeTruthy();
+    await page.screenshot({ path: "cypress/screenshots/step2-step3-fallback-requests.png", fullPage: false }).catch(() => {});
+
+    // Step 4: Inspection of those subtitles via the Network Panel
+    const openNetworkBtn = page.getByTestId("open-network-inspector-button");
+    await expect(openNetworkBtn).toBeVisible({ timeout: 5000 });
+    await openNetworkBtn.click();
+
+    const networkModal = page.getByTestId("network-inspector-modal");
+    await expect(networkModal).toBeVisible();
+
+    // Show failed requests if filtered so both tlang and lang fallback are inspectable
+    const hideFailedBtn = page.getByTestId("hide-failed-toggle");
+    if (await hideFailedBtn.isVisible()) {
+      await hideFailedBtn.click();
+    }
+
+    // Verify presence of captured timedtext & bridge requests
+    await expect(page.locator("text=timedtext").first()).toBeVisible();
+    await page.screenshot({ path: "cypress/screenshots/step4-network-panel-inspection.png", fullPage: false }).catch(() => {});
+
+    // Close network panel
+    const closeNetworkBtn = page.getByTestId("close-network-inspector-button");
+    await closeNetworkBtn.click();
+    await expect(networkModal).toBeHidden();
+
+    // Step 5: Inspection of those subtitles via the Subtitles view element
+    const subtitlesPanel = page.locator('details[data-panel="subtitles"]');
+    await expect(subtitlesPanel).toBeVisible();
+    const subtitlesTable = subtitlesPanel.locator("table");
+    await expect(subtitlesTable).toBeVisible({ timeout: 10000 });
+
+    // Verify subtitle text rows are rendered
+    const firstRow = subtitlesTable.locator("tbody tr").first();
+    await expect(firstRow).toBeVisible();
+    await expect(firstRow).toContainText(/Line 1/i);
+
+    await page.screenshot({ path: "cypress/screenshots/step5-subtitles-view-inspection.png", fullPage: false }).catch(() => {});
+  });
+
+  test("emulator: shares YouTube video links from browser or official YouTube app", async ({
+    page,
+  }) => {
+    // 1. Simulate browser share link (ACTION_VIEW)
+    const browserSharedUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+    await page.evaluate((url) => {
+      const win = window as typeof window & { onNativeSharedLinkReceived?: (link: string) => void };
+      win.onNativeSharedLinkReceived?.(url);
+    }, browserSharedUrl);
+
+    // Verify header and state updated to dQw4w9WgXcQ
+    await expect(page.locator("header")).toContainText("video dQw4w9WgXcQ");
+    await page.screenshot({ path: "cypress/screenshots/step-share-browser-link.png", fullPage: false }).catch(() => {});
+
+    // 2. Simulate official YouTube app share with title text (ACTION_SEND)
+    const youtubeAppShareText = "Never Gonna Give You Up\nhttps://youtu.be/kJQP7kiw5Fk?si=123";
+    await page.evaluate((text) => {
+      const win = window as typeof window & { onNativeSharedLinkReceived?: (link: string) => void };
+      win.onNativeSharedLinkReceived?.(text);
+    }, youtubeAppShareText);
+
+    // Verify state updated to kJQP7kiw5Fk
+    await expect(page.locator("header")).toContainText("video kJQP7kiw5Fk");
+    await page.screenshot({ path: "cypress/screenshots/step-share-youtube-app-text.png", fullPage: false }).catch(() => {});
   });
 });

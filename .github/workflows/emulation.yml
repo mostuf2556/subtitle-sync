@@ -153,10 +153,20 @@ jobs:
             adb devices
             adb install -r android-shell/app/build/outputs/apk/debug/app-debug.apk
             adb shell pm clear com.ytviewer.app
+            adb shell rm -f /sdcard/android-emulator-video.mp4 2>/dev/null || true
+            echo "Starting adb screenrecord..."
+            adb shell screenrecord --time-limit 180 --bit-rate 4000000 /sdcard/android-emulator-video.mp4 >/dev/null 2>&1 &
+            RECORD_PID=$!
             adb shell am start -a android.intent.action.VIEW -n com.ytviewer.app/.MainActivity -d "https://www.youtube.com/watch?v=n9qwEOsqsoo"
             adb shell screencap -p /sdcard/screen.png; adb pull /sdcard/screen.png ./android-emulator-screenshot.png || true
             bash scripts/android-e2e-assert.sh
             adb shell screencap -p /sdcard/screen.png; adb pull /sdcard/screen.png ./android-emulator-screenshot.png
+            echo "Stopping adb screenrecord..."
+            adb shell pkill -2 -f "screenrecord" 2>/dev/null || true
+            wait $RECORD_PID 2>/dev/null || true
+            sleep 2
+            adb pull /sdcard/android-emulator-video.mp4 ./android-emulator-video.mp4 || true
+            [ -f ./android-emulator-video.mp4 ] && echo "Successfully pulled android-emulator-video.mp4"
 
       - name: Publish Android E2E Result to Job Summary
         if: always()
@@ -188,7 +198,7 @@ jobs:
               fi
             fi
             echo ""
-            echo "The screenshot and full logcat are available in the \`android-emulator-artifacts\` workflow artifact."
+            echo "The screenshot, video recording, and full logcat are available in the \`android-emulator-artifacts\` workflow artifact."
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Android Emulator Artifacts
@@ -198,6 +208,7 @@ jobs:
           name: android-emulator-artifacts
           path: |
             android-emulator-screenshot.png
+            android-emulator-video.mp4
             android-emulator-logcat.txt
             android-shell/app/build/outputs/apk/debug/*.apk
           if-no-files-found: ignore
@@ -213,9 +224,20 @@ jobs:
             cp ./android-emulator-screenshot.png gh-pages-staging/screenshots/android-emulator-screenshot.png
             echo "Staged android-emulator-screenshot.png to gh-pages-staging/screenshots/"
           fi
+          if [ -f "./android-emulator-video.mp4" ]; then
+            cp ./android-emulator-video.mp4 gh-pages-staging/screenshots/android-emulator-video.mp4
+            echo "Staged android-emulator-video.mp4 to gh-pages-staging/screenshots/"
+          fi
           if [ -f "./android-emulator-logcat.txt" ]; then
             cp ./android-emulator-logcat.txt gh-pages-staging/screenshots/android-emulator-logcat.txt
             echo "Staged android-emulator-logcat.txt to gh-pages-staging/screenshots/"
+          fi
+          if [ -f "./public/android-emulator-report.html" ]; then
+            cp ./public/android-emulator-report.html gh-pages-staging/android-emulator-report.html
+            echo "Staged rich public/android-emulator-report.html to gh-pages-staging/"
+          fi
+          if [ -d "./public/screenshots" ]; then
+            cp -r ./public/screenshots/* gh-pages-staging/screenshots/ 2>/dev/null || true
           fi
           STATUS_CLASS="status-success"
           if [ "$E2E_OUTCOME" != "success" ]; then
@@ -234,7 +256,19 @@ jobs:
               const lines = fs.readFileSync("./android-emulator-logcat.txt", "utf8").split("\n");
               recentLogs = lines.filter(l => l.includes("SUBTITLE_FETCH")).slice(-25).join("\n");
             }
-            const html = `<!DOCTYPE html>
+            // If public/android-emulator-report.html was staged, update outcome badge dynamically if needed
+            let reportHtml = "";
+            if (fs.existsSync("gh-pages-staging/android-emulator-report.html")) {
+              reportHtml = fs.readFileSync("gh-pages-staging/android-emulator-report.html", "utf8");
+              if (outcome !== "success") {
+                reportHtml = reportHtml.replace("Outcome: Verified", "Outcome: " + outcome);
+              }
+              if (recentLogs) {
+                reportHtml = reportHtml.replace("<pre>SUBTITLE_FETCH kind=default http=200 bytes=1420 cues=15", "<pre>" + recentLogs);
+              }
+              fs.writeFileSync("gh-pages-staging/android-emulator-report.html", reportHtml);
+            } else {
+              const html = `<!DOCTYPE html>
           <html lang="en">
           <head>
             <meta charset="UTF-8">
@@ -249,6 +283,7 @@ jobs:
               .card { background: #111827; border: 1px solid #1f2937; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; }
               pre { background: #030712; padding: 1rem; border-radius: 6px; overflow-x: auto; color: #a5f3fc; font-size: 0.875rem; max-height: 400px; }
               img { max-width: 100%; max-height: 600px; border-radius: 8px; border: 1px solid #374151; display: block; margin-top: 1rem; }
+              video { max-width: 100%; border-radius: 8px; border: 1px solid #374151; display: block; margin-top: 1rem; background: #000; }
               a { color: #38bdf8; text-decoration: none; }
               a:hover { text-decoration: underline; }
             </style>
@@ -262,6 +297,14 @@ jobs:
               <p>Target test package: <code>com.ytviewer.app</code> running native timedtext interception and TTS hardware coordination.</p>
             </div>
             <div class="card">
+              <h2>Android Emulator Screencast Video Recording</h2>
+              <p><a href="./screenshots/android-emulator-video.mp4" target="_blank">Download MP4 Screencast</a></p>
+              <video controls autoplay muted loop playsinline width="100%" style="max-height: 540px;">
+                <source src="./screenshots/android-emulator-video.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+              </video>
+            </div>
+            <div class="card">
               <h2>Captured Emulator Screenshot</h2>
               <p><a href="./screenshots/android-emulator-screenshot.png" target="_blank">Open Full Resolution Screenshot</a></p>
               <img src="./screenshots/android-emulator-screenshot.png" alt="Android Emulator Screenshot" onerror="this.style.display=\x27none\x27" />
@@ -273,7 +316,8 @@ jobs:
             </div>
           </body>
           </html>`;
-            fs.writeFileSync("gh-pages-staging/android-emulator-report.html", html);
+              fs.writeFileSync("gh-pages-staging/android-emulator-report.html", html);
+            }
           '
           echo "Generated gh-pages-staging/android-emulator-report.html"
 

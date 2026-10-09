@@ -79,6 +79,35 @@ if command -v adb &> /dev/null; then
     echo "--> Capturing foreground activity state..."
     adb shell dumpsys activity "${PACKAGE_NAME}" | grep -E "mResumed|topResumedActivity|ActivityRecord" | head -n 10 || true
 
+    # Start screencast recording in the background on the emulator
+    RECORDING_PID=""
+    VIDEO_REMOTE="/sdcard/android-emulator-video.mp4"
+    VIDEO_OUT="${ROOT_DIR}/android-emulator-video.mp4"
+    echo "--> Starting Android emulator screencast recording via screenrecord..."
+    adb shell rm -f "${VIDEO_REMOTE}" 2>/dev/null || true
+    adb shell screenrecord --time-limit 180 --bit-rate 4000000 "${VIDEO_REMOTE}" >/dev/null 2>&1 &
+    RECORDING_PID=$!
+    echo "  screenrecord started (runner background PID: ${RECORDING_PID})"
+
+    stop_recording_and_pull() {
+      echo "--> Stopping screencast recording and pulling video..."
+      if [[ -n "${RECORDING_PID}" ]] && kill -0 "${RECORDING_PID}" 2>/dev/null; then
+        # Send SIGINT to adb screenrecord process so it finalizes MP4 container
+        adb shell pkill -2 -f "screenrecord" 2>/dev/null || true
+        wait "${RECORDING_PID}" 2>/dev/null || true
+        sleep 2
+      fi
+      adb pull "${VIDEO_REMOTE}" "${VIDEO_OUT}" 2>/dev/null || true
+      if [[ -f "${VIDEO_OUT}" ]]; then
+        echo "✓ Video screencast pulled to: ${VIDEO_OUT}"
+        mkdir -p "${ROOT_DIR}/public/screenshots"
+        cp -f "${VIDEO_OUT}" "${ROOT_DIR}/public/screenshots/android-emulator-video.mp4" 2>/dev/null || true
+      else
+        echo "ℹ️ No video file retrieved from emulator."
+      fi
+    }
+    trap stop_recording_and_pull EXIT
+
     echo "--> Capturing device screenshot..."
     adb shell screencap -p /sdcard/android_test_screen.png
     adb pull /sdcard/android_test_screen.png "${SCREENSHOT_OUT}" || true
@@ -92,6 +121,8 @@ if command -v adb &> /dev/null; then
     echo "=================================================================="
     echo "✓ Android device/emulator E2E run complete!"
     echo "=================================================================="
+    stop_recording_and_pull
+    trap - EXIT
   else
     echo "❌ No active Android device/emulator detected via adb."
     exit 1

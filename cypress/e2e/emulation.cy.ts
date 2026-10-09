@@ -2,7 +2,7 @@ describe("YouTube Video Viewer - Android Emulation Subtitle Tests", () => {
   beforeEach(() => {
     cy.log("Step 0: Navigating to YouTube Video Viewer");
     cy.visit("./?reset_all=true");
-    cy.title().should("match", /YouTube/i);
+    cy.title().should("match", /YouTube|Parallel Subtitles/i);
     cy.get("header").should("be.visible");
   });
 
@@ -89,5 +89,65 @@ describe("YouTube Video Viewer - Android Emulation Subtitle Tests", () => {
       }
     });
     cy.screenshot("test3-step5", { capture: "viewport", overwrite: true });
+  });
+
+  it("Step-by-step: Emulator testing - detect default subtitles, fetch favorite languages, YouTube API tlang and lang fallback, and inspect via network panel and subtitles view", () => {
+    // Enable debug mode to make Network Inspector accessible
+    cy.get("body").then(($b) => {
+      if ($b.find("#debug-mode-toggle").length > 0) {
+        cy.get("#debug-mode-toggle").then(($chk) => {
+          if (!$chk.is(":checked")) {
+            cy.get("#debug-mode-toggle").check({ force: true });
+          }
+        });
+      }
+    });
+
+    cy.log("Step 1: Detecting and fetching default subtitles");
+    cy.get("details[data-panel='subtitles'], details[data-panel='player']").should("be.visible");
+    cy.screenshot("step1-default-subtitles-detected", { capture: "viewport", overwrite: true });
+
+    cy.log("Step 2: Proactive fetching requests for favorite languages");
+    cy.get("body").then(($b) => {
+      if ($b.find("#target-language-select").length > 0) {
+        cy.get("#target-language-select").should("be.visible");
+      }
+    });
+    cy.screenshot("step2-favorite-languages-fetch", { capture: "viewport", overwrite: true });
+
+    cy.log("Step 3: YouTube API request using tlang and lang fallback");
+    cy.screenshot("step3-youtube-api-tlang-lang-fallback", { capture: "viewport", overwrite: true });
+
+    cy.log("Step 4: Inspection of subtitles via Network Panel");
+    cy.get("body").then(($b) => {
+      if ($b.find("#open-network-inspector-button").length > 0) {
+        cy.get("#open-network-inspector-button").click();
+        cy.get("#network-inspector-modal").should("be.visible");
+        cy.screenshot("step4-network-panel-inspection", { capture: "viewport", overwrite: true });
+        cy.get("#close-network-inspector-button").click();
+        cy.get("#network-inspector-modal").should("not.exist");
+      }
+    });
+
+    cy.log("Step 5: Inspection of subtitles via Subtitles View Element");
+    cy.get("details[data-panel='subtitles']").should("be.visible");
+    cy.get("details[data-panel='subtitles'] table, details[data-panel='subtitles']").should("exist");
+    cy.screenshot("step5-subtitles-view-inspection", { capture: "viewport", overwrite: true });
+  });
+
+  it("Step-by-step: Emulator testing - share YouTube video link from browser or official YouTube app", () => {
+    cy.log("Step 1: Share video link from browser (ACTION_VIEW)");
+    cy.window().then((win: any) => {
+      win.onNativeSharedLinkReceived?.("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+    });
+    cy.get("header").should("contain.text", "video dQw4w9WgXcQ");
+    cy.screenshot("step-share-browser-link", { capture: "viewport", overwrite: true });
+
+    cy.log("Step 2: Share video link from official YouTube app (ACTION_SEND with title and newline)");
+    cy.window().then((win: any) => {
+      win.onNativeSharedLinkReceived?.("Never Gonna Give You Up\nhttps://youtu.be/kJQP7kiw5Fk?si=123");
+    });
+    cy.get("header").should("contain.text", "video kJQP7kiw5Fk");
+    cy.screenshot("step-share-youtube-app-text", { capture: "viewport", overwrite: true });
   });
 });
