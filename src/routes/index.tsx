@@ -721,6 +721,7 @@ function Index() {
     const openLink = (link: string) => {
       const id = parseVideoId(link);
       if (id) {
+        console.log("[SHARED_LINK_DISPATCH]", id, link);
         setVideoId((prevId) => {
           if (id !== prevId) {
             setTracks(null);

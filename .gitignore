@@ -73,6 +73,8 @@ screenshots/
 *.webm
 android-emulator-video.mp4
 public/screenshots/android-emulator-video.mp4
+android-emulator-device-info.json
+public/screenshots/android-emulator-device-info.json
 
 # Editor directories and files
 .vscode/*

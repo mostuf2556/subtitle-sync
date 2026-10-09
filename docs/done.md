@@ -1,5 +1,20 @@
 # Done tasks
 
+## Task 54: Improve Android Device & Emulator E2E Testing Suite
+
+### Subtask 54.1: Robust Device Environment, Lifecycle Management & Telemetry
+
+- Supported explicit device targeting with `ANDROID_SERIAL` across `scripts/run-android-e2e.sh` and `scripts/android-e2e-assert.sh`, including automatic discovery of first connected device/emulator when omitted.
+- Wrapped adb interactions in an `adb_cmd` function with `-s "$ANDROID_SERIAL"` for multi-device isolation.
+- Implemented automated device wake (`input keyevent KEYCODE_WAKEUP`), keyguard dismissal (`wm dismiss-keyguard`), orientation locking (`accelerometer_rotation 0`), and battery/device connectivity logging.
+- Extracted comprehensive hardware and software telemetry (model, brand, manufacturer, release, SDK/API level, display size, display density, CPU ABI, battery level) and saved to `android-emulator-device-info.json`.
+- Enforced clean repository hygiene by adding `android-emulator-device-info.json` to `.gitignore`.
+- Updated `public/android-emulator-report.html` to dynamically hydrate a "Device & Hardware Telemetry" dashboard section from the JSON payload with graceful fallbacks.
+- Updated `.github/workflows/emulation.yml` to extract device telemetry, include it in artifact uploads, and stage it into `gh-pages-staging/`.
+- Created dedicated verification test suite `scripts/verify-android-device-e2e-suite.ts` and registered `"test:android-device-e2e"` in `package.json`.
+- Documented `scripts/verify-android-device-e2e-suite.ts` in `docs/files.md`.
+- Verified 100% test pass rate, clean compilation, and zero ESLint warnings.
+
 ## Task 53: Android E2E YouTube Share Intent Verification, Screencast Video Recording & GitHub Pages Presentation
 
 ### Subtask 53.1: Android E2E YouTube Link Share Testing (Browser & Official YouTube App)

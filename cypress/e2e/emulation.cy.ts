@@ -150,4 +150,19 @@ describe("YouTube Video Viewer - Android Emulation Subtitle Tests", () => {
     cy.get("header").should("contain.text", "video kJQP7kiw5Fk");
     cy.screenshot("step-share-youtube-app-text", { capture: "viewport", overwrite: true });
   });
+
+  it("Device parity: adaptive viewport interactions and shared intent switching", () => {
+    cy.log("Step 1: Set physical device profile viewport (Pixel 7 / 412x915)");
+    cy.viewport(412, 915);
+
+    cy.log("Step 2: Share YouTube Shorts link via native intent bridge");
+    cy.window().then((win: any) => {
+      win.onNativeSharedLinkReceived?.("https://www.youtube.com/shorts/s8h8W2Lz9H4");
+    });
+    cy.get("header").should("contain.text", "video s8h8W2Lz9H4");
+
+    cy.log("Step 3: Perform adaptive scroll gesture on subtitle section");
+    cy.get("details[data-panel='subtitles']").scrollTo("bottom", { ensureScrollable: false });
+  });
 });
+

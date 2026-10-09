@@ -34,7 +34,7 @@ assert(
   "scripts/run-android-e2e.sh must invoke 'adb shell screenrecord'",
 );
 assert(
-  runShContent.includes("adb pull") && runShContent.includes("android-emulator-video.mp4"),
+  (runShContent.includes("adb pull") || runShContent.includes("adb_cmd pull")) && runShContent.includes("android-emulator-video.mp4"),
   "scripts/run-android-e2e.sh must pull android-emulator-video.mp4 from emulator",
 );
 assert(

@@ -15,3 +15,17 @@
   - Pull and stage `android-emulator-video.mp4` as a workflow artifact and onto the `gh-pages` branch (`screenshots/android-emulator-video.mp4`), keeping the video ephemeral and ignored on the `main` branch as required by AGENTS.md.
   - Update `public/android-emulator-report.html` to embed and present the screencast video player (`<video controls autoplay muted loop>`) alongside the test steps, captured screenshots, Mochawesome report, Playwright report, and logcat telemetry.
   - Create dedicated verification suite `scripts/verify-emulator-screencast-report.ts`, register in `package.json`, and update `docs/files.md`.
+
+## Task 54: Improve Android Device & Emulator E2E Testing Suite
+
+- [x] **Subtask 54.1: Robust Device Environment, Lifecycle Management & Telemetry**:
+  - Add explicit device serial selection (`adb -s <serial>`) to ensure stability across both physical hardware devices and emulators.
+  - Implement screen wake, keyguard dismissal (`wm dismiss-keyguard`), device orientation locking, and battery/network health checks before test execution.
+  - Collect rich hardware and system telemetry (Manufacturer, Model, Android Version, API Level, Display Resolution, Density, Architecture) and include it in the test summary and `public/android-emulator-report.html`.
+  - Add dedicated verification suite `scripts/verify-android-device-e2e-suite.ts` and register `test:android-device-e2e` in `package.json`.
+
+- [ ] **Subtask 54.2: Adaptive Device Interaction, Live Intent Assertions & Multi-Scenario Video Capture**:
+  - Add adaptive coordinate scaling based on device display resolution for gestures and taps.
+  - Implement real device live intent dispatch (`ACTION_VIEW` and `ACTION_SEND`) with verification of UI response in `scripts/android-e2e-assert.sh`.
+  - Ensure video screencast recording and screenshot generation dynamically handle physical device screens and rotation gracefully.
+  - Update `e2e/emulation.spec.ts` and Cypress emulation tests to reflect physical device and emulator parity.

@@ -151,6 +151,31 @@ jobs:
           disable-animations: true
           script: |
             adb devices
+            adb shell input keyevent KEYCODE_WAKEUP 2>/dev/null || true
+            adb shell wm dismiss-keyguard 2>/dev/null || true
+            adb shell settings put system accelerometer_rotation 0 2>/dev/null || true
+            DEVICE_MODEL=$(adb shell getprop ro.product.model 2>/dev/null || echo "Android Device")
+            DEVICE_MANUFACTURER=$(adb shell getprop ro.product.manufacturer 2>/dev/null || echo "Google")
+            DEVICE_BRAND=$(adb shell getprop ro.product.brand 2>/dev/null || echo "google")
+            DEVICE_API=$(adb shell getprop ro.build.version.sdk 2>/dev/null || echo "34")
+            DEVICE_RELEASE=$(adb shell getprop ro.build.version.release 2>/dev/null || echo "14")
+            DEVICE_ABI=$(adb shell getprop ro.product.cpu.abi 2>/dev/null || echo "arm64-v8a")
+            DEVICE_RESOLUTION=$(adb shell wm size 2>/dev/null | grep -oE '[0-9]+x[0-9]+' | head -n 1 || echo "1080x2400")
+            DEVICE_DENSITY=$(adb shell wm density 2>/dev/null | grep -oE '[0-9]+' | head -n 1 || echo "420")
+            cat <<EOF > android-emulator-device-info.json
+            {
+              "serial": "emulator-5554",
+              "manufacturer": "${DEVICE_MANUFACTURER}",
+              "brand": "${DEVICE_BRAND}",
+              "model": "${DEVICE_MODEL}",
+              "androidVersion": "${DEVICE_RELEASE}",
+              "apiLevel": "${DEVICE_API}",
+              "abi": "${DEVICE_ABI}",
+              "resolution": "${DEVICE_RESOLUTION}",
+              "density": "${DEVICE_DENSITY}",
+              "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+            }
+            EOF
             adb install -r android-shell/app/build/outputs/apk/debug/app-debug.apk
             adb shell pm clear com.ytviewer.app
             adb shell rm -f /sdcard/android-emulator-video.mp4 2>/dev/null || true
@@ -210,6 +235,7 @@ jobs:
             android-emulator-screenshot.png
             android-emulator-video.mp4
             android-emulator-logcat.txt
+            android-emulator-device-info.json
             android-shell/app/build/outputs/apk/debug/*.apk
           if-no-files-found: ignore
           retention-days: 14
@@ -231,6 +257,11 @@ jobs:
           if [ -f "./android-emulator-logcat.txt" ]; then
             cp ./android-emulator-logcat.txt gh-pages-staging/screenshots/android-emulator-logcat.txt
             echo "Staged android-emulator-logcat.txt to gh-pages-staging/screenshots/"
+          fi
+          if [ -f "./android-emulator-device-info.json" ]; then
+            cp ./android-emulator-device-info.json gh-pages-staging/screenshots/android-emulator-device-info.json
+            cp ./android-emulator-device-info.json gh-pages-staging/android-emulator-device-info.json
+            echo "Staged android-emulator-device-info.json to gh-pages-staging/"
           fi
           if [ -f "./public/android-emulator-report.html" ]; then
             cp ./public/android-emulator-report.html gh-pages-staging/android-emulator-report.html

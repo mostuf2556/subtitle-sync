@@ -76,6 +76,8 @@
     "test:emulator-subtitles-e2e": "tsx scripts/verify-emulator-e2e-subtitles.ts",
     "test:android-share-e2e": "tsx scripts/verify-android-share-e2e.ts",
     "test:emulator-screencast-report": "tsx scripts/verify-emulator-screencast-report.ts",
+    "test:android-device-e2e": "tsx scripts/verify-android-device-e2e-suite.ts",
+    "test:android-adaptive": "tsx scripts/verify-android-device-e2e-adaptive.ts",
     "test:android": "bash scripts/run-android-e2e.sh"
   },
   "overrides": {

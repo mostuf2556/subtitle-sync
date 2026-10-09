@@ -233,4 +233,40 @@ test.describe("Android native subtitle emulation", () => {
     await expect(page.locator("header")).toContainText("video kJQP7kiw5Fk");
     await page.screenshot({ path: "cypress/screenshots/step-share-youtube-app-text.png", fullPage: false }).catch(() => {});
   });
+
+  test("device parity: adaptive touch gestures and shared intent switching across physical screen profiles", async ({
+    page,
+  }) => {
+    // Test adaptive mobile viewport (e.g. 412x915 Pixel 7 / physical device profile)
+    await page.setViewportSize({ width: 412, height: 915 });
+    await deliverDefaultCaptions(page);
+
+    // Verify adaptive player tap (50% horizontal, 22% vertical)
+    const viewport = page.viewportSize();
+    expect(viewport).toBeDefined();
+    if (viewport) {
+      const tapX = Math.round(viewport.width * 0.5);
+      const tapY = Math.round(viewport.height * 0.22);
+      await page.mouse.click(tapX, tapY);
+    }
+
+    // Verify live intent dispatch with query parameters and shorts
+    await page.evaluate(() => {
+      const win = window as typeof window & { onNativeSharedLinkReceived?: (link: string) => void };
+      win.onNativeSharedLinkReceived?.("https://www.youtube.com/shorts/s8h8W2Lz9H4");
+    });
+    await expect(page.locator("header")).toContainText("video s8h8W2Lz9H4");
+
+    // Perform adaptive vertical swipe gesture (simulating transcript scroll)
+    if (viewport) {
+      const swipeX = Math.round(viewport.width * 0.5);
+      const swipeStartY = Math.round(viewport.height * 0.75);
+      const swipeEndY = Math.round(viewport.height * 0.35);
+      await page.mouse.move(swipeX, swipeStartY);
+      await page.mouse.down();
+      await page.mouse.move(swipeX, swipeEndY, { steps: 5 });
+      await page.mouse.up();
+    }
+  });
 });
+
