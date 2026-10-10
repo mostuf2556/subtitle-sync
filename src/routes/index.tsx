@@ -76,6 +76,7 @@ import { notifySubtitleFetch } from "@/utils/subtitleNotificationManager";
 import { getApkReleaseLinks } from "@/utils/apkUpdater";
 import { isValidJsonSubtitleResponse } from "@/utils/subtitleCache";
 import { STORAGE_KEYS } from "@/config/appConfig";
+import { APP_VERSION, ALL_RELEASES_URL } from "@/config/constants";
 import { JSON3_RAW_MAP } from "../../test/fixtures/L2Ryrr6txwA/jsonStrings";
 
 const DEMO_VIDEO = "L2Ryrr6txwA";
@@ -1224,8 +1225,19 @@ function Index() {
         className="flex flex-wrap items-center gap-4 border-b border-border px-6 py-4"
         data-app-hydrated={isHydrated ? "true" : undefined}
       >
-        <div className="mr-auto flex items-baseline gap-4">
+        <div className="mr-auto flex flex-wrap items-baseline gap-3">
           <h1 className="font-display text-2xl">Parallel Subtitles</h1>
+          <a
+            href={ALL_RELEASES_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="app-version-badge"
+            title="View all releases on GitHub"
+            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-mono font-medium border border-border bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted transition"
+          >
+            <span>v{APP_VERSION}</span>
+            <ExternalLink className="h-3 w-3" />
+          </a>
           <span className="text-sm text-muted-foreground">
             video {videoId} · {rows.length} sections ·{" "}
             {isAndroid ? "live Android captions" : "fixture demo"}
@@ -2357,6 +2369,31 @@ function Index() {
           }
         }}
       />
+      <footer className="mt-8 border-t border-border px-6 py-4 flex flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <span>Parallel Subtitles</span>
+          <a
+            href={ALL_RELEASES_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="footer-all-releases-link"
+            className="font-mono font-semibold text-primary hover:underline inline-flex items-center gap-1"
+            title="View all releases on GitHub"
+          >
+            <span>v{APP_VERSION}</span>
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        </div>
+        <a
+          href={ALL_RELEASES_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-testid="footer-view-all-releases"
+          className="hover:text-foreground transition underline underline-offset-2"
+        >
+          All Releases & Changelog
+        </a>
+      </footer>
     </div>
   );
 }

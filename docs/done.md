@@ -1,5 +1,26 @@
 # Done tasks
 
+## Task 48: Fix APK Version Collision, Update Script Robustness & In-App Version Display with Releases Link
+
+### Subtask 48.1: Robust APK Installation & Version Code Handling in Update Script
+
+- Enhanced section 5 (uninstall) of `update.apk.sh` with multi-user uninstallation commands (`pm uninstall --user 0`, `pm uninstall`, and `pm clear`) to prevent stale package fragments or conflicting signatures across Android profiles.
+- Enhanced section 6 (install) of `update.apk.sh` to actively intercept `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, `INSTALL_FAILED_VERSION_DOWNGRADE`, `INSTALL_FAILED_CONFLICTING_PROVIDER`, and related collision error codes, executing an emergency deep purge and automated retry.
+- Updated repository defaults to `ofer-shaham` with automatic fallback to `mostuf2556`.
+- Added `"version": "1.0.0"` to `package.json` and verified Gradle version propagation.
+- Added link to All Releases page (`https://github.com/ofer-shaham/subtitle-sync/releases`) under CLI install instructions in `README.md`.
+- Created dedicated verification test `scripts/verify-apk-updater-robustness.ts` (`npm run test:apk-updater-robustness`).
+- Registered `test:apk-updater-robustness` in `package.json` and documented in `docs/files.md`.
+
+### Subtask 48.2: In-App Version Display with Link to All Releases Page
+
+- Displayed app version (`v1.0.0`) in the header next to the title with an interactive link to the GitHub All Releases page (`https://github.com/ofer-shaham/subtitle-sync/releases`).
+- Added a responsive footer in `src/routes/index.tsx` displaying the version tag and a direct link to `All Releases & Changelog`.
+- Updated `src/components/ApkReleaseModal.tsx` so the current version text in the modal header and a dedicated button in the modal footer navigate to the All Releases page.
+- Exported `APP_VERSION`, `GITHUB_REPOSITORY`, and `ALL_RELEASES_URL` in `src/config/constants.ts` and synced with `src/utils/apkUpdater.ts`.
+- Created dedicated verification test `scripts/verify-apk-version-and-releases.ts` (`npm run test:apk-version-and-releases`).
+- Registered `test:apk-version-and-releases` in `package.json` and documented in `docs/files.md`.
+
 ## Task 47: Fix README.md Links, CI Workflows & GitHub Pages Staging for Forked Repositories
 
 ### Subtask 47.1: Synchronize README.md Links & Static Fallbacks for Current and Forked Repositories

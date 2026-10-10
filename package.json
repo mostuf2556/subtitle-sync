@@ -64,6 +64,7 @@
     "test:fork-readme-links": "tsx scripts/verify-fork-readme-links.ts",
     "test:fork-ci-workflows": "tsx scripts/verify-fork-ci-workflows.ts",
     "test:apk-updater-robustness": "tsx scripts/verify-apk-updater-robustness.ts",
+    "test:apk-version-and-releases": "tsx scripts/verify-apk-version-and-releases.ts",
     "test:android": "bash scripts/run-android-e2e.sh"
   },
   "overrides": {

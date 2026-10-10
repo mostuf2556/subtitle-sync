@@ -2,13 +2,13 @@
 
 ## Task 48: Fix APK Version Collision, Update Script Robustness & In-App Version Display with Releases Link
 
-- [ ] **Subtask 48.1: Robust APK Installation & Version Code Handling in Update Script**:
+- [x] **Subtask 48.1: Robust APK Installation & Version Code Handling in Update Script**:
   - Update `update.apk.sh` to handle package collisions (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`, `INSTALL_FAILED_VERSION_DOWNGRADE`, `INSTALL_FAILED_CONFLICTING_PROVIDER`), performing deep purge (`pm uninstall`, `pm uninstall --user 0`, `pm clear`) and retrying cleanly.
   - Ensure `package.json` defines a standard `"version"` field and `release-apk.yml` correctly propagates version code and version name.
-  - In `README.md`, ensure the APK section links to the all releases page (`https://github.com/mostuf2556/subtitle-sync/releases`).
-- [ ] **Subtask 48.2: In-App Version Display with Link to All Releases Page**:
+  - In `README.md`, ensure the APK section links to the all releases page (`https://github.com/ofer-shaham/subtitle-sync/releases`).
+- [x] **Subtask 48.2: In-App Version Display with Link to All Releases Page**:
   - Display the application version in the UI.
-  - Link the version directly to the GitHub All Releases page (`https://github.com/mostuf2556/subtitle-sync/releases`).
+  - Link the version directly to the GitHub All Releases page (`https://github.com/ofer-shaham/subtitle-sync/releases`).
   - Add dedicated test `scripts/verify-apk-version-and-releases.ts` and verify.
 
 ## Task 47: Fix README.md Links, CI Workflows & GitHub Pages Staging for Forked Repositories

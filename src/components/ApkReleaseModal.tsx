@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import {
   CURRENT_APK_VERSION,
+  ALL_RELEASES_URL,
   getActiveAppVersion,
   getApkReleaseLinks,
   type ApkReleaseLink,
@@ -63,9 +64,16 @@ export const ApkReleaseModal: React.FC<ApkReleaseModalProps> = ({ isOpen, onClos
               </h2>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Current App Version:{" "}
-                <span className="font-mono font-semibold text-foreground">
+                <a
+                  href={ALL_RELEASES_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="modal-app-version-link"
+                  className="font-mono font-semibold text-primary hover:underline"
+                  title="View all releases on GitHub"
+                >
                   {activeVersion || CURRENT_APK_VERSION}
-                </span>
+                </a>
               </p>
             </div>
           </div>
@@ -191,8 +199,17 @@ export const ApkReleaseModal: React.FC<ApkReleaseModalProps> = ({ isOpen, onClos
         </div>
 
         {/* Footer info */}
-        <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border">
-          <span>Both repositories build and release synchronized APK artifacts.</span>
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground pt-2 border-t border-border">
+          <a
+            href={ALL_RELEASES_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="all-releases-page-link"
+            className="flex items-center gap-1.5 text-primary hover:underline font-medium"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            <span>Open All Releases Page on GitHub</span>
+          </a>
           <button
             type="button"
             onClick={onClose}

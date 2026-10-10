@@ -5,6 +5,10 @@
 
 export const ON_DEMAND_FALLBACK_COUNT = 4;
 
+export const APP_VERSION = "1.0.0";
+export const GITHUB_REPOSITORY = "ofer-shaham/subtitle-sync";
+export const ALL_RELEASES_URL = "https://github.com/ofer-shaham/subtitle-sync/releases";
+
 export const SUPPORTED_TARGET_LANGUAGES = [
   { code: "en", name: "English", color: "#3b82f6" },
   { code: "es", name: "Spanish (Español)", color: "#ef4444" },

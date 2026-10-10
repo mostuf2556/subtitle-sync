@@ -47,30 +47,33 @@ export interface ArtifactUpdateProgress {
   tagName?: string;
 }
 
-export const CURRENT_APK_VERSION = "v1.0.13";
-export const REPO_OWNERS = ["mostuf2556", "mostuf25561"] as const;
+export const CURRENT_APK_VERSION = "v1.0.0";
+export const ALL_RELEASES_URL = "https://github.com/ofer-shaham/subtitle-sync/releases";
+export const REPO_OWNERS = ["ofer-shaham", "mostuf2556", "mostuf25561"] as const;
 export type RepoOwner = (typeof REPO_OWNERS)[number];
 
-export const DEFAULT_REPO = "mostuf2556/subtitle-sync";
-export const FALLBACK_REPO = "mostuf25561/subtitle-sync";
+export const DEFAULT_REPO = "ofer-shaham/subtitle-sync";
+export const FALLBACK_REPO = "mostuf2556/subtitle-sync";
 
 export interface ApkReleaseLink {
   owner: string;
   repo: string;
   releaseUrl: string;
+  allReleasesUrl: string;
   downloadUrl: string;
   otaBundleUrl: string;
   cliInstallCommand: string;
 }
 
 /**
- * Returns latest APK and release links for both repository owners (mostuf2556, mostuf25561)
+ * Returns latest APK and release links for all repository owners
  */
 export function getApkReleaseLinks(): ApkReleaseLink[] {
   return REPO_OWNERS.map((owner) => ({
     owner,
     repo: `${owner}/subtitle-sync`,
     releaseUrl: `https://github.com/${owner}/subtitle-sync/releases/latest`,
+    allReleasesUrl: `https://github.com/${owner}/subtitle-sync/releases`,
     downloadUrl: `https://github.com/${owner}/subtitle-sync/releases/latest/download/YouTube-Viewer-debug.apk`,
     otaBundleUrl: `https://github.com/${owner}/subtitle-sync/releases/latest/download/web-dist.zip`,
     cliInstallCommand: `curl -fsSL https://raw.githubusercontent.com/${owner}/subtitle-sync/main/update.apk.sh | bash -s -- "https://github.com/${owner}/subtitle-sync/releases/latest/download/YouTube-Viewer-debug.apk"`,
