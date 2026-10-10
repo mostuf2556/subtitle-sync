@@ -140,9 +140,11 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                         val rawBodyString = String(rawBodyBytes, StandardCharsets.UTF_8)
                         val contentType = response.header("Content-Type", "text/xml; charset=utf-8") ?: "text/xml"
                         val requestKind = if (android.net.Uri.parse(url).getQueryParameter("tlang").isNullOrBlank()) "default" else "translated"
+                        val targetLang = android.net.Uri.parse(url).getQueryParameter("tlang") ?: android.net.Uri.parse(url).getQueryParameter("lang")
+                        val langSuffix = if (requestKind == "translated" && !targetLang.isNullOrBlank()) " lang=$targetLang" else ""
 
                         Log.i(TAG, "Received ${rawBodyBytes.size} bytes of raw caption data.")
-                        Log.i(TAG, "SUBTITLE_FETCH kind=$requestKind http=${response.code} bytes=${rawBodyBytes.size} cues=${countCaptionCues(rawBodyString)}")
+                        Log.i(TAG, "SUBTITLE_FETCH kind=$requestKind$langSuffix http=${response.code} bytes=${rawBodyBytes.size} cues=${countCaptionCues(rawBodyString)}")
 
                         // 1. Save raw caption to device storage ONLY if it is valid JSON
                         if (isValidJsonSubtitle(rawBodyString)) {
@@ -192,16 +194,17 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                         )
                         return WebResourceResponse(mimeType, "UTF-8", 200, "OK", headers, inputStream)
                     } catch (e: Exception) {
-                        Log.w(TAG, "Asset not found ($assetPath): ${e.message}")
                         // Fallback 1: if it's an extensionless SPA route or starts with app/, serve index.html
                         if (!assetPath.contains(".") || assetPath.startsWith("app/")) {
                             try {
                                 val indexStream = assets.open("index.html")
                                 return WebResourceResponse("text/html", "UTF-8", 200, "OK", mapOf("Access-Control-Allow-Origin" to "*"), indexStream)
-                            } catch (_: Exception) {}
+                            } catch (ignored: Exception) {}
                         }
                         val loaderResponse = assetLoader.shouldInterceptRequest(request!!.url)
                         if (loaderResponse != null) return loaderResponse
+
+                        Log.w(TAG, "Local asset unavailable ($assetPath): ${e.message}")
 
                         // If assets are completely missing from the build, show an authentic local offline error
                         val offlineHtml = """
@@ -276,7 +279,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         // Extract shared link/deep link text from intent to pass directly as a query parameter
         val sharedText = extractSharedText(intent)
         val querySuffix = buildQuerySuffix(sharedText)
-        val initialVideoId = extractYouTubeVideoId(sharedText) ?: "vBURridJXZ0"
 
         // Load the application exclusively from local bundled web assets
         Log.i(TAG, "Loading local offline web assets from https://$LOCAL_ASSET_DOMAIN/index.html$querySuffix")
@@ -284,9 +286,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         // Handle any shared intent that opened the app
         handleSharedIntent(intent)
-
-        // Proactively detect and present subtitles in realtime for the target video
-        proactiveDetectSubtitles(initialVideoId)
 
         // Handle Android hardware/gesture back navigation
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
@@ -342,31 +341,27 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         setIntent(intent)
-        handleSharedIntent(intent)
-        
-        // If app is already active, immediately navigate the WebView to the incoming video URL
+
         val sharedText = extractSharedText(intent)
         if (!sharedText.isNullOrBlank()) {
             val querySuffix = buildQuerySuffix(sharedText)
             Log.i(TAG, "Navigating to shared URL via local asset domain: https://$LOCAL_ASSET_DOMAIN/index.html$querySuffix")
             val target = extractYouTubeVideoId(sharedText) ?: sharedText
-            val targetVideoId = extractYouTubeVideoId(sharedText) ?: "vBURridJXZ0"
-            proactiveDetectSubtitles(targetVideoId)
             val jsCode = """
                 (function() {
                     var link = ${JSONObject.quote(target)};
-                    if (window.onNativeSharedLinkReceived) {
+                    if (typeof window.onNativeSharedLinkReceived === 'function') {
                         window.onNativeSharedLinkReceived(link);
+                        return "handled";
                     } else {
                         window.__pendingSharedLink = link;
-                        window.location.href = "https://$LOCAL_ASSET_DOMAIN/index.html$querySuffix";
+                        return "pending";
                     }
                 })();
             """.trimIndent()
-            webView.evaluateJavascript(jsCode) { res ->
-                if (res == null || res == "null") {
-                    webView.loadUrl("https://$LOCAL_ASSET_DOMAIN/index.html$querySuffix")
-                }
+            webView.evaluateJavascript(jsCode) { result ->
+                val cleanResult = result?.replace("\"", "")?.trim()
+                Log.i(TAG, "Shared link dispatch result: $cleanResult (target: $target)")
             }
         }
     }
@@ -410,9 +405,14 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun buildQuerySuffix(rawText: String?): String {
-        if (rawText.isNullOrBlank()) return "?v=vBURridJXZ0&android=true"
-        val videoId = extractYouTubeVideoId(rawText) ?: "vBURridJXZ0"
-        return "?v=$videoId&url=" + android.net.Uri.encode(rawText) + "&android=true"
+        if (rawText.isNullOrBlank() || rawText.trim() == "null" || rawText.trim() == "undefined") {
+            return ""
+        }
+        val videoId = extractYouTubeVideoId(rawText)
+        return when {
+            !videoId.isNullOrBlank() -> "?v=$videoId&android=true"
+            else -> "?url=" + android.net.Uri.encode(rawText) + "&android=true"
+        }
     }
 
     private fun handleSharedIntent(intent: Intent?) {
@@ -455,7 +455,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                     false
                 }
             }
-        } catch (_: Exception) {
+        } catch (ignored: Exception) {
             false
         }
     }
@@ -467,7 +467,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             return
         }
         try {
-            val dir = File(getExternalFilesDir(null), "youtube_captions")
+            val targetBaseDir = getExternalFilesDir(null) ?: filesDir
+            val dir = File(targetBaseDir, "youtube_captions")
             if (!dir.exists()) dir.mkdirs()
             val filename = "caption_${System.currentTimeMillis()}.json"
             val file = File(dir, filename)
@@ -489,7 +490,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                     }
                 }
             }
-        } catch (_: Exception) {
+        } catch (ignored: Exception) {
         }
         return Regex("<text\\b[^>]*>(.*?)</text>", RegexOption.DOT_MATCHES_ALL)
             .findAll(rawData)
@@ -558,7 +559,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 put("wireMagic", "pb3")
                 put("events", events)
             }.toString()
-        } catch (_: Exception) {
+        } catch (ignored: Exception) {
             ""
         }
     }
@@ -650,18 +651,18 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun proactiveDetectSubtitles(videoId: String) {
+        if (videoId.isBlank()) return
         Thread {
             try {
                 Thread.sleep(1200)
                 if (lastObservedTimedTextUrl != null) return@Thread
 
                 val testUrls = listOf(
-                    "https://www.youtube.com/api/timedtext?v=$videoId&lang=he&fmt=json3",
+                    "https://www.youtube.com/api/timedtext?v=$videoId&fmt=json3",
                     "https://www.youtube.com/api/timedtext?v=$videoId&lang=en&fmt=json3",
-                    "https://www.youtube.com/api/timedtext?v=$videoId&lang=he&fmt=srv3"
+                    "https://www.youtube.com/api/timedtext?v=$videoId&lang=es&fmt=json3"
                 )
 
-                var found = false
                 for (url in testUrls) {
                     try {
                         val req = Request.Builder()
@@ -680,21 +681,10 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                                 Log.i(TAG, "SUBTITLE_FETCH kind=default http=200 bytes=${bytes.size} cues=${countCaptionCues(json3)}")
                                 saveCaptionToFile(url, bytes)
                                 dispatchToJavaScript(url, json3, "application/json", 200)
-                                found = true
                                 break
                             }
                         }
-                    } catch (_: Exception) {}
-                }
-
-                if (!found && lastObservedTimedTextUrl == null) {
-                    val fallback = generateDefaultSubtitlesJson(videoId)
-                    val url = "https://www.youtube.com/api/timedtext?v=$videoId&lang=he&fmt=json3"
-                    val bytes = fallback.toByteArray(StandardCharsets.UTF_8)
-                    lastObservedTimedTextUrl = url
-                    Log.i(TAG, "SUBTITLE_FETCH kind=default http=200 bytes=${bytes.size} cues=${countCaptionCues(fallback)}")
-                    saveCaptionToFile(url, bytes)
-                    dispatchToJavaScript(url, fallback, "application/json", 200)
+                    } catch (ignored: Exception) {}
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "proactiveDetectSubtitles failed: ${e.message}")

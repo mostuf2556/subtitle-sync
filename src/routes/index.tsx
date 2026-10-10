@@ -2548,11 +2548,17 @@ function Index() {
                             data-testid={`tts-settings-card-${lang.code}`}
                             className="grid grid-cols-[4.5rem_1fr] items-center gap-x-2 gap-y-1 rounded-md border border-border/60 px-2 py-1.5 text-xs sm:grid-cols-[6rem_auto_1fr_minmax(0,12rem)]"
                           >
-                            <span className="truncate font-semibold text-foreground" title={lang.name}>
+                            <span
+                              className="truncate font-semibold text-foreground"
+                              title={lang.name}
+                            >
                               {lang.name}
                             </span>
                             {/* Speech ratio: speak 1 of every N sections */}
-                            <label className="flex items-center gap-1" title="Speak 1 of every N sections (comprehension level)">
+                            <label
+                              className="flex items-center gap-1"
+                              title="Speak 1 of every N sections (comprehension level)"
+                            >
                               <span className="text-muted-foreground">Speak</span>
                               <select
                                 aria-label={`${lang.name} TTS sentence ratio`}
@@ -2562,17 +2568,25 @@ function Index() {
                                   const val = Math.max(1, Math.min(10, Number(e.target.value)));
                                   setTtsRatios((curr) => ({ ...curr, [lang.code]: val }));
                                   saveTtsRatioPreference(lang.code, val);
-                                  if (videoId) saveVideoSettings(videoId, { ttsRatios: { [lang.code]: val } });
+                                  if (videoId)
+                                    saveVideoSettings(videoId, { ttsRatios: { [lang.code]: val } });
                                 }}
                                 className="rounded border border-input bg-background px-1 py-0.5"
                               >
                                 {[1, 2, 3, 4, 5, 7, 10].map((n) => (
-                                  <option key={n} value={n} data-testid={`tts-ratio-preset-${lang.code}-${n}`}>
+                                  <option
+                                    key={n}
+                                    value={n}
+                                    data-testid={`tts-ratio-preset-${lang.code}-${n}`}
+                                  >
                                     1:{n}
                                   </option>
                                 ))}
                               </select>
-                              <span data-testid={`tts-ratio-label-${lang.code}`} className="sr-only">
+                              <span
+                                data-testid={`tts-ratio-label-${lang.code}`}
+                                className="sr-only"
+                              >
                                 1:{ratio} ({Math.round(100 / ratio)}% of sentences)
                               </span>
                             </label>
@@ -2586,7 +2600,10 @@ function Index() {
                                 step={0.1}
                                 value={rates[lang.code] ?? 1}
                                 onChange={(e) =>
-                                  setRates((current) => ({ ...current, [lang.code]: Number(e.target.value) }))
+                                  setRates((current) => ({
+                                    ...current,
+                                    [lang.code]: Number(e.target.value),
+                                  }))
                                 }
                                 className="h-1.5 min-w-0 flex-1 cursor-pointer accent-primary"
                               />
@@ -2602,7 +2619,10 @@ function Index() {
                                 setVoiceSelections((current) => {
                                   const next = { ...current, [lang.code]: value };
                                   try {
-                                    localStorage.setItem("yt_tts_voice_selections_v1", JSON.stringify(next));
+                                    localStorage.setItem(
+                                      "yt_tts_voice_selections_v1",
+                                      JSON.stringify(next),
+                                    );
                                   } catch {
                                     // ignore storage errors
                                   }
@@ -2610,14 +2630,21 @@ function Index() {
                                 });
                               }}
                               disabled={languageVoices.length === 0}
-                              title={languageVoices.length === 0 ? "No selectable voices on this device; the device default voice is used" : "Voice"}
+                              title={
+                                languageVoices.length === 0
+                                  ? "No selectable voices on this device; the device default voice is used"
+                                  : "Voice"
+                              }
                               className="col-span-2 min-w-0 rounded border border-input bg-background px-1 py-0.5 disabled:opacity-60 sm:col-span-1"
                             >
                               <option value="">
                                 {languageVoices.length === 0 ? "Device voice" : "Default voice"}
                               </option>
                               {languageVoices.map((voice, voiceIndex) => (
-                                <option key={getUniqueVoiceKey(voice, voiceIndex)} value={voice.voiceURI}>
+                                <option
+                                  key={getUniqueVoiceKey(voice, voiceIndex)}
+                                  value={voice.voiceURI}
+                                >
                                   {voice.name}
                                 </option>
                               ))}

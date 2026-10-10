@@ -1,5 +1,28 @@
 # Done tasks
 
+## Task 61: Resolve Android App Runtime Failure After Commit Group 420d2bd-b92be574
+
+### Subtask 61.1: Ensure Clean Asset Synchronization, Gradle Asset Build Integrity & Android Shell Runtime Stability
+
+- Synchronized bundled web assets in `android-shell/app/src/main/assets/` directly with current production build outputs (`dist/`), preventing missing hash chunk errors and 404s in the WebView.
+- Fixed code formatting and linting errors across `src/lib/playback-preferences.ts` and `src/routes/index.tsx` introduced by recent UI commits.
+- Verified Android WebView asset interception and fallback mechanisms in `MainActivity.kt` cleanly serve bundled JS/CSS chunks with correct MIME types without logging premature errors.
+- Validated that all compact accordion headers, pin toggles, and TTS voice selection features initialize safely without throwing runtime errors.
+- Created dedicated verification test `scripts/verify-android-app-run-parity.ts` (`npm run test:android-run-parity`), registered in `package.json`, and documented in `docs/files.md`.
+- Verified 100% test pass rate across all suites, clean app compilation (`compile_applet`), and zero ESLint errors (`lint_applet`).
+
+## Task 60: Fix Android App Loading Failure & Restore Robust Android Shell Execution
+
+### Subtask 60.1: Fix Kotlin Compilation Syntax Errors, Clean Query Suffix Handling & Restore Clean Android App Loading
+
+- Replaced invalid `catch (_: Exception)` with valid `catch (ignored: Exception)` across `MainActivity.kt`, fixing Kotlin 1.9 compiler failure.
+- Fixed `buildQuerySuffix` and intent handling to cleanly load local assets `index.html` without corrupt query combinations (`"null"`, `"undefined"`) or unnecessary whole-page reloads on `onNewIntent`.
+- Fixed `onNewIntent` to seamlessly dispatch incoming video IDs via `window.onNativeSharedLinkReceived` or buffer in `window.__pendingSharedLink` without destructive `window.location.href` or `loadUrl` reloads.
+- Removed premature hardcoded Hebrew fallback and subtitle injection from `proactiveDetectSubtitles` and `onCreate`, ensuring `lastObservedTimedTextUrl` is never corrupted and subtitles always strictly match the active video.
+- Removed premature `Asset not found` error logging in `shouldInterceptRequest` before attempting extensionless SPA route and `assetLoader` fallbacks.
+- Created dedicated verification test `scripts/verify-android-app-loading.ts` (`npm run test:android-loading`), registered in `package.json`, and documented in `docs/files.md`.
+- Verified 100% test pass rate across all suites, clean app compilation (`compile_applet`), and zero ESLint errors (`lint_applet`).
+
 ## Task 58: Auto-Enable "Speak" Checkbox on Favorites Language Panel Upon Subtitle Fetching
 
 ### Subtask 58.1: Auto-check "Speak" checkbox when favorite language subtitles are fetched and remove pronouncing language name

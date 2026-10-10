@@ -92,3 +92,23 @@
 - [ ] 59.4 Remove the iframe player option.
 - [ ] 59.5 Library record: "Clear cache" and "Fetch from scratch" buttons.
 - [ ] 59.6 Removing a favorite language removes all related instances (columns, speech, players, cached state).
+
+## Task 60: Fix Android App Loading Failure & Restore Robust Android Shell Execution
+
+- [x] **Subtask 60.1: Fix Kotlin Compilation Syntax Errors, Clean Query Suffix Handling & Restore Clean Android App Loading**:
+  - Replace illegal `catch (_: Exception)` syntax with valid `catch (e: Exception)` / `catch (ignored: Exception)` across `MainActivity.kt` to fix Kotlin 1.9 compiler failure.
+  - Fix `buildQuerySuffix` and intent handling to cleanly load local assets `index.html` without corrupt query combinations or unnecessary whole-page reloads on `onNewIntent`.
+  - Fix `onNewIntent` to prevent unintended `webView.loadUrl` reloads when `evaluateJavascript` returns null.
+  - Ensure proactive subtitle detection does not overwrite `lastObservedTimedTextUrl` with hardcoded Hebrew or inject mismatched captions on video load.
+  - Create dedicated verification test `scripts/verify-android-app-loading.ts` and register `npm run test:android-loading` in `package.json`.
+  - Verify app compilation, linting, run tests, and perform git commit.
+
+## Task 61: Resolve Android App Runtime Failure After Commit Group 420d2bd-b92be574
+
+- [x] **Subtask 61.1: Ensure Clean Asset Synchronization, Gradle Asset Build Integrity & Android Shell Runtime Stability**:
+  - Synchronize bundled web assets in `android-shell/app/src/main/assets/` directly with current production build outputs (`dist/`), preventing missing hash chunk errors.
+  - Fix `android-shell/app/build.gradle.kts` `prepareWebAssets` task to always refresh bundled assets instead of skipping when stale `index.html` exists.
+  - Verify Android WebView asset interception in `MainActivity.kt` serves bundled JS/CSS chunks reliably with correct MIME types and headers.
+  - Validate that all UI features added in commit group `420d2bd-b92be574` (compact accordion headers, pin toggles, TTS voice selections) initialize safely without browser/WebView runtime errors.
+  - Create dedicated verification test `scripts/verify-android-app-run-parity.ts` and register `npm run test:android-run-parity` in `package.json`.
+  - Verify app compilation, linting, run tests, and perform git commit.

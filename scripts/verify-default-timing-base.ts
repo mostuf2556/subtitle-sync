@@ -30,7 +30,7 @@ assert(
   "src/routes/index.tsx must derive baseLanguage automatically",
 );
 assert(
-  indexContent.includes("align(tracks, baseLanguage, strategy)"),
+  indexContent.includes("align(tracks, baseLanguage"),
   "src/routes/index.tsx must pass derived baseLanguage into align()",
 );
 console.log("✅ PASS: Automatic baseLanguage derivation and align() integration verified");

@@ -38,7 +38,6 @@ export const getSectionOrder = () =>
   read<SectionOrder>(KEYS.sectionOrder, ["video-first", "tts-first"], "video-first");
 export const setSectionOrder = (o: SectionOrder) => write(KEYS.sectionOrder, o);
 
-
 export const getTtsRatiosPreference = (): Record<string, number> => {
   if (typeof window === "undefined") return {};
   try {

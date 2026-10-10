@@ -38,6 +38,8 @@
     "test:android-subtitles": "tsx scripts/verify-android-favorite-subtitles.ts",
     "test:emulation-gh-pages": "tsx scripts/verify-emulation-gh-pages.ts",
     "test:local-assets": "tsx scripts/verify-android-local-assets.ts",
+    "test:android-loading": "tsx scripts/verify-android-app-loading.ts",
+    "test:android-run-parity": "tsx scripts/verify-android-app-run-parity.ts",
     "test:favorite-dynamic-fetch": "tsx scripts/verify-favorite-lang-dynamic-fetch.ts",
     "test:subtitle-toast": "tsx scripts/verify-subtitle-toast.ts",
     "test:network-inspector": "tsx scripts/verify-network-inspector.ts",
