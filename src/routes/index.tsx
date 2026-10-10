@@ -74,20 +74,16 @@ import { VideoInstancesSwiper } from "@/components/VideoInstancesSwiper";
 import { FloatingDraggablePauseButton } from "@/components/FloatingDraggablePauseButton";
 import { trackNetworkRequest, useNetworkRequests } from "@/utils/networkTracker";
 import { NetworkRequestsInspector } from "@/components/NetworkRequestsInspector";
-import { createIframePlayer } from "@/lib/iframe-player";
 import {
-  getPlayerKind,
   getSectionOrder,
   getSubtitleRequestMode,
   getTtsRatiosPreference,
   isSubtitleInstanceEligibleForTTS,
   shouldHighlightSentenceForTTS,
-  setPlayerKind as savePlayerKind,
   setSectionOrder as saveSectionOrder,
   setSubtitleRequestMode as saveSubtitleRequestMode,
   setTtsRatioPreference as saveTtsRatioPreference,
   subtitleRequestModeOrder,
-  type PlayerKind,
   type SectionOrder,
   type SubtitleRequestMode,
 } from "@/lib/playback-preferences";
@@ -477,7 +473,6 @@ function Index() {
     // Load device-saved preferences after hydration
     setRequestModeState(getSubtitleRequestMode());
     setSectionOrderState(getSectionOrder());
-    setPlayerKindState(getPlayerKind());
   }, []);
   const requestModeRef = useRef(requestMode);
   requestModeRef.current = requestMode;
@@ -629,7 +624,6 @@ function Index() {
   const [isHydrated, setIsHydrated] = useState(false);
   const [pauseMode, setPauseMode] = useState(true);
   const [sectionOrder, setSectionOrderState] = useState<SectionOrder>("video-first");
-  const [playerKind, setPlayerKindState] = useState<PlayerKind>("youtube-api");
   const [audioTrackMode, setAudioTrackModeState] = useState(() =>
     typeof window !== "undefined" ? getAudioTrackMode() : false,
   );
@@ -1178,13 +1172,6 @@ function Index() {
       const host = document.createElement("div");
       host.className = "h-full w-full";
       playerEl.current.appendChild(host);
-      if (playerKind === "iframe") {
-        player.current = createIframePlayer(host, videoId, { autoplay: isAndroid });
-        if (player.current) {
-          multiVideoPlayerRegistry.register("primary", player.current);
-        }
-        return;
-      }
       if (!window.YT) return;
       player.current = new window.YT.Player(host, {
         videoId,
@@ -1206,7 +1193,7 @@ function Index() {
         multiVideoPlayerRegistry.register("primary", player.current);
       }
     };
-    if (playerKind === "iframe" || window.YT?.Player) init();
+    if (window.YT?.Player) init();
     else {
       window.onYouTubeIframeAPIReady = init;
       const s = document.createElement("script");
@@ -1376,7 +1363,7 @@ function Index() {
       player.current?.destroy?.();
       player.current = null;
     };
-  }, [videoId, isAndroid, playerKind]);
+  }, [videoId, isAndroid]);
 
   // Mount and manage dedicated video player instances for each language with speak/audio enabled
   useEffect(() => {
@@ -1390,9 +1377,7 @@ function Index() {
         child.className = "h-full w-full";
         host.appendChild(child);
         let secPlayer: YTPlayerLike | null = null;
-        if (playerKind === "iframe") {
-          secPlayer = createIframePlayer(child, videoId, { autoplay: false });
-        } else if (window.YT?.Player) {
+        if (window.YT?.Player) {
           secPlayer = new window.YT.Player(child, {
             videoId,
             playerVars: {
@@ -1418,7 +1403,7 @@ function Index() {
         }
       }
     }
-  }, [audioTrackMode, videoInstances, videoId, playerKind]);
+  }, [audioTrackMode, videoInstances, videoId]);
 
   // Keep swiper active index synced to active speaking language when repeating with audio track
   useEffect(() => {
@@ -1874,22 +1859,6 @@ function Index() {
                     >
                       <option value="video-first">Video, then speech</option>
                       <option value="tts-first">Speech, then video</option>
-                    </select>
-                  </label>
-                  <label className="flex flex-wrap items-center gap-2">
-                    <span>Player:</span>
-                    <select
-                      data-testid="player-kind-select"
-                      value={playerKind}
-                      onChange={(e) => {
-                        const v = e.target.value as PlayerKind;
-                        setPlayerKindState(v);
-                        savePlayerKind(v);
-                      }}
-                      className="rounded-md border border-input bg-background px-2 py-1"
-                    >
-                      <option value="youtube-api">YouTube player</option>
-                      <option value="iframe">Plain iframe (controlled by messages)</option>
                     </select>
                   </label>
                   {isAndroid && (
