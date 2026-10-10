@@ -83,3 +83,12 @@
 
 
 
+
+## Task 59: Compact panels, auto-fold, correct per-video captions, cache controls, favorites cleanup
+
+- [ ] 59.1 Compact per-language settings (rate/voice) and fix voice selection.
+- [ ] 59.2 Accordions auto-fold after a timeout unless pinned.
+- [ ] 59.3 Subtitles always belong to the current video (no fixture/stale captions on Android or other videos).
+- [ ] 59.4 Remove the iframe player option.
+- [ ] 59.5 Library record: "Clear cache" and "Fetch from scratch" buttons.
+- [ ] 59.6 Removing a favorite language removes all related instances (columns, speech, players, cached state).
