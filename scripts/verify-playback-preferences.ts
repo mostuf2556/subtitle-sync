@@ -29,15 +29,9 @@ assert(
 );
 assert(index.includes('st.current.sectionOrder === "tts-first"'), "speech-first section order");
 assert(index.includes('data-testid="section-order-select"'), "section order setting");
-assert(index.includes('data-testid="player-kind-select"'), "player kind setting");
-assert(index.includes("createIframePlayer(host, videoId"), "plain iframe player");
+assert(!index.includes("createIframePlayer"), "iframe player option removed");
+assert(!fs.existsSync("src/lib/iframe-player.ts"), "iframe player module removed");
 
-const iframe = fs.readFileSync("src/lib/iframe-player.ts", "utf8");
-assert(iframe.includes("enablejsapi"), "iframe uses control messages");
-assert(
-  iframe.includes('post("seekTo"') && iframe.includes('post("pauseVideo")'),
-  "commands sent to the same iframe",
-);
 console.log("✅ PASS: section order, player kind and iframe control");
 
 const net = fs.readFileSync("src/components/NetworkRequestsInspector.tsx", "utf8");

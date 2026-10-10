@@ -2,12 +2,10 @@
 
 export type SubtitleRequestMode = "tlang" | "lang";
 export type SectionOrder = "video-first" | "tts-first";
-export type PlayerKind = "youtube-api" | "iframe";
 
 const KEYS = {
   requestMode: "yt_subtitle_request_mode_v1",
   sectionOrder: "yt_section_order_v1",
-  playerKind: "yt_player_kind_v1",
   ttsRatios: "yt_tts_ratios_v1",
 } as const;
 
@@ -40,9 +38,6 @@ export const getSectionOrder = () =>
   read<SectionOrder>(KEYS.sectionOrder, ["video-first", "tts-first"], "video-first");
 export const setSectionOrder = (o: SectionOrder) => write(KEYS.sectionOrder, o);
 
-export const getPlayerKind = () =>
-  read<PlayerKind>(KEYS.playerKind, ["youtube-api", "iframe"], "youtube-api");
-export const setPlayerKind = (k: PlayerKind) => write(KEYS.playerKind, k);
 
 export const getTtsRatiosPreference = (): Record<string, number> => {
   if (typeof window === "undefined") return {};

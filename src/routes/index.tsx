@@ -74,20 +74,16 @@ import { VideoInstancesSwiper } from "@/components/VideoInstancesSwiper";
 import { FloatingDraggablePauseButton } from "@/components/FloatingDraggablePauseButton";
 import { trackNetworkRequest, useNetworkRequests } from "@/utils/networkTracker";
 import { NetworkRequestsInspector } from "@/components/NetworkRequestsInspector";
-import { createIframePlayer } from "@/lib/iframe-player";
 import {
-  getPlayerKind,
   getSectionOrder,
   getSubtitleRequestMode,
   getTtsRatiosPreference,
   isSubtitleInstanceEligibleForTTS,
   shouldHighlightSentenceForTTS,
-  setPlayerKind as savePlayerKind,
   setSectionOrder as saveSectionOrder,
   setSubtitleRequestMode as saveSubtitleRequestMode,
   setTtsRatioPreference as saveTtsRatioPreference,
   subtitleRequestModeOrder,
-  type PlayerKind,
   type SectionOrder,
   type SubtitleRequestMode,
 } from "@/lib/playback-preferences";
@@ -98,7 +94,7 @@ import { recordVideoWatch } from "@/utils/videoLibraryManager";
 import { notifySubtitleFetch } from "@/utils/subtitleNotificationManager";
 import { getApkReleaseLinks } from "@/utils/apkUpdater";
 import { isValidJsonSubtitleResponse } from "@/utils/subtitleCache";
-import { STORAGE_KEYS, APP_VERSION, ALL_RELEASES_URL } from "@/config/appConfig";
+import { STORAGE_KEYS, APP_VERSION, ALL_RELEASES_URL, DEFAULT_VIDEO_ID } from "@/config/appConfig";
 import { JSON3_RAW_MAP } from "../../test/fixtures/L2Ryrr6txwA/jsonStrings";
 
 const DEMO_VIDEO = "L2Ryrr6txwA";
@@ -204,7 +200,11 @@ function speak(
   return new Promise<void>((res) => {
     if (!text) return res();
 
-    if (typeof window !== "undefined" && window.AndroidNativeShell?.speak) {
+    const chosenVoice =
+      voiceURI && typeof window !== "undefined" && "speechSynthesis" in window
+        ? window.speechSynthesis.getVoices?.().find((x) => x.voiceURI === voiceURI)
+        : undefined;
+    if (!chosenVoice && typeof window !== "undefined" && window.AndroidNativeShell?.speak) {
       try {
         const handled = window.AndroidNativeShell.speak(text, lang, rate, `row-${row}-${lang}`);
         if (handled) {
@@ -449,6 +449,14 @@ function Index() {
     Object.fromEntries(LANGS.map((lang) => [lang.code, 1])),
   );
   const [voiceSelections, setVoiceSelections] = useState<Record<string, string>>({});
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("yt_tts_voice_selections_v1") || "{}");
+      if (saved && typeof saved === "object") setVoiceSelections(saved);
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
 
   const baseLanguage = useMemo(() => {
     if (observedUrl) {
@@ -477,7 +485,6 @@ function Index() {
     // Load device-saved preferences after hydration
     setRequestModeState(getSubtitleRequestMode());
     setSectionOrderState(getSectionOrder());
-    setPlayerKindState(getPlayerKind());
   }, []);
   const requestModeRef = useRef(requestMode);
   requestModeRef.current = requestMode;
@@ -629,7 +636,6 @@ function Index() {
   const [isHydrated, setIsHydrated] = useState(false);
   const [pauseMode, setPauseMode] = useState(true);
   const [sectionOrder, setSectionOrderState] = useState<SectionOrder>("video-first");
-  const [playerKind, setPlayerKindState] = useState<PlayerKind>("youtube-api");
   const [audioTrackMode, setAudioTrackModeState] = useState(() =>
     typeof window !== "undefined" ? getAudioTrackMode() : false,
   );
@@ -1026,7 +1032,10 @@ function Index() {
   }, []);
 
   useEffect(() => {
-    if (isAndroid) return;
+    // Fixtures exist only for the demo video and only in the web demo. Never load them
+    // on Android (the bridge may be detected after first render) or for any other video.
+    if (isAndroid || nativeShell() || videoId !== DEMO_VIDEO) return;
+    let cancelled = false;
     Promise.all(
       LANGS.map(async (l) => {
         const fixtureUrl = getFixturesUrl(DEMO_VIDEO, l.code);
@@ -1060,6 +1069,7 @@ function Index() {
         }
       }),
     ).then((entries) => {
+      if (cancelled || nativeShell()) return;
       const validEntries = entries.filter(
         (entry): entry is readonly [string, Json3] => entry !== null,
       );
@@ -1070,7 +1080,10 @@ function Index() {
         setShown((prev) => (prev.length === 0 ? Object.keys(newTracks) : prev));
       });
     });
-  }, [isAndroid]);
+    return () => {
+      cancelled = true;
+    };
+  }, [isAndroid, videoId]);
 
   const rows = useMemo<Row[]>(
     () =>
@@ -1171,13 +1184,6 @@ function Index() {
       const host = document.createElement("div");
       host.className = "h-full w-full";
       playerEl.current.appendChild(host);
-      if (playerKind === "iframe") {
-        player.current = createIframePlayer(host, videoId, { autoplay: isAndroid });
-        if (player.current) {
-          multiVideoPlayerRegistry.register("primary", player.current);
-        }
-        return;
-      }
       if (!window.YT) return;
       player.current = new window.YT.Player(host, {
         videoId,
@@ -1199,7 +1205,7 @@ function Index() {
         multiVideoPlayerRegistry.register("primary", player.current);
       }
     };
-    if (playerKind === "iframe" || window.YT?.Player) init();
+    if (window.YT?.Player) init();
     else {
       window.onYouTubeIframeAPIReady = init;
       const s = document.createElement("script");
@@ -1369,7 +1375,7 @@ function Index() {
       player.current?.destroy?.();
       player.current = null;
     };
-  }, [videoId, isAndroid, playerKind]);
+  }, [videoId, isAndroid]);
 
   // Mount and manage dedicated video player instances for each language with speak/audio enabled
   useEffect(() => {
@@ -1383,9 +1389,7 @@ function Index() {
         child.className = "h-full w-full";
         host.appendChild(child);
         let secPlayer: YTPlayerLike | null = null;
-        if (playerKind === "iframe") {
-          secPlayer = createIframePlayer(child, videoId, { autoplay: false });
-        } else if (window.YT?.Player) {
+        if (window.YT?.Player) {
           secPlayer = new window.YT.Player(child, {
             videoId,
             playerVars: {
@@ -1397,7 +1401,7 @@ function Index() {
             events: {
               onReady: () => {
                 try {
-                  secPlayer.mute?.();
+                  secPlayer?.mute?.();
                 } catch {
                   // ignore
                 }
@@ -1411,7 +1415,7 @@ function Index() {
         }
       }
     }
-  }, [audioTrackMode, videoInstances, videoId, playerKind]);
+  }, [audioTrackMode, videoInstances, videoId]);
 
   // Keep swiper active index synced to active speaking language when repeating with audio track
   useEffect(() => {
@@ -1867,22 +1871,6 @@ function Index() {
                     >
                       <option value="video-first">Video, then speech</option>
                       <option value="tts-first">Speech, then video</option>
-                    </select>
-                  </label>
-                  <label className="flex flex-wrap items-center gap-2">
-                    <span>Player:</span>
-                    <select
-                      data-testid="player-kind-select"
-                      value={playerKind}
-                      onChange={(e) => {
-                        const v = e.target.value as PlayerKind;
-                        setPlayerKindState(v);
-                        savePlayerKind(v);
-                      }}
-                      className="rounded-md border border-input bg-background px-2 py-1"
-                    >
-                      <option value="youtube-api">YouTube player</option>
-                      <option value="iframe">Plain iframe (controlled by messages)</option>
                     </select>
                   </label>
                   {isAndroid && (
@@ -2546,7 +2534,7 @@ function Index() {
                       })}
                     </tbody>
                   </table>
-                  <div className="mt-4 space-y-4 border-t border-border pt-3">
+                  <div className="mt-2 space-y-1 border-t border-border pt-2">
                     {orderedLangs
                       .filter((lang) => spoken.includes(lang.code))
                       .map((lang) => {
@@ -2556,140 +2544,38 @@ function Index() {
                           <div
                             key={lang.code}
                             data-testid={`tts-settings-card-${lang.code}`}
-                            className="space-y-2.5 rounded-lg border border-border/60 bg-muted/20 p-3"
+                            className="grid grid-cols-[4.5rem_1fr] items-center gap-x-2 gap-y-1 rounded-md border border-border/60 px-2 py-1.5 text-xs sm:grid-cols-[6rem_auto_1fr_minmax(0,12rem)]"
                           >
-                            <div className="flex items-center justify-between">
-                              <span className="font-semibold text-sm text-foreground">
-                                {lang.name}
-                              </span>
-                              <div className="flex items-center gap-2">
-                                <span
-                                  data-testid={`tts-ratio-summary-${lang.code}`}
-                                  className="text-xs px-2 py-0.5 rounded font-mono font-medium bg-primary/10 text-primary border border-primary/20"
-                                >
-                                  Ratio 1:{ratio}
-                                </span>
-                                <span className="tabular-nums text-xs text-muted-foreground">
-                                  {(rates[lang.code] ?? 1).toFixed(1)}×
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Foreign Subtitles TTS Playback Ratio / Language Level */}
-                            <div className="space-y-2 rounded-md bg-background/80 p-2.5 border border-border/50">
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="font-medium text-foreground">
-                                  Foreign Subtitle TTS Ratio (Comprehension Level)
-                                </span>
-                                <span
-                                  data-testid={`tts-ratio-label-${lang.code}`}
-                                  className="font-mono text-primary font-semibold text-xs"
-                                >
-                                  1:{ratio} (
-                                  {ratio === 1
-                                    ? "100% • All sentences"
-                                    : `${Math.round(100 / ratio)}% of sentences`}
-                                  )
-                                </span>
-                              </div>
-                              <p className="text-[11px] text-muted-foreground leading-normal">
-                                Adjust video-to-TTS ratio based on your {lang.name} level. Plays
-                                speech for 1 out of every {ratio} sentence{ratio > 1 ? "s" : ""} so
-                                you can listen to the video with periodic speech.
-                              </p>
-
-                              {/* Quick Level Presets */}
-                              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                                <span className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground mr-1">
-                                  Level:
-                                </span>
-                                {[
-                                  {
-                                    label: "Advanced (1:1)",
-                                    value: 1,
-                                    title: "Hear every sentence (100% - advanced)",
-                                  },
-                                  {
-                                    label: "Proficient (1:2)",
-                                    value: 2,
-                                    title: "Hear 1 in 2 sentences (50%)",
-                                  },
-                                  {
-                                    label: "Intermediate (1:4)",
-                                    value: 4,
-                                    title: "Hear 1 in 4 sentences (25%)",
-                                  },
-                                  {
-                                    label: "Beginner (1:7)",
-                                    value: 7,
-                                    title: "Hear 1 sentence per every 7 sentences (beginner)",
-                                  },
-                                ].map((preset) => (
-                                  <button
-                                    key={preset.value}
-                                    type="button"
-                                    data-testid={`tts-ratio-preset-${lang.code}-${preset.value}`}
-                                    onClick={() => {
-                                      setTtsRatios((curr) => ({
-                                        ...curr,
-                                        [lang.code]: preset.value,
-                                      }));
-                                      saveTtsRatioPreference(lang.code, preset.value);
-                                      if (videoId) {
-                                        saveVideoSettings(videoId, {
-                                          ttsRatios: { [lang.code]: preset.value },
-                                        });
-                                      }
-                                    }}
-                                    className={`px-2 py-0.5 text-[11px] rounded transition-colors ${
-                                      ratio === preset.value
-                                        ? "bg-primary text-primary-foreground font-semibold shadow-xs"
-                                        : "bg-muted hover:bg-muted/80 text-muted-foreground"
-                                    }`}
-                                    title={preset.title}
-                                  >
-                                    {preset.label}
-                                  </button>
+                            <span className="truncate font-semibold text-foreground" title={lang.name}>
+                              {lang.name}
+                            </span>
+                            {/* Speech ratio: speak 1 of every N sections */}
+                            <label className="flex items-center gap-1" title="Speak 1 of every N sections (comprehension level)">
+                              <span className="text-muted-foreground">Speak</span>
+                              <select
+                                aria-label={`${lang.name} TTS sentence ratio`}
+                                data-testid={`tts-ratio-slider-${lang.code}`}
+                                value={ratio}
+                                onChange={(e) => {
+                                  const val = Math.max(1, Math.min(10, Number(e.target.value)));
+                                  setTtsRatios((curr) => ({ ...curr, [lang.code]: val }));
+                                  saveTtsRatioPreference(lang.code, val);
+                                  if (videoId) saveVideoSettings(videoId, { ttsRatios: { [lang.code]: val } });
+                                }}
+                                className="rounded border border-input bg-background px-1 py-0.5"
+                              >
+                                {[1, 2, 3, 4, 5, 7, 10].map((n) => (
+                                  <option key={n} value={n} data-testid={`tts-ratio-preset-${lang.code}-${n}`}>
+                                    1:{n}
+                                  </option>
                                 ))}
-                              </div>
-
-                              <div className="flex items-center gap-2 pt-1">
-                                <input
-                                  aria-label={`${lang.name} TTS sentence ratio`}
-                                  data-testid={`tts-ratio-slider-${lang.code}`}
-                                  type="range"
-                                  min={1}
-                                  max={10}
-                                  step={1}
-                                  value={ratio}
-                                  onChange={(e) => {
-                                    const val = Math.max(1, Math.min(10, Number(e.target.value)));
-                                    setTtsRatios((curr) => ({ ...curr, [lang.code]: val }));
-                                    saveTtsRatioPreference(lang.code, val);
-                                    if (videoId) {
-                                      saveVideoSettings(videoId, {
-                                        ttsRatios: { [lang.code]: val },
-                                      });
-                                    }
-                                  }}
-                                  className="w-full h-1.5 cursor-pointer accent-primary"
-                                />
-                                <span className="text-xs font-mono font-medium tabular-nums text-muted-foreground w-8 text-right">
-                                  1:{ratio}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Speech rate slider */}
-                            <div className="space-y-1 pt-0.5">
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-muted-foreground font-medium">
-                                  Speech rate
-                                </span>
-                                <span className="tabular-nums font-mono text-muted-foreground">
-                                  {(rates[lang.code] ?? 1).toFixed(1)}×
-                                </span>
-                              </div>
+                              </select>
+                              <span data-testid={`tts-ratio-label-${lang.code}`} className="sr-only">
+                                1:{ratio} ({Math.round(100 / ratio)}% of sentences)
+                              </span>
+                            </label>
+                            <label className="col-span-2 flex items-center gap-1.5 sm:col-span-1">
+                              <span className="text-muted-foreground">Rate</span>
                               <input
                                 aria-label={`${lang.name} speech rate`}
                                 type="range"
@@ -2698,42 +2584,42 @@ function Index() {
                                 step={0.1}
                                 value={rates[lang.code] ?? 1}
                                 onChange={(e) =>
-                                  setRates((current) => ({
-                                    ...current,
-                                    [lang.code]: Number(e.target.value),
-                                  }))
+                                  setRates((current) => ({ ...current, [lang.code]: Number(e.target.value) }))
                                 }
-                                className="w-full h-1.5 cursor-pointer"
+                                className="h-1.5 min-w-0 flex-1 cursor-pointer accent-primary"
                               />
-                            </div>
-
-                            {/* Voice selector */}
-                            <div className="space-y-1">
-                              <label className="text-xs text-muted-foreground font-medium">
-                                Voice
-                              </label>
-                              <select
-                                aria-label={`${lang.name} voice`}
-                                value={voiceSelections[lang.code] ?? ""}
-                                onChange={(e) =>
-                                  setVoiceSelections((current) => ({
-                                    ...current,
-                                    [lang.code]: e.target.value,
-                                  }))
-                                }
-                                className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-xs"
-                              >
-                                <option value="">Device default</option>
-                                {languageVoices.map((voice, voiceIndex) => (
-                                  <option
-                                    key={getUniqueVoiceKey(voice, voiceIndex)}
-                                    value={voice.voiceURI}
-                                  >
-                                    {voice.name}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
+                              <span className="w-8 text-right font-mono tabular-nums text-muted-foreground">
+                                {(rates[lang.code] ?? 1).toFixed(1)}×
+                              </span>
+                            </label>
+                            <select
+                              aria-label={`${lang.name} voice`}
+                              value={voiceSelections[lang.code] ?? ""}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                setVoiceSelections((current) => {
+                                  const next = { ...current, [lang.code]: value };
+                                  try {
+                                    localStorage.setItem("yt_tts_voice_selections_v1", JSON.stringify(next));
+                                  } catch {
+                                    // ignore storage errors
+                                  }
+                                  return next;
+                                });
+                              }}
+                              disabled={languageVoices.length === 0}
+                              title={languageVoices.length === 0 ? "No selectable voices on this device; the device default voice is used" : "Voice"}
+                              className="col-span-2 min-w-0 rounded border border-input bg-background px-1 py-0.5 disabled:opacity-60 sm:col-span-1"
+                            >
+                              <option value="">
+                                {languageVoices.length === 0 ? "Device voice" : "Default voice"}
+                              </option>
+                              {languageVoices.map((voice, voiceIndex) => (
+                                <option key={getUniqueVoiceKey(voice, voiceIndex)} value={voice.voiceURI}>
+                                  {voice.name}
+                                </option>
+                              ))}
+                            </select>
                           </div>
                         );
                       })}
@@ -3150,6 +3036,8 @@ function HighlightedSubtitle({
   );
 }
 
+const ACCORDION_AUTO_FOLD_MS = 30_000;
+
 function AccordionSection({
   id,
   title,
@@ -3180,6 +3068,33 @@ function AccordionSection({
     dotBg: "bg-neutral-500",
     tagColor: "neutral",
   };
+  // Auto-fold: an open, unpinned section folds after a period without interaction inside it.
+  const pinKey = `yt_accordion_pinned_${id}`;
+  const [pinned, setPinned] = React.useState(false);
+  React.useEffect(() => {
+    try {
+      setPinned(localStorage.getItem(pinKey) === "1");
+    } catch {
+      // ignore storage errors
+    }
+  }, [pinKey]);
+  const [activityTick, setActivityTick] = React.useState(0);
+  React.useEffect(() => {
+    if (!open || pinned) return;
+    const timer = window.setTimeout(() => onOpenChange(false), ACCORDION_AUTO_FOLD_MS);
+    return () => window.clearTimeout(timer);
+  }, [open, pinned, activityTick, onOpenChange]);
+  const markActivity = () => setActivityTick((t) => t + 1);
+  const togglePinned = () => {
+    setPinned((p) => {
+      try {
+        localStorage.setItem(pinKey, p ? "0" : "1");
+      } catch {
+        // ignore storage errors
+      }
+      return !p;
+    });
+  };
 
   return (
     <details
@@ -3188,12 +3103,15 @@ function AccordionSection({
       data-accordion-type={id}
       data-accordion-color={theme.tagColor}
       open={open}
+      onPointerDown={markActivity}
+      onKeyDown={markActivity}
+      onFocus={markActivity}
       onToggle={(event) => onOpenChange(event.currentTarget.open)}
       className={`overflow-hidden rounded-lg border border-border bg-card text-sm ${theme.borderLeft} ${wide ? "lg:col-span-2" : ""}`}
     >
       <summary
         data-testid={`accordion-bar-${id}`}
-        className={`flex cursor-pointer list-none items-center gap-2 px-4 py-3 marker:hidden transition-colors ${theme.summaryBg}`}
+        className={`flex cursor-pointer list-none items-center gap-1 px-3 py-1 marker:hidden transition-colors ${theme.summaryBg}`}
       >
         <ChevronDown
           aria-hidden="true"
@@ -3207,6 +3125,22 @@ function AccordionSection({
             aria-hidden="true"
           />
         </h2>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          data-testid={`accordion-pin-${id}`}
+          aria-pressed={pinned}
+          onClick={(event) => {
+            event.preventDefault();
+            togglePinned();
+          }}
+          aria-label={pinned ? `Unpin ${title} (allow auto-fold)` : `Pin ${title} open`}
+          title={pinned ? "Pinned: stays open" : "Pin to keep open (otherwise folds automatically)"}
+          className={pinned ? "text-primary" : "text-muted-foreground"}
+        >
+          {pinned ? <Pin aria-hidden="true" /> : <PinOff aria-hidden="true" />}
+        </Button>
         <Button
           type="button"
           variant="ghost"
@@ -3236,7 +3170,7 @@ function AccordionSection({
           <ChevronDown aria-hidden="true" />
         </Button>
       </summary>
-      <div className="border-t border-border p-4">{children}</div>
+      <div className="border-t border-border p-2 sm:p-3">{children}</div>
     </details>
   );
 }

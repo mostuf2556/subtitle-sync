@@ -78,25 +78,14 @@ export const LanguageVideoPlayerPanel: React.FC<LanguageVideoPlayerPanelProps> =
 
       const tracker = trackNetworkRequest(timedtextUrl, "GET", "fetch");
 
-      // Retrieve fixture or raw json if available
-      let rawJson = JSON3_RAW_MAP[langCode];
+      // Fixture subtitles exist only for the web demo video. Never inject them (or any
+      // placeholder text) for other videos or on Android, where live captions are used.
+      const isNative = typeof window !== "undefined" && Boolean((window as { AndroidNativeShell?: unknown }).AndroidNativeShell);
+      const rawJson = !isNative && videoId === "L2Ryrr6txwA" ? JSON3_RAW_MAP[langCode] : "";
       if (!rawJson) {
-        // Fallback realistic timedtext response
-        rawJson = JSON.stringify({
-          wireMagic: "pb3",
-          pens: [{}],
-          wsWinStyles: [{}],
-          wpWinPositions: [{}],
-          events: [
-            {
-              tStartMs: 1000,
-              dDurationMs: 4000,
-              segs: [{ utf8: `[${langName}] Subtitles for video ${videoId}` }],
-            },
-          ],
-        });
+        tracker.fail(isNative ? "Live captions are fetched by the main subtitles view" : "No demo subtitles for this video");
+        return;
       }
-
       const parsed = parseJson3(rawJson);
       tracker.complete(200, rawJson);
 
