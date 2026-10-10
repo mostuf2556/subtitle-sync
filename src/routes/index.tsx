@@ -98,7 +98,7 @@ import { recordVideoWatch } from "@/utils/videoLibraryManager";
 import { notifySubtitleFetch } from "@/utils/subtitleNotificationManager";
 import { getApkReleaseLinks } from "@/utils/apkUpdater";
 import { isValidJsonSubtitleResponse } from "@/utils/subtitleCache";
-import { STORAGE_KEYS, APP_VERSION, ALL_RELEASES_URL } from "@/config/appConfig";
+import { STORAGE_KEYS, APP_VERSION, ALL_RELEASES_URL, DEFAULT_VIDEO_ID } from "@/config/appConfig";
 import { JSON3_RAW_MAP } from "../../test/fixtures/L2Ryrr6txwA/jsonStrings";
 
 const DEMO_VIDEO = "L2Ryrr6txwA";
@@ -1404,7 +1404,7 @@ function Index() {
             events: {
               onReady: () => {
                 try {
-                  secPlayer.mute?.();
+                  secPlayer?.mute?.();
                 } catch {
                   // ignore
                 }
