@@ -19,7 +19,9 @@ async function deliverDefaultCaptions(page: Page) {
     const payload = {
       url,
       rawData: JSON.stringify({
-        events: [{ tStartMs: 0, dDurationMs: 4000, segs: [{ utf8: "Default caption line dialog" }] }],
+        events: [
+          { tStartMs: 0, dDurationMs: 4000, segs: [{ utf8: "Default caption line dialog" }] },
+        ],
       }),
     };
     nativeWindow.onNativeCaptionsInterceptedBase64?.(btoa(JSON.stringify(payload)));
@@ -155,7 +157,12 @@ test.describe("Android native subtitle emulation", () => {
     // Step 1: Detection of fetching the default subtitles
     expect(await getNativeCaptionRequests(page)).toEqual([]);
     await deliverDefaultCaptions(page);
-    await page.screenshot({ path: "cypress/screenshots/step1-default-subtitles-detected.png", fullPage: false }).catch(() => {});
+    await page
+      .screenshot({
+        path: "cypress/screenshots/step1-default-subtitles-detected.png",
+        fullPage: false,
+      })
+      .catch(() => {});
 
     // Step 2 & 3: Following it, fetching requests of subtitles of favorited languages with tlang & lang fallback
     await expect
@@ -167,9 +174,16 @@ test.describe("Android native subtitle emulation", () => {
     const tlangAttempt = nativeRequests.find((r) => r.url.includes("tlang="));
     expect(tlangAttempt).toBeTruthy();
     // Assert fallback to lang request occurred
-    const langFallbackAttempt = nativeRequests.find((r) => !r.url.includes("tlang=") && r.url.includes("lang="));
+    const langFallbackAttempt = nativeRequests.find(
+      (r) => !r.url.includes("tlang=") && r.url.includes("lang="),
+    );
     expect(langFallbackAttempt).toBeTruthy();
-    await page.screenshot({ path: "cypress/screenshots/step2-step3-fallback-requests.png", fullPage: false }).catch(() => {});
+    await page
+      .screenshot({
+        path: "cypress/screenshots/step2-step3-fallback-requests.png",
+        fullPage: false,
+      })
+      .catch(() => {});
 
     // Step 4: Inspection of those subtitles via the Network Panel
     const openNetworkBtn = page.getByTestId("open-network-inspector-button");
@@ -187,7 +201,12 @@ test.describe("Android native subtitle emulation", () => {
 
     // Verify presence of captured timedtext & bridge requests
     await expect(page.locator("text=timedtext").first()).toBeVisible();
-    await page.screenshot({ path: "cypress/screenshots/step4-network-panel-inspection.png", fullPage: false }).catch(() => {});
+    await page
+      .screenshot({
+        path: "cypress/screenshots/step4-network-panel-inspection.png",
+        fullPage: false,
+      })
+      .catch(() => {});
 
     // Close network panel
     const closeNetworkBtn = page.getByTestId("close-network-inspector-button");
@@ -205,7 +224,12 @@ test.describe("Android native subtitle emulation", () => {
     await expect(firstRow).toBeVisible();
     await expect(firstRow).toContainText(/Line 1/i);
 
-    await page.screenshot({ path: "cypress/screenshots/step5-subtitles-view-inspection.png", fullPage: false }).catch(() => {});
+    await page
+      .screenshot({
+        path: "cypress/screenshots/step5-subtitles-view-inspection.png",
+        fullPage: false,
+      })
+      .catch(() => {});
   });
 
   test("emulator: shares YouTube video links from browser or official YouTube app", async ({
@@ -220,7 +244,9 @@ test.describe("Android native subtitle emulation", () => {
 
     // Verify header and state updated to dQw4w9WgXcQ
     await expect(page.locator("header")).toContainText("video dQw4w9WgXcQ");
-    await page.screenshot({ path: "cypress/screenshots/step-share-browser-link.png", fullPage: false }).catch(() => {});
+    await page
+      .screenshot({ path: "cypress/screenshots/step-share-browser-link.png", fullPage: false })
+      .catch(() => {});
 
     // 2. Simulate official YouTube app share with title text (ACTION_SEND)
     const youtubeAppShareText = "Never Gonna Give You Up\nhttps://youtu.be/kJQP7kiw5Fk?si=123";
@@ -231,7 +257,9 @@ test.describe("Android native subtitle emulation", () => {
 
     // Verify state updated to kJQP7kiw5Fk
     await expect(page.locator("header")).toContainText("video kJQP7kiw5Fk");
-    await page.screenshot({ path: "cypress/screenshots/step-share-youtube-app-text.png", fullPage: false }).catch(() => {});
+    await page
+      .screenshot({ path: "cypress/screenshots/step-share-youtube-app-text.png", fullPage: false })
+      .catch(() => {});
   });
 
   test("device parity: adaptive touch gestures and shared intent switching across physical screen profiles", async ({
@@ -269,4 +297,3 @@ test.describe("Android native subtitle emulation", () => {
     }
   });
 });
-

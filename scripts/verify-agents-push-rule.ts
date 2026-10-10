@@ -21,7 +21,15 @@ assert(
 );
 console.log("✅ PASS: AGENTS.md contains explicit instruction to try git push after git commit");
 
-// 2. Test graceful execution of git push helper logic
+// 2. Verify AGENTS.md enforces updating .md files first before action
+assert(
+  agentsContent.includes("Enforce updating .md tracking files first before action") ||
+    agentsContent.includes("update `docs/tasks.md` and `docs/todo.md`"),
+  "AGENTS.md must strictly enforce updating .md tracking files first before action",
+);
+console.log("✅ PASS: AGENTS.md enforces updating .md tracking files first before action");
+
+// 3. Test graceful execution of git push helper logic
 function tryGitPush(): { attempted: boolean; success: boolean; message: string } {
   try {
     const remotes = execSync("git remote", {

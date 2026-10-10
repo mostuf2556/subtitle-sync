@@ -116,7 +116,10 @@ describe("YouTube Video Viewer - Android Emulation Subtitle Tests", () => {
     cy.screenshot("step2-favorite-languages-fetch", { capture: "viewport", overwrite: true });
 
     cy.log("Step 3: YouTube API request using tlang and lang fallback");
-    cy.screenshot("step3-youtube-api-tlang-lang-fallback", { capture: "viewport", overwrite: true });
+    cy.screenshot("step3-youtube-api-tlang-lang-fallback", {
+      capture: "viewport",
+      overwrite: true,
+    });
 
     cy.log("Step 4: Inspection of subtitles via Network Panel");
     cy.get("body").then(($b) => {
@@ -131,7 +134,9 @@ describe("YouTube Video Viewer - Android Emulation Subtitle Tests", () => {
 
     cy.log("Step 5: Inspection of subtitles via Subtitles View Element");
     cy.get("details[data-panel='subtitles']").should("be.visible");
-    cy.get("details[data-panel='subtitles'] table, details[data-panel='subtitles']").should("exist");
+    cy.get("details[data-panel='subtitles'] table, details[data-panel='subtitles']").should(
+      "exist",
+    );
     cy.screenshot("step5-subtitles-view-inspection", { capture: "viewport", overwrite: true });
   });
 
@@ -143,9 +148,13 @@ describe("YouTube Video Viewer - Android Emulation Subtitle Tests", () => {
     cy.get("header").should("contain.text", "video dQw4w9WgXcQ");
     cy.screenshot("step-share-browser-link", { capture: "viewport", overwrite: true });
 
-    cy.log("Step 2: Share video link from official YouTube app (ACTION_SEND with title and newline)");
+    cy.log(
+      "Step 2: Share video link from official YouTube app (ACTION_SEND with title and newline)",
+    );
     cy.window().then((win: any) => {
-      win.onNativeSharedLinkReceived?.("Never Gonna Give You Up\nhttps://youtu.be/kJQP7kiw5Fk?si=123");
+      win.onNativeSharedLinkReceived?.(
+        "Never Gonna Give You Up\nhttps://youtu.be/kJQP7kiw5Fk?si=123",
+      );
     });
     cy.get("header").should("contain.text", "video kJQP7kiw5Fk");
     cy.screenshot("step-share-youtube-app-text", { capture: "viewport", overwrite: true });
@@ -165,4 +174,3 @@ describe("YouTube Video Viewer - Android Emulation Subtitle Tests", () => {
     cy.get("details[data-panel='subtitles']").scrollTo("bottom", { ensureScrollable: false });
   });
 });
-

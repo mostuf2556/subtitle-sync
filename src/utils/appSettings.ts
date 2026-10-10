@@ -504,3 +504,72 @@ export function setDebugModeSetting(enabled: boolean): void {
     // Ignore storage errors in restricted contexts
   }
 }
+
+export const AUTO_SPEAK_ON_FETCH_STORAGE_KEY = "yt_auto_speak_on_fetch";
+
+/**
+ * Get whether auto-speak upon subtitle fetch is enabled.
+ * Defaults to TRUE (on) to automatically speak language when subtitles are loaded.
+ */
+export function getAutoSpeakOnFetchSetting(): boolean {
+  if (typeof window === "undefined" || !window.localStorage) {
+    return true;
+  }
+  try {
+    const val = window.localStorage.getItem(AUTO_SPEAK_ON_FETCH_STORAGE_KEY);
+    return val === null ? true : val === "true";
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Persist auto-speak upon subtitle fetch setting.
+ */
+export function setAutoSpeakOnFetchSetting(enabled: boolean): void {
+  if (typeof window === "undefined" || !window.localStorage) {
+    return;
+  }
+  try {
+    window.localStorage.setItem(
+      AUTO_SPEAK_ON_FETCH_STORAGE_KEY,
+      enabled ? "true" : "false",
+    );
+  } catch {
+    // Ignore storage errors in restricted contexts
+  }
+}
+
+export const LANGUAGE_DISPLAY_MODE_STORAGE_KEY = "yt_language_display_mode";
+
+export type LanguageDisplayMode = "boxes" | "list";
+
+/**
+ * Get language presentation display mode ("boxes" or "list").
+ * Defaults to "boxes" for touch-friendly Android UI.
+ */
+export function getLanguageDisplayModeSetting(): LanguageDisplayMode {
+  if (typeof window === "undefined" || !window.localStorage) {
+    return "boxes";
+  }
+  try {
+    const val = window.localStorage.getItem(LANGUAGE_DISPLAY_MODE_STORAGE_KEY);
+    return val === "list" ? "list" : "boxes";
+  } catch {
+    return "boxes";
+  }
+}
+
+/**
+ * Persist language presentation display mode.
+ */
+export function setLanguageDisplayModeSetting(mode: LanguageDisplayMode): void {
+  if (typeof window === "undefined" || !window.localStorage) {
+    return;
+  }
+  try {
+    window.localStorage.setItem(LANGUAGE_DISPLAY_MODE_STORAGE_KEY, mode);
+  } catch {
+    // Ignore storage errors in restricted contexts
+  }
+}

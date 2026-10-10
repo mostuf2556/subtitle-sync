@@ -1,5 +1,60 @@
 # Done tasks
 
+## Task 58: Auto-Enable "Speak" Checkbox on Favorites Language Panel Upon Subtitle Fetching
+
+### Subtask 58.1: Auto-check "Speak" checkbox when favorite language subtitles are fetched and remove pronouncing language name
+
+- Removed audio pronunciation of language names (`speak(meta.name)`) via TTS upon subtitle fetch in `src/routes/index.tsx` and related components.
+- Configured `autoSpeakOnFetch` so that when subtitle tracks are fetched/loaded for language(s), the language(s) are automatically added to `spoken` state (`setSpoken`), setting the checkbox under "Speak" on the Favorites Language panel.
+- Updated the toggle explanation copy in the Favorites Language panel to clarify that it automatically enables the "Speak" checkbox when subtitles are loaded.
+- Updated `scripts/verify-auto-speak-on-fetch.ts` to assert that language names are not spoken and that the "Speak" checkbox state is auto-checked on fetch.
+- Verified all tests pass, app compiles cleanly (`compile_applet`), and ESLint passes with 0 errors.
+
+## Task 57: Remove Textual Color Names from Accordion Header Bars
+
+### Subtask 57.1: Remove Color Names Text from Accordion Section Headers
+
+- Removed rendered textual color names (`theme.tagColor`) from `AccordionSection` header bars in `src/routes/index.tsx`.
+- Replaced textual color badge with subtle dot accent indicator (`theme.dotBg`) and retained full constant color bar styling (`border-l-4`, summary tinted background).
+- Updated `src/config/accordionThemes.ts` and `scripts/verify-accordion-colors.ts` to assert that textual color names are completely removed while constant color themes and attributes are preserved.
+- Verified 100% test pass rate (`npm run test:accordion-colors`), clean app compilation, and zero ESLint warnings.
+
+## Task 56: Fix autoSpeakOnFetch ReferenceError Initialization Order
+
+### Subtask 56.1: Initialize autoSpeakOnFetch Prior to Callback Bindings
+
+- Reordered `autoSpeakOnFetch` state initialization in `src/routes/index.tsx` above all callbacks (`fetchFavoriteLanguageSubtitles`, `onSelectLanguage`) that reference it, eliminating temporal dead zone (TDZ) ReferenceError on component render.
+- Created dedicated verification test suite `scripts/verify-autospeak-initialization-order.ts` asserting top-level declaration order and zero downstream duplicate re-declarations.
+- Registered `"test:autospeak-init"` in `package.json` and documented in `docs/files.md`.
+- Verified 100% test pass rate, clean app compilation, and zero ESLint warnings.
+
+## Task 55: Accordion Color Standardization, Auto-TTS Subtitle Fetching, Touch-Friendly Language Selection & Multi-Language Video Player
+
+### Subtask 55.1: Constant Theme Colors per Accordion Type
+- Created `src/config/accordionThemes.ts` defining distinct constant color themes (borders, summary backgrounds, badges, and tags) for each accordion section (`player`, `playback`, `parser`, `languages`, `language-player`, `subtitles`, `library`).
+- Updated `AccordionSection` to apply `data-accordion-type`, `data-accordion-color`, `data-testid="accordion-bar-{id}"`, and colored header bars.
+- Implemented dedicated test `scripts/verify-accordion-colors.ts` and registered `npm run test:accordion-colors`.
+
+### Subtask 55.2: Automatic Speech Synthesis Announcement on Subtitle Fetch
+- Added persistent configuration `getAutoSpeakOnFetchSetting` and `setAutoSpeakOnFetchSetting` in `src/utils/appSettings.ts` (defaulting to enabled/`true`).
+- Triggered automatic pronunciation of language names via TTS (`speak`) upon live fetch completion, base64 caption interception, and language selection.
+- Added accessible toggle `data-testid="auto-speak-on-fetch-toggle"` in the Languages panel.
+- Implemented dedicated test `scripts/verify-auto-speak-on-fetch.ts` and registered `npm run test:auto-speak-on-fetch`.
+
+### Subtask 55.3: Touch-Friendly Language Boxes & Keep Clicked Selections on Top
+- Created `src/components/LanguageBoxesSelector.tsx` featuring a mode toggle button (`#toggle-language-display-mode`) between boxes and list.
+- Provided large touch-friendly box elements (`min-h-[48px]`, `data-testid="language-box-{code}"`) suitable for Android.
+- Automatically partitioned and kept selected/clicked languages at the top of the grid and table (`orderedLangs`).
+- Maintained compatibility and synchronization with `#target-language-select` for all existing automation suites.
+- Implemented dedicated test `scripts/verify-language-boxes-selection.ts` and registered `npm run test:language-boxes`.
+
+### Subtask 55.4: Dedicated Language Video Player Accordion with Iframe URL Subtitle Control & Network Inspector Integration
+- Registered `"language-player"` accordion panel (`"Language video player"`) in `PANELS` and `panelOrder`.
+- Created `src/components/LanguageVideoPlayerPanel.tsx` rendering YouTube embed iframes with `https://www.youtube.com/embed/VIDEO_ID?hl=en&cc_load_policy=1&cc_lang_pref={lang}`.
+- Strictly maintained `hl=en` to keep menus in English, forced captions via `cc_load_policy=1`, and controlled subtitle languages via `cc_lang_pref`.
+- Tracked subtitle requests in `networkTracker` (`/api/timedtext?...&fmt=json3`) and provided direct links to view them in the embedded Network Requests Inspector.
+- Implemented dedicated test `scripts/verify-language-video-player-accordion.ts` and registered `npm run test:language-player-accordion`.
+
 ## Task 54: Improve Android Device & Emulator E2E Testing Suite
 
 ### Subtask 54.1: Robust Device Environment, Lifecycle Management & Telemetry
@@ -48,6 +103,7 @@
 - Verified cache write protection: attempting to cache empty or non-JSON responses leaves storage untouched, and existing valid cached subtitles and raw JSON3 are preserved and never overwritten by subsequent empty or corrupt responses.
 - Verified Android native shell (`MainActivity.kt`) contracts: `isValidJsonSubtitle` validation, `saveCaptionToFile` disk write protection, and interception checking.
 - Registered `"test:no-cache-empty-non-json"` in `package.json` and documented in `docs/files.md`.
+
 ### Subtask 52.2: Implement Emulator E2E Testing Default Subtitles Detection, Favorite Languages Fetch, YouTube API tlang/lang Fallback, and Network & Subtitles View Inspection
 
 - Implemented full emulator E2E flow in `e2e/emulation.spec.ts` and `cypress/e2e/emulation.cy.ts` covering:
@@ -670,3 +726,22 @@
 - Updated `.github/workflows/integrity.yml` to run authentic tests (`test:hygiene`, `test:client-spa`).
 - Cleaned references to deleted synthetic reports in `README.md` and `docs/files.md`.
 - Ran all authentic tests, builds, and lint successfully.
+
+## Task 55: Accordion Color Standardization, Auto-TTS Subtitle Fetching, Touch-Friendly Language Selection & Multi-Language Video Player
+
+- Defined constant theme colors per accordion type in `src/config/accordionThemes.ts` (`player`: blue, `playback`: emerald, `parser`: amber, `languages`: purple, `language-player`: indigo, `subtitles`: teal, `library`: rose) with colored summary bars and tags.
+- Implemented `getAutoSpeakOnFetchSetting` and `setAutoSpeakOnFetchSetting` in `src/utils/appSettings.ts` (default true) and triggered speech synthesis on subtitle fetch completion.
+- Built `src/components/LanguageBoxesSelector.tsx` offering a mode toggle between touch-friendly boxes (`min-h-[48px]`) and compact list, keeping clicked/selected languages partitioned at the top.
+- Created `src/components/LanguageVideoPlayerPanel.tsx` in a new accordion (`language-player`), rendering YouTube embeds with `https://www.youtube.com/embed/VIDEO_ID?hl=en&cc_load_policy=1&cc_lang_pref={lang}`, preserving English menus with `hl=en`, controlling subtitles via URL, and integrating subtitle requests with the embedded Network Requests Inspector.
+- Added 4 dedicated verification test suites (`test:accordion-colors`, `test:auto-speak-on-fetch`, `test:language-boxes`, `test:language-player-accordion`), updated `docs/files.md`, and passed all build and lint verifications.
+
+## Task 56: Fix autoSpeakOnFetch ReferenceError Initialization Order
+
+### Subtask 56.1: Initialize autoSpeakOnFetch Prior to Callback Bindings
+- Reordered state variable declarations in `src/routes/index.tsx` so that `autoSpeakOnFetch`, `rates`, and `voiceSelections` are initialized near the top of the component prior to `fetchFavoriteLanguageSubtitles` and any effects referencing them in closures or dependency arrays.
+- Removed downstream duplicate declarations to avoid TDZ (Temporal Dead Zone) `ReferenceError`.
+- Created dedicated test suite `scripts/verify-autospeak-initialization-order.ts` (`npm run test:autospeak-init`) validating top-level declaration order and absence of duplicate re-declarations.
+- Updated `package.json` scripts and registered the test in `docs/files.md`.
+- Verified clean build (`compile_applet`) and zero lint errors (`lint_applet`).
+
+

@@ -6,5 +6,3 @@
 - Implement real device live intent dispatch (`ACTION_VIEW` and `ACTION_SEND`) with verification of UI response in `scripts/android-e2e-assert.sh`.
 - Ensure video screencast recording and screenshot generation dynamically handle physical device screens and rotation gracefully.
 - Update `e2e/emulation.spec.ts` and Cypress emulation tests to reflect physical device and emulator parity.
-- Add dedicated test suite `scripts/verify-android-device-e2e-adaptive.ts` and register `npm run test:android-adaptive` in `package.json`.
-- Document new test suite in `docs/files.md`.
