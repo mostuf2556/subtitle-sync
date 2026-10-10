@@ -15,6 +15,8 @@ import {
   Smartphone,
   Subtitles,
   Sun,
+  Pin,
+  PinOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -3070,16 +3072,16 @@ function AccordionSection({
   };
   // Auto-fold: an open, unpinned section folds after a period without interaction inside it.
   const pinKey = `yt_accordion_pinned_${id}`;
-  const [pinned, setPinned] = React.useState(false);
-  React.useEffect(() => {
+  const [pinned, setPinned] = useState(false);
+  useEffect(() => {
     try {
       setPinned(localStorage.getItem(pinKey) === "1");
     } catch {
       // ignore storage errors
     }
   }, [pinKey]);
-  const [activityTick, setActivityTick] = React.useState(0);
-  React.useEffect(() => {
+  const [activityTick, setActivityTick] = useState(0);
+  useEffect(() => {
     if (!open || pinned) return;
     const timer = window.setTimeout(() => onOpenChange(false), ACCORDION_AUTO_FOLD_MS);
     return () => window.clearTimeout(timer);
