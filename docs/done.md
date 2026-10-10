@@ -1,5 +1,16 @@
 # Done tasks
 
+## Task 49: Native YouTube Free API Subtitles Discovery & Auto-Activation
+
+### Subtask 49.1: Automatic IFrame Captions Activation & Multi-Format Negotiation
+
+- Updated `src/lib/iframe-player.ts` to configure `cc_load_policy: "1"` in the YouTube player embed parameters and accept optional `captionLang` (`cc_lang_pref`).
+- Added automatic `post("loadModule", ["captions"])` and track preference signaling on player initialization (`onReady`, `initialDelivery`, and `listen`), guaranteeing that `/api/timedtext` is issued immediately upon loading any video without requiring manual user touch.
+- Enhanced `parseJson3` in `src/lib/native-captions.ts` with a resilient WebVTT parser (`WEBVTT` / `-->` timestamps), unified into standard `{ events: [...] }` segment representations.
+- Exported `SUPPORTED_CAPTION_FORMATS = ["json3", "srv3", "srv1", "vtt"]` and updated caption URL builders to negotiate formats seamlessly.
+- Created dedicated verification suite `scripts/verify-native-captions-discovery.ts` (`npm run test:captions-discovery`).
+- Registered `test:captions-discovery` in `package.json` and documented in `docs/files.md`.
+
 ## Task 48: Fix APK Version Collision, Update Script Robustness & In-App Version Display with Releases Link
 
 ### Subtask 48.1: Robust APK Installation & Version Code Handling in Update Script

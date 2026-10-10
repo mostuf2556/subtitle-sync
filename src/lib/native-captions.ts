@@ -4,6 +4,7 @@ import { extractYouTubeId } from "../utils/youtube";
 export type NativeShell = {
   isNativeShell(): boolean;
   getLastObservedTimedTextUrl(): string;
+  discoverCaptionUrl?(videoId: string): string;
   fetchTranslatedCaptionsWithUrl(url: string, language: string, format: string): string;
   fetchTranslatedCaptions?(language: string, format: string): string;
 };
@@ -16,6 +17,18 @@ export function nativeShell(): NativeShell | null {
   } catch {
     return null;
   }
+}
+
+export function ensureCaptionBaseUrl(videoId: string): string | null {
+  const shell = nativeShell();
+  if (!shell) return null;
+  const current = shell.getLastObservedTimedTextUrl();
+  if (current) return current;
+  if (typeof shell.discoverCaptionUrl === "function") {
+    const discovered = shell.discoverCaptionUrl(videoId);
+    if (discovered) return discovered;
+  }
+  return null;
 }
 
 export function decodeInterceptedCaption(payload: string): { url: string; rawData: string } | null {
@@ -106,8 +119,61 @@ export function parseJson3(raw: string): Json3 | null {
     // Ignore XML parse errors
   }
 
+  // 3. Resilient WebVTT Parser Fallback
+  if (trimmed.includes("-->") || trimmed.startsWith("WEBVTT")) {
+    try {
+      const vttBlocks = trimmed.split(/\r?\n\r?\n/);
+      const events: Json3["events"] = [];
+      const timeRegex =
+        /(?:(\d+):)?(\d{2}):(\d{2})\.(\d{3})\s*-->\s*(?:(\d+):)?(\d{2}):(\d{2})\.(\d{3})/;
+
+      for (const block of vttBlocks) {
+        const lines = block.trim().split(/\r?\n/);
+        for (let i = 0; i < lines.length; i++) {
+          const match = lines[i].match(timeRegex);
+          if (match) {
+            const startH = parseInt(match[1] || "0", 10);
+            const startM = parseInt(match[2], 10);
+            const startS = parseInt(match[3], 10);
+            const startMs = parseInt(match[4], 10);
+            const tStartMs = startH * 3600000 + startM * 60000 + startS * 1000 + startMs;
+
+            const endH = parseInt(match[5] || "0", 10);
+            const endM = parseInt(match[6], 10);
+            const endS = parseInt(match[7], 10);
+            const endMs = parseInt(match[8], 10);
+            const tEndMs = endH * 3600000 + endM * 60000 + endS * 1000 + endMs;
+            const dDurationMs = Math.max(0, tEndMs - tStartMs);
+
+            const textLines = lines
+              .slice(i + 1)
+              .join(" ")
+              .replace(/<[^>]*>/g, "")
+              .trim();
+            if (textLines) {
+              events.push({
+                tStartMs,
+                dDurationMs,
+                segs: [{ utf8: textLines }],
+              });
+            }
+            break;
+          }
+        }
+      }
+      if (events.length > 0) {
+        return { events };
+      }
+    } catch {
+      // Ignore VTT parse errors
+    }
+  }
+
   return null;
 }
+
+export const SUPPORTED_CAPTION_FORMATS = ["json3", "srv3", "srv1", "vtt"] as const;
+export type CaptionFormat = (typeof SUPPORTED_CAPTION_FORMATS)[number];
 
 export function timedTextVideoId(url: string): string | null {
   try {

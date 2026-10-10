@@ -15,7 +15,7 @@ export type IframeControlledPlayer = {
 export function createIframePlayer(
   host: HTMLElement,
   videoId: string,
-  opts: { autoplay?: boolean } = {},
+  opts: { autoplay?: boolean; captionLang?: string } = {},
 ): IframeControlledPlayer {
   const origin = window.location.origin;
   const iframe = document.createElement("iframe");
@@ -23,9 +23,13 @@ export function createIframePlayer(
     enablejsapi: "1",
     playsinline: "1",
     rel: "0",
+    cc_load_policy: "1",
     autoplay: opts.autoplay ? "1" : "0",
     origin,
   });
+  if (opts.captionLang) {
+    params.set("cc_lang_pref", opts.captionLang);
+  }
   iframe.src = `https://www.youtube.com/embed/${videoId}?${params}`;
   iframe.allow = "autoplay; encrypted-media; picture-in-picture";
   iframe.setAttribute("allowfullscreen", "");
@@ -40,6 +44,13 @@ export function createIframePlayer(
   const post = (func: string, args: unknown[] = []) =>
     iframe.contentWindow?.postMessage(JSON.stringify({ event: "command", func, args }), "*");
 
+  const activateCaptions = () => {
+    post("loadModule", ["captions"]);
+    if (opts.captionLang) {
+      post("setOption", ["captions", "track", { languageCode: opts.captionLang }]);
+    }
+  };
+
   const onMessage = (e: MessageEvent) => {
     if (e.source !== iframe.contentWindow) return;
     let data: { event?: string; info?: { currentTime?: number; playerState?: number } };
@@ -47,6 +58,9 @@ export function createIframePlayer(
       data = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
     } catch {
       return;
+    }
+    if (data?.event === "onReady" || data?.event === "initialDelivery") {
+      activateCaptions();
     }
     const info = data?.info;
     if (!info) return;
@@ -57,8 +71,10 @@ export function createIframePlayer(
     if (typeof info.playerState === "number") state = info.playerState;
   };
   window.addEventListener("message", onMessage);
-  const listen = () =>
+  const listen = () => {
     iframe.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*");
+    activateCaptions();
+  };
   iframe.addEventListener("load", listen);
   const keepAlive = window.setInterval(listen, 2000);
 

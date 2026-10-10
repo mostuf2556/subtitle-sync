@@ -493,6 +493,49 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             .count { it.groupValues[1].replace(Regex("<[^>]*>"), "").isNotBlank() }
     }
 
+    private fun fetchInnertubeCaptionBaseUrl(videoId: String): String? {
+        return try {
+            val jsonPayload = JSONObject().apply {
+                put("videoId", videoId)
+                put("context", JSONObject().apply {
+                    put("client", JSONObject().apply {
+                        put("clientName", "ANDROID")
+                        put("clientVersion", "19.09.37")
+                        put("hl", "en")
+                    })
+                })
+            }
+            val mediaType = okhttp3.MediaType.parse("application/json; charset=utf-8")
+            val body = okhttp3.RequestBody.create(mediaType, jsonPayload.toString())
+            val request = Request.Builder()
+                .url("https://www.youtube.com/youtubei/v1/player")
+                .header("User-Agent", "com.google.android.youtube/19.09.37 (Linux; U; Android 14; en_US) gzip")
+                .header("Content-Type", "application/json")
+                .post(body)
+                .build()
+            val response = okHttpClient.newCall(request).execute()
+            if (!response.isSuccessful) return null
+            val responseString = response.body?.string() ?: return null
+            val root = JSONObject(responseString)
+            val captions = root.optJSONObject("captions") ?: return null
+            val tracklistRenderer = captions.optJSONObject("playerCaptionsTracklistRenderer") ?: return null
+            val tracks = tracklistRenderer.optJSONArray("captionTracks") ?: return null
+            if (tracks.length() > 0) {
+                val firstTrack = tracks.getJSONObject(0)
+                val baseUrl = firstTrack.optString("baseUrl")
+                if (baseUrl.isNotBlank()) {
+                    Log.i(TAG, "Innertube discovered caption baseUrl for video $videoId: $baseUrl")
+                    lastObservedTimedTextUrl = baseUrl
+                    return baseUrl
+                }
+            }
+            null
+        } catch (e: Exception) {
+            Log.w(TAG, "Innertube caption discovery error for video $videoId: ${e.message}")
+            null
+        }
+    }
+
     private fun dispatchToJavaScript(url: String, rawData: String, contentType: String, status: Int) {
         mainHandler.post {
             try {
@@ -687,6 +730,12 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
 
         @JavascriptInterface
+        fun discoverCaptionUrl(videoId: String): String {
+            if (videoId.isBlank()) return ""
+            return fetchInnertubeCaptionBaseUrl(videoId) ?: ""
+        }
+
+        @JavascriptInterface
         fun fetchTranslatedCaptions(targetLang: String, format: String): String {
             val base = lastObservedTimedTextUrl ?: return ""
             return executeTimedTextRepetition(base, targetLang, format)
@@ -694,7 +743,13 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         @JavascriptInterface
         fun fetchTranslatedCaptionsWithUrl(customUrl: String, targetLang: String, format: String): String {
-            val base = if (customUrl.isNotEmpty()) customUrl else (lastObservedTimedTextUrl ?: "")
+            var base = if (customUrl.isNotEmpty()) customUrl else (lastObservedTimedTextUrl ?: "")
+            if (base.isEmpty() || (base.length == 11 && !base.contains("/"))) {
+                val vid = if (base.length == 11 && !base.contains("/")) base else null
+                if (vid != null) {
+                    base = fetchInnertubeCaptionBaseUrl(vid) ?: "https://www.youtube.com/api/timedtext?v=$vid&lang=en"
+                }
+            }
             if (base.isEmpty()) return ""
             return executeTimedTextRepetition(base, targetLang, format)
         }

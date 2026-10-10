@@ -65,6 +65,8 @@
     "test:fork-ci-workflows": "tsx scripts/verify-fork-ci-workflows.ts",
     "test:apk-updater-robustness": "tsx scripts/verify-apk-updater-robustness.ts",
     "test:apk-version-and-releases": "tsx scripts/verify-apk-version-and-releases.ts",
+    "test:captions-discovery": "tsx scripts/verify-native-captions-discovery.ts",
+    "test:innertube-discovery": "tsx scripts/verify-innertube-discovery.ts",
     "test:android": "bash scripts/run-android-e2e.sh"
   },
   "overrides": {

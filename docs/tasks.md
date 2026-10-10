@@ -1,5 +1,16 @@
 # Tasks
 
+## Task 49: Native YouTube Free API Subtitles Discovery & Auto-Activation
+
+- [x] **Subtask 49.1: Automatic IFrame Captions Activation & Multi-Format Negotiation**:
+  - In `src/lib/iframe-player.ts`, activate YouTube IFrame captions module (`loadModule('captions')` and setting initial caption track) on player ready so that `/api/timedtext` is triggered automatically upon loading any video without user interaction.
+  - In `src/lib/native-captions.ts`, enhance `parseJson3` and format builders with multi-format fallback negotiation (`json3` -> `srv3` -> `srv1` -> `vtt`) for translated and native subtitles.
+  - Implement dedicated test `scripts/verify-native-captions-discovery.ts` and verify.
+- [ ] **Subtask 49.2: Native Android Direct Caption Discovery via Innertube Player API**:
+  - In `MainActivity.kt`, add native endpoint discovery via YouTube's public free Innertube player endpoint (`https://www.youtube.com/youtubei/v1/player` with client `ANDROID`) when `lastObservedTimedTextUrl` is null.
+  - Extract and cache `baseUrl` from `playerCaptionsTracklistRenderer.captionTracks` so any video ID can immediately fetch captions in any target language even before the player fires timedtext.
+  - Implement dedicated test `scripts/verify-innertube-discovery.ts` and verify.
+
 ## Task 48: Fix APK Version Collision, Update Script Robustness & In-App Version Display with Releases Link
 
 - [x] **Subtask 48.1: Robust APK Installation & Version Code Handling in Update Script**:
