@@ -3036,6 +3036,8 @@ function HighlightedSubtitle({
   );
 }
 
+const ACCORDION_AUTO_FOLD_MS = 30_000;
+
 function AccordionSection({
   id,
   title,
@@ -3066,6 +3068,33 @@ function AccordionSection({
     dotBg: "bg-neutral-500",
     tagColor: "neutral",
   };
+  // Auto-fold: an open, unpinned section folds after a period without interaction inside it.
+  const pinKey = `yt_accordion_pinned_${id}`;
+  const [pinned, setPinned] = React.useState(false);
+  React.useEffect(() => {
+    try {
+      setPinned(localStorage.getItem(pinKey) === "1");
+    } catch {
+      // ignore storage errors
+    }
+  }, [pinKey]);
+  const [activityTick, setActivityTick] = React.useState(0);
+  React.useEffect(() => {
+    if (!open || pinned) return;
+    const timer = window.setTimeout(() => onOpenChange(false), ACCORDION_AUTO_FOLD_MS);
+    return () => window.clearTimeout(timer);
+  }, [open, pinned, activityTick, onOpenChange]);
+  const markActivity = () => setActivityTick((t) => t + 1);
+  const togglePinned = () => {
+    setPinned((p) => {
+      try {
+        localStorage.setItem(pinKey, p ? "0" : "1");
+      } catch {
+        // ignore storage errors
+      }
+      return !p;
+    });
+  };
 
   return (
     <details
@@ -3074,12 +3103,15 @@ function AccordionSection({
       data-accordion-type={id}
       data-accordion-color={theme.tagColor}
       open={open}
+      onPointerDown={markActivity}
+      onKeyDown={markActivity}
+      onFocus={markActivity}
       onToggle={(event) => onOpenChange(event.currentTarget.open)}
       className={`overflow-hidden rounded-lg border border-border bg-card text-sm ${theme.borderLeft} ${wide ? "lg:col-span-2" : ""}`}
     >
       <summary
         data-testid={`accordion-bar-${id}`}
-        className={`flex cursor-pointer list-none items-center gap-2 px-4 py-3 marker:hidden transition-colors ${theme.summaryBg}`}
+        className={`flex cursor-pointer list-none items-center gap-1 px-3 py-1 marker:hidden transition-colors ${theme.summaryBg}`}
       >
         <ChevronDown
           aria-hidden="true"
@@ -3093,6 +3125,22 @@ function AccordionSection({
             aria-hidden="true"
           />
         </h2>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          data-testid={`accordion-pin-${id}`}
+          aria-pressed={pinned}
+          onClick={(event) => {
+            event.preventDefault();
+            togglePinned();
+          }}
+          aria-label={pinned ? `Unpin ${title} (allow auto-fold)` : `Pin ${title} open`}
+          title={pinned ? "Pinned: stays open" : "Pin to keep open (otherwise folds automatically)"}
+          className={pinned ? "text-primary" : "text-muted-foreground"}
+        >
+          {pinned ? <Pin aria-hidden="true" /> : <PinOff aria-hidden="true" />}
+        </Button>
         <Button
           type="button"
           variant="ghost"
@@ -3122,7 +3170,7 @@ function AccordionSection({
           <ChevronDown aria-hidden="true" />
         </Button>
       </summary>
-      <div className="border-t border-border p-4">{children}</div>
+      <div className="border-t border-border p-2 sm:p-3">{children}</div>
     </details>
   );
 }
