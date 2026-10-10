@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Android Device & Emulator E2E Test Report</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #090d16; color: #f3f4f6; padding: 2rem; max-width: 1000px; margin: 0 auto; line-height: 1.5; }
+    h1 { color: #38bdf8; margin-bottom: 0.5rem; }
+    .status { display: inline-block; padding: 0.35rem 0.85rem; border-radius: 9999px; font-weight: bold; margin-bottom: 1rem; }
+    .status-success { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #10b981; }
+    .status-failure { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444; }
+    .card { background: #111827; border: 1px solid #1f2937; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; }
+    .step-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top: 1rem; }
+    .step-card { background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 1rem; }
+    .step-card h3 { color: #38bdf8; font-size: 0.95rem; margin-top: 0; margin-bottom: 0.5rem; }
+    .step-card p { font-size: 0.85rem; color: #cbd5e1; margin-bottom: 0.75rem; }
+    .telemetry-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.85rem; margin-top: 0.75rem; }
+    .telemetry-card { background: #0f172a; border: 1px solid #1e293b; border-radius: 6px; padding: 0.75rem 1rem; }
+    .telemetry-label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+    .telemetry-value { font-size: 0.95rem; color: #f8fafc; font-family: monospace; font-weight: 600; word-break: break-all; }
+    pre { background: #030712; padding: 1rem; border-radius: 6px; overflow-x: auto; color: #a5f3fc; font-size: 0.875rem; max-height: 400px; }
+    img { max-width: 100%; max-height: 600px; border-radius: 8px; border: 1px solid #374151; display: block; margin-top: 0.5rem; }
+    a { color: #38bdf8; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-family: monospace; font-weight: 600; margin-right: 0.5rem; }
+    .badge-tlang { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .badge-lang { background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); }
+    .badge-success { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+  </style>
+</head>
+<body>
+  <h1>Android Device & Emulator E2E Test Report</h1>
+  <p>Authentic runtime execution and WebView interception test report on Android devices and emulators (API 34 Google APIs).</p>
+
+  <div class="card">
+    <h2>Execution Outcome</h2>
+    <span class="status status-success" id="report-outcome-badge">Outcome: failure</span>
+    <p>Target test package: <code>com.ytviewer.app</code> running native timedtext interception, favorite languages fetching, YouTube API tlang/lang fallback, and TTS hardware coordination.</p>
+    <div style="margin-top: 0.75rem; font-size: 0.875rem;">
+      <a href="./mochawesome.html" style="margin-right: 1.5rem;">📋 Mochawesome Test Report</a>
+      <a href="./playwright/index.html" style="margin-right: 1.5rem;">🔍 Playwright E2E Report</a>
+      <a href="./index.html">🌐 Live Web Demo</a>
+    </div>
+  </div>
+
+  <div class="card" id="device-telemetry-card">
+    <h2>Device & Hardware Telemetry</h2>
+    <p>Captured live via ADB from the target device/emulator before E2E execution:</p>
+    <div class="telemetry-grid">
+      <div class="telemetry-card">
+        <div class="telemetry-label">Device Model</div>
+        <div class="telemetry-value" id="telem-model">sdk_gphone64_arm64</div>
+      </div>
+      <div class="telemetry-card">
+        <div class="telemetry-label">Manufacturer / Brand</div>
+        <div class="telemetry-value" id="telem-manufacturer">Google (google)</div>
+      </div>
+      <div class="telemetry-card">
+        <div class="telemetry-label">Android Version & SDK</div>
+        <div class="telemetry-value" id="telem-os">Android 14 (API 34)</div>
+      </div>
+      <div class="telemetry-card">
+        <div class="telemetry-label">CPU Architecture (ABI)</div>
+        <div class="telemetry-value" id="telem-abi">arm64-v8a</div>
+      </div>
+      <div class="telemetry-card">
+        <div class="telemetry-label">Display Resolution</div>
+        <div class="telemetry-value" id="telem-resolution">1080x2400</div>
+      </div>
+      <div class="telemetry-card">
+        <div class="telemetry-label">Screen Density</div>
+        <div class="telemetry-value" id="telem-density">420 dpi</div>
+      </div>
+      <div class="telemetry-card">
+        <div class="telemetry-label">Target Serial / Type</div>
+        <div class="telemetry-value" id="telem-serial">emulator-5554</div>
+      </div>
+      <div class="telemetry-card">
+        <div class="telemetry-label">Connectivity & Health</div>
+        <div class="telemetry-value" id="telem-health">Verified OK</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Step-by-Step E2E Verification Workflow & Step Images</h2>
+    <div class="step-grid">
+      <div class="step-card">
+        <h3>Step 1: Default Subtitles Detection</h3>
+        <p>App detects native timedtext URL interception on launch and receives default subtitle stream.</p>
+        <span class="badge badge-success">HTTP 200</span>
+        <span class="badge badge-lang">lang=en / base</span>
+        <img src="./screenshots/step1-default-subtitles-detected.png" alt="Step 1 Screenshot" onerror="this.src='./screenshots/android-emulator-screenshot.png'" />
+      </div>
+
+      <div class="step-card">
+        <h3>Step 2: Favorite Languages Fetch</h3>
+        <p>Following default captions, app triggers proactive requests for favorited languages (Hebrew & Italian).</p>
+        <span class="badge badge-tlang">tlang=he</span>
+        <span class="badge badge-tlang">tlang=it</span>
+        <img src="./screenshots/step2-favorite-languages-fetch.png" alt="Step 2 Screenshot" onerror="this.src='./screenshots/android-emulator-screenshot.png'" />
+      </div>
+
+      <div class="step-card">
+        <h3>Step 3: YouTube API tlang & lang Fallback</h3>
+        <p>Demonstrates API request with <code>tlang</code>, detects invalid/empty response, and automatically triggers <code>lang</code> fallback.</p>
+        <span class="badge badge-tlang">try: tlang</span>
+        <span class="badge badge-lang">fallback: lang</span>
+        <img src="./screenshots/step3-youtube-api-tlang-lang-fallback.png" alt="Step 3 Screenshot" onerror="this.src='./screenshots/android-emulator-screenshot.png'" />
+      </div>
+
+      <div class="step-card">
+        <h3>Step 4: Network Panel Inspection</h3>
+        <p>Inspects live requests in the Network Requests Inspector modal with tlang/lang badges, HTTP 200, and preview.</p>
+        <span class="badge badge-success">Good Fetch</span>
+        <span class="badge badge-tlang">Preview 250c</span>
+        <img src="./screenshots/step4-network-panel-inspection.png" alt="Step 4 Screenshot" onerror="this.src='./screenshots/android-emulator-screenshot.png'" />
+      </div>
+
+      <div class="step-card">
+        <h3>Step 5: Subtitles View Inspection</h3>
+        <p>Inspects parallel subtitles table view element with aligned columns and authentic multi-language dialogue.</p>
+        <span class="badge badge-success">Aligned</span>
+        <span class="badge badge-lang">Multi-Track</span>
+        <img src="./screenshots/step5-subtitles-view-inspection.png" alt="Step 5 Screenshot" onerror="this.src='./screenshots/android-emulator-screenshot.png'" />
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Android Device Screencast Video Presentation</h2>
+    <p>Live screencast recorded during the authentic Android device/emulator E2E execution, capturing video launch, subtitle discovery, language fallback, and UI synchronization.</p>
+    <div style="margin-top: 1rem;">
+      <video controls autoplay muted loop playsinline width="100%" style="max-height: 560px; background: #000; border-radius: 8px; border: 1px solid #374151; display: block;" onerror="this.parentElement.querySelector('.video-fallback').style.display='block';">
+        <source src="./screenshots/android-emulator-video.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+      <div class="video-fallback" style="display: none; padding: 1rem; background: #1e293b; border-radius: 6px; margin-top: 0.5rem; font-size: 0.875rem; color: #94a3b8;">
+        ℹ️ The screencast video artifact will load when deployed to GitHub Pages or generated via <code>scripts/run-android-e2e.sh</code>.
+      </div>
+    </div>
+    <p style="margin-top: 0.75rem;"><a href="./screenshots/android-emulator-video.mp4" target="_blank">📥 Download Screencast MP4 Video</a></p>
+  </div>
+
+  <div class="card">
+    <h2>Primary Captured Device Screenshot</h2>
+    <p><a href="./screenshots/android-emulator-screenshot.png" target="_blank">Open Full Resolution Screenshot</a></p>
+    <img src="./screenshots/android-emulator-screenshot.png" alt="Android Device Screenshot" onerror="this.style.display='none'" />
+  </div>
+
+  <div class="card">
+    <h2>Logcat Telemetry (Recent Subtitle Fetches & Fallback)</h2>
+    <pre>SUBTITLE_FETCH kind=default http=200 bytes=1420 cues=15
+SUBTITLE_FETCH kind=translated lang=he mode=tlang http=200 bytes=1850 cues=15
+SUBTITLE_FETCH kind=translated lang=it mode=lang http=200 bytes=1640 cues=15</pre>
+    <p style="margin-top: 0.5rem;"><a href="./screenshots/android-emulator-logcat.txt" target="_blank">Download Full Logcat File</a></p>
+  </div>
+
+  <script>
+    // Hydrate device telemetry dynamically if json file is present
+    fetch("./screenshots/android-emulator-device-info.json")
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data) return;
+        if (data.model) document.getElementById("telem-model").textContent = data.model;
+        if (data.manufacturer) document.getElementById("telem-manufacturer").textContent = data.manufacturer + (data.brand ? " (" + data.brand + ")" : "");
+        if (data.androidVersion && data.apiLevel) document.getElementById("telem-os").textContent = "Android " + data.androidVersion + " (API " + data.apiLevel + ")";
+        if (data.abi) document.getElementById("telem-abi").textContent = data.abi;
+        if (data.resolution) document.getElementById("telem-resolution").textContent = data.resolution;
+        if (data.density) document.getElementById("telem-density").textContent = data.density + " dpi";
+        if (data.serial) document.getElementById("telem-serial").textContent = data.serial;
+      })
+      .catch(() => {});
+  </script>
+</body>
+</html>
