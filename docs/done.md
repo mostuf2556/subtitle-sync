@@ -10,6 +10,14 @@
 - Created dedicated verification suite `scripts/verify-fork-readme-links.ts` (`npm run test:fork-readme-links`).
 - Registered `test:fork-readme-links` in `package.json` and documented in `docs/files.md`.
 
+### Subtask 47.2: Ensure GitHub Actions E2E Tests Pass and Deploy to GitHub Pages on Forked Repos
+
+- Added `push: branches: [main, master]` triggers to `.github/workflows/web.yml` and `.github/workflows/emulation.yml` in addition to `workflow_run`, ensuring forks automatically execute tests and publish reports on push.
+- Verified resilient report publication (`if: always() && ...` and `keep_files: true`) across `web.yml` and `emulation.yml`.
+- Verified `deploy-demo.yml` preserves all E2E reports (`mochawesome.html`, `playwright/`, `android-emulator-report.html`, and `screenshots/`).
+- Created dedicated verification suite `scripts/verify-fork-ci-workflows.ts` (`npm run test:fork-ci-workflows`).
+- Verified all Playwright web E2E tests and workflow validation suites pass cleanly.
+
 ## Task 46: Fix E2E Report Generation, CI Workflows & GitHub Pages Staging
 
 ### Subtask 46.1: Fix Playwright E2E Locator Ambiguity

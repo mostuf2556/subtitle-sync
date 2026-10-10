@@ -75,10 +75,10 @@ console.log("✅ PASS: update.apk.sh exists and is referenced in README.md");
 
 // 4. Verify GitHub Pages links in README table and static assets
 assert(
-  readmeContent.includes("https://mostuf2556.github.io/Youtubenet6/") ||
-    readmeContent.includes("https://mostuf2556.github.io/subtitle-sync/") ||
-    readmeContent.includes("https://mostuf25561.github.io/subtitle-sync/"),
-  "README.md must contain valid GitHub Pages demo URL",
+  /https:\/\/[a-zA-Z0-9_\-.]+\.github\.io\/(?:subtitle-sync|Youtubenet6)\//.test(
+    readmeContent,
+  ),
+  "README.md must contain valid GitHub Pages demo URL for subtitle-sync",
 );
 assert(
   readmeContent.includes("mochawesome.html"),
@@ -99,6 +99,14 @@ assert(
 console.log(
   "✅ PASS: All E2E test report links (Mochawesome, Playwright, Android Emulator) verified in README.md",
 );
+
+assert(
+  /https:\/\/github\.com\/[a-zA-Z0-9_\-.]+\/subtitle-sync\/releases/.test(
+    readmeContent,
+  ),
+  "README.md must contain link to all releases page",
+);
+console.log("✅ PASS: All Releases page link verified in README.md");
 
 const screenshotAsset = path.resolve(
   rootDir,

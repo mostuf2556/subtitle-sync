@@ -1,5 +1,6 @@
 {
   "name": "subtitle-sync",
+  "version": "1.0.0",
   "private": true,
   "sideEffects": false,
   "type": "module",
@@ -62,6 +63,7 @@
     "test:hotfix": "tsx scripts/verify-hotfix-links-and-actions.ts",
     "test:fork-readme-links": "tsx scripts/verify-fork-readme-links.ts",
     "test:fork-ci-workflows": "tsx scripts/verify-fork-ci-workflows.ts",
+    "test:apk-updater-robustness": "tsx scripts/verify-apk-updater-robustness.ts",
     "test:android": "bash scripts/run-android-e2e.sh"
   },
   "overrides": {

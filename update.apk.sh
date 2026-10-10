@@ -14,11 +14,11 @@ set -uo pipefail
 export MSYS_NO_PATHCONV=1
 export MSYS2_ARG_CONV_EXCL="*"
 
-REPO_OWNER="mostuf2556"
+REPO_OWNER="ofer-shaham"
 REPO_NAME="subtitle-sync"
-ALT_REPO_OWNER="mostuf25561"
-ALT_REPO_NAME="youtubenet3"
-FALLBACK_REPO_OWNER="baobabitogether-a11y"
+ALT_REPO_OWNER="mostuf2556"
+ALT_REPO_NAME="subtitle-sync"
+FALLBACK_REPO_OWNER="mostuf25561"
 FALLBACK_REPO_NAME="youtubenet3"
 ARG_INPUT="${1:-latest}"
 APK_NAME="YouTube-Viewer-debug.apk"
@@ -198,6 +198,13 @@ echo ""
 echo "[*] Uninstalling existing ${PACKAGE_NAME} from device..."
 UNINSTALL_RES=$($ADB_CMD uninstall "${PACKAGE_NAME}" 2>&1 || true)
 echo "${UNINSTALL_RES}"
+
+# Comprehensive multi-user purge to prevent INSTALL_FAILED_UPDATE_INCOMPATIBLE,
+# INSTALL_FAILED_VERSION_DOWNGRADE, or collided package signatures
+$ADB_CMD shell pm uninstall --user 0 "${PACKAGE_NAME}" 2>/dev/null || true
+$ADB_CMD shell pm uninstall "${PACKAGE_NAME}" 2>/dev/null || true
+$ADB_CMD shell pm clear "${PACKAGE_NAME}" 2>/dev/null || true
+
 if echo "${UNINSTALL_RES}" | grep -iq "Success"; then
   echo "[+] Existing version removed."
 else
@@ -219,6 +226,21 @@ echo "${INSTALL_OUTPUT}"
 
 if echo "${INSTALL_OUTPUT}" | grep -iq "Success"; then
   INSTALL_SUCCESS=true
+fi
+
+# Detect package collision, signature mismatch, or version downgrade error
+if [ "$INSTALL_SUCCESS" = false ] && echo "${INSTALL_OUTPUT}" | grep -iqE "INSTALL_FAILED_UPDATE_INCOMPATIBLE|INSTALL_FAILED_VERSION_DOWNGRADE|INSTALL_FAILED_CONFLICTING_PROVIDER|INSTALL_FAILED_ALREADY_EXISTS|INSTALL_FAILED_DUPLICATE_PERMISSION"; then
+  echo "[!] Package collision detected in primary install. Performing deep purge across all user spaces..."
+  $ADB_CMD shell pm uninstall --user 0 "${PACKAGE_NAME}" 2>/dev/null || true
+  $ADB_CMD shell pm uninstall "${PACKAGE_NAME}" 2>/dev/null || true
+  $ADB_CMD shell pm clear "${PACKAGE_NAME}" 2>/dev/null || true
+  $ADB_CMD uninstall "${PACKAGE_NAME}" 2>/dev/null || true
+  echo "[*] Retrying install after collision purge..."
+  RETRY_OUTPUT=$($ADB_CMD install -r -d -t "${ADB_TARGET_PATH}" 2>&1 || true)
+  echo "${RETRY_OUTPUT}"
+  if echo "${RETRY_OUTPUT}" | grep -iq "Success"; then
+    INSTALL_SUCCESS=true
+  fi
 fi
 
 # Method 2: If native Windows path fails, try bash POSIX path
@@ -258,6 +280,20 @@ if [ "$INSTALL_SUCCESS" = false ]; then
   INSTALL_OUTPUT_4=$($ADB_CMD install --user 0 -r -d -t "${ADB_TARGET_PATH}" 2>&1 || true)
   echo "${INSTALL_OUTPUT_4}"
   if echo "${INSTALL_OUTPUT_4}" | grep -iq "Success"; then
+    INSTALL_SUCCESS=true
+  fi
+fi
+
+# Final collision fallback: if still failing due to collision, full purge and final push install
+if [ "$INSTALL_SUCCESS" = false ]; then
+  echo "[!] Final fallback: performing deep package purge and retrying installation..."
+  $ADB_CMD shell pm uninstall --user 0 "${PACKAGE_NAME}" 2>/dev/null || true
+  $ADB_CMD shell pm uninstall "${PACKAGE_NAME}" 2>/dev/null || true
+  $ADB_CMD uninstall "${PACKAGE_NAME}" 2>/dev/null || true
+  $ADB_CMD shell pm clear "${PACKAGE_NAME}" 2>/dev/null || true
+  FINAL_OUTPUT=$($ADB_CMD install -r -d -t "${ADB_TARGET_PATH}" 2>&1 || true)
+  echo "${FINAL_OUTPUT}"
+  if echo "${FINAL_OUTPUT}" | grep -iq "Success"; then
     INSTALL_SUCCESS=true
   fi
 fi

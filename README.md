@@ -24,6 +24,8 @@ curl -fsSL https://raw.githubusercontent.com/ofer-shaham/subtitle-sync/main/upda
 3. **Installs onto Device**: Executes `adb install -r -d -t` targeting package `com.ytviewer.app` with multi-tiered fallback pipelines.
 4. **Launches App**: Starts `com.ytviewer.app/.MainActivity` on the connected target device or emulator.
 
+To view all released versions, release notes, and download assets, visit the [**All Releases**](https://github.com/ofer-shaham/subtitle-sync/releases) page.
+
 ---
 
 ## 🌐 GitHub Pages Links

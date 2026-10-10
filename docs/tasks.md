@@ -18,7 +18,7 @@
   - Provide static `public/android-emulator-report.html` asset so GitHub Pages never serves a 404 for the emulator report.
   - Update `scripts/update-readme.mjs` and `.github/workflows/update-readme.yml` for zero-touch fork sync.
   - Add dedicated test `scripts/verify-fork-readme-links.ts` and verify.
-- [ ] **Subtask 47.2: Ensure GitHub Actions E2E Tests Pass and Deploy to GitHub Pages on Forked Repos**:
+- [x] **Subtask 47.2: Ensure GitHub Actions E2E Tests Pass and Deploy to GitHub Pages on Forked Repos**:
   - Add `push: branches: [main, master]` triggers to `web.yml` and `emulation.yml` in addition to `workflow_run` so forks automatically run CI and publish to `gh-pages`.
   - Verify `web.yml`, `deploy-demo.yml`, and `emulation.yml` deploy all reports (`mochawesome.html`, `playwright/`, `android-emulator-report.html`, `screenshots/`) to `gh-pages` with `keep_files: true`.
   - Run all E2E test suites locally and verify app compilation and linting.

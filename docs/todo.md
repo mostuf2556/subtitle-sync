@@ -1,7 +1,7 @@
 # Active Sub-task
 
-## Subtask 47.2: Ensure GitHub Actions E2E Tests Pass and Deploy to GitHub Pages on Forked Repos
-- Add `push: branches: [main, master]` triggers to `web.yml` and `emulation.yml` in addition to `workflow_run` so forks automatically run CI and publish to `gh-pages`.
-- Verify `web.yml`, `deploy-demo.yml`, and `emulation.yml` deploy all reports (`mochawesome.html`, `playwright/`, `android-emulator-report.html`, `screenshots/`) to `gh-pages` with `keep_files: true`.
-- Run all E2E test suites locally and verify app compilation and linting.
-- Add dedicated verification test `scripts/verify-fork-ci-workflows.ts` and verify.
+## Subtask 48.1: Robust APK Installation & Version Code Handling in Update Script
+- Update `update.apk.sh` to handle package collisions (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`, `INSTALL_FAILED_VERSION_DOWNGRADE`, `INSTALL_FAILED_CONFLICTING_PROVIDER`), performing a multi-level purge (`pm uninstall`, `pm uninstall --user 0`, `pm clear`) and retrying cleanly.
+- Ensure `package.json` defines a standard `"version"` field (e.g. `1.0.0`) and `release-apk.yml` correctly propagates version code and version name.
+- In `README.md`, ensure the APK section links to the all releases page (`https://github.com/ofer-shaham/subtitle-sync/releases`).
+- Add dedicated test `scripts/verify-apk-updater-robustness.ts` and verify.

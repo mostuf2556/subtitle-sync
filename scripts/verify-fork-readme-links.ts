@@ -99,10 +99,6 @@ try {
 } finally {
   // Restore original repository identity
   fs.writeFileSync(readmePath, originalReadme, "utf8");
-  execSync("node scripts/update-readme.mjs mostuf2556 subtitle-sync", {
-    cwd: rootDir,
-    stdio: "pipe",
-  });
 }
 
 console.log("====================================================");
