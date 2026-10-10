@@ -1026,7 +1026,10 @@ function Index() {
   }, []);
 
   useEffect(() => {
-    if (isAndroid) return;
+    // Fixtures exist only for the demo video and only in the web demo. Never load them
+    // on Android (the bridge may be detected after first render) or for any other video.
+    if (isAndroid || nativeShell() || videoId !== DEMO_VIDEO) return;
+    let cancelled = false;
     Promise.all(
       LANGS.map(async (l) => {
         const fixtureUrl = getFixturesUrl(DEMO_VIDEO, l.code);
@@ -1060,6 +1063,7 @@ function Index() {
         }
       }),
     ).then((entries) => {
+      if (cancelled || nativeShell()) return;
       const validEntries = entries.filter(
         (entry): entry is readonly [string, Json3] => entry !== null,
       );
@@ -1070,7 +1074,10 @@ function Index() {
         setShown((prev) => (prev.length === 0 ? Object.keys(newTracks) : prev));
       });
     });
-  }, [isAndroid]);
+    return () => {
+      cancelled = true;
+    };
+  }, [isAndroid, videoId]);
 
   const rows = useMemo<Row[]>(
     () =>
