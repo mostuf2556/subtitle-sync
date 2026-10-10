@@ -78,6 +78,11 @@
     "test:emulator-screencast-report": "tsx scripts/verify-emulator-screencast-report.ts",
     "test:android-device-e2e": "tsx scripts/verify-android-device-e2e-suite.ts",
     "test:android-adaptive": "tsx scripts/verify-android-device-e2e-adaptive.ts",
+    "test:accordion-colors": "tsx scripts/verify-accordion-colors.ts",
+    "test:auto-speak-on-fetch": "tsx scripts/verify-auto-speak-on-fetch.ts",
+    "test:language-boxes": "tsx scripts/verify-language-boxes-selection.ts",
+    "test:language-player-accordion": "tsx scripts/verify-language-video-player-accordion.ts",
+    "test:autospeak-init": "tsx scripts/verify-autospeak-initialization-order.ts",
     "test:android": "bash scripts/run-android-e2e.sh"
   },
   "overrides": {

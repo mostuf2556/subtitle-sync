@@ -52,7 +52,11 @@ import {
   setDebugModeSetting,
   loadVideoSettings,
   saveVideoSettings,
+  getAutoSpeakOnFetchSetting,
+  setAutoSpeakOnFetchSetting,
 } from "@/utils/appSettings";
+import { LanguageBoxesSelector } from "@/components/LanguageBoxesSelector";
+import { LanguageVideoPlayerPanel } from "@/components/LanguageVideoPlayerPanel";
 import {
   getAudioTrackMode,
   setAudioTrackMode,
@@ -144,16 +148,7 @@ declare global {
 
 type SpeechProgress = { lang: string; row: number; start: number; end: number } | null;
 type Theme = "light" | "dark" | "dark-blue";
-type PanelId = "player" | "playback" | "library" | "parser" | "languages" | "subtitles";
-
-const PANELS: { id: PanelId; title: string }[] = [
-  { id: "player", title: "Video" },
-  { id: "playback", title: "Playback" },
-  { id: "parser", title: "Parser" },
-  { id: "languages", title: "Languages" },
-  { id: "subtitles", title: "Parallel subtitles" },
-  { id: "library", title: "Video library" },
-];
+import { type PanelId, PANELS, ACCORDION_THEMES } from "@/config/accordionThemes";
 
 function cancelSpeech() {
   if (typeof window !== "undefined") {
@@ -447,6 +442,13 @@ function Index() {
     }
     return [];
   });
+  const [autoSpeakOnFetch, setAutoSpeakOnFetch] = useState<boolean>(() =>
+    getAutoSpeakOnFetchSetting(),
+  );
+  const [rates, setRates] = useState<Record<string, number>>(() =>
+    Object.fromEntries(LANGS.map((lang) => [lang.code, 1])),
+  );
+  const [voiceSelections, setVoiceSelections] = useState<Record<string, string>>({});
 
   const baseLanguage = useMemo(() => {
     if (observedUrl) {
@@ -570,9 +572,13 @@ function Index() {
           `Subtitles successfully loaded for ${Object.keys(next).join(", ")}!`,
           Object.keys(next)[0],
         );
+        if (autoSpeakOnFetch) {
+          // Auto-enable "Speak" checkbox for the fetched languages
+          setSpoken((prev) => Array.from(new Set([...prev, ...Object.keys(next)])));
+        }
       }
     },
-    [isAndroid],
+    [isAndroid, autoSpeakOnFetch],
   );
 
   const manualFetchFailed = () => {
@@ -586,17 +592,21 @@ function Index() {
     setTargetLanguages(newTargetLangs);
     setUserLearningLanguages(newTargetLangs);
     setShown((prev) => Array.from(new Set([...prev, ...newTargetLangs])));
-    if (newlyAdded.length > 0 && isAndroid) {
-      setCaptionStatus(
-        `Fetching live subtitles for added favorite language: ${newlyAdded.join(", ")}…`,
-      );
-      void fetchFavoriteLanguageSubtitles(newlyAdded);
+    if (newlyAdded.length > 0) {
+      if (isAndroid) {
+        setCaptionStatus(
+          `Fetching live subtitles for added favorite language: ${newlyAdded.join(", ")}…`,
+        );
+        void fetchFavoriteLanguageSubtitles(newlyAdded);
+      } else {
+        // Web demo: auto enable "Speak" checkbox upon selection if autoSpeakOnFetch is true
+        if (autoSpeakOnFetch) {
+          setSpoken((prev) => Array.from(new Set([...prev, ...newlyAdded])));
+        }
+      }
     }
   };
   const [languageOrder, setLanguageOrder] = useState(() => LANGS.map((lang) => lang.code));
-  const [rates, setRates] = useState<Record<string, number>>(() =>
-    Object.fromEntries(LANGS.map((lang) => [lang.code, 1])),
-  );
   const [ttsRatios, setTtsRatios] = useState<Record<string, number>>(() => {
     const saved = getTtsRatiosPreference();
     const defaults = Object.fromEntries(LANGS.map((lang) => [lang.code, 1]));
@@ -613,7 +623,6 @@ function Index() {
       }));
     }
   }, [videoId]);
-  const [voiceSelections, setVoiceSelections] = useState<Record<string, string>>({});
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [theme, setTheme] = useState<Theme>("light");
   const themeWasSelectedRef = useRef(false);
@@ -680,6 +689,7 @@ function Index() {
     playback: false,
     parser: false,
     languages: false,
+    "language-player": false,
     subtitles: false,
     library: false,
   });
@@ -895,12 +905,16 @@ function Index() {
           setTracks((prev) => ({ ...prev, [lang]: json }));
           setShown((prev) => (prev.includes(lang) ? prev : [...prev, lang]));
         });
+        if (autoSpeakOnFetch) {
+          // Auto-enable "Speak" checkbox for the fetched language
+          setSpoken((prev) => (prev.includes(lang) ? prev : [...prev, lang]));
+        }
       }
     };
     return () => {
       delete window.onNativeCaptionsInterceptedBase64;
     };
-  }, [isAndroid, videoId]);
+  }, [isAndroid, videoId, autoSpeakOnFetch]);
 
   useEffect(() => {
     if (!isAndroid || !observedUrl || !defaultCaptionsLoaded) return;
@@ -1086,20 +1100,26 @@ function Index() {
 
   // Main screen presents favorite languages and intercepted tracks for show/hide, speech toggles, ordering, and per-language TTS controls
   const orderedLangs = useMemo(() => {
+    let list: Array<{ code: string; name: string; tts: string }>;
     if (!isAndroid) {
-      return languageOrder
+      list = languageOrder
         .filter((code) => LANGS.some((l) => l.code === code))
         .map((code) => getLanguageMeta(code));
+    } else {
+      const favoriteSet = new Set(targetLanguages);
+      const combinedSet = new Set([
+        ...favoriteSet,
+        ...(baseLanguage ? [baseLanguage] : []),
+        ...(tracks ? Object.keys(tracks) : []),
+      ]);
+      list = languageOrder
+        .filter((code) => combinedSet.has(code))
+        .map((code) => getLanguageMeta(code));
     }
-    const favoriteSet = new Set(targetLanguages);
-    const combinedSet = new Set([
-      ...favoriteSet,
-      ...(baseLanguage ? [baseLanguage] : []),
-      ...(tracks ? Object.keys(tracks) : []),
-    ]);
-    return languageOrder
-      .filter((code) => combinedSet.has(code))
-      .map((code) => getLanguageMeta(code));
+    // Keep clicked / selected favorite languages strictly on top
+    const selected = list.filter((l) => targetLanguages.includes(l.code));
+    const unselected = list.filter((l) => !targetLanguages.includes(l.code));
+    return [...selected, ...unselected];
   }, [isAndroid, languageOrder, targetLanguages, baseLanguage, tracks]);
   const st = useRef({
     rows,
@@ -1664,6 +1684,7 @@ function Index() {
           return (
             <AccordionSection
               key={panelId}
+              id={panelId}
               title={panel.title}
               open={openPanels[panelId]}
               onOpenChange={(open) => setOpenPanels((current) => ({ ...current, [panelId]: open }))}
@@ -1671,7 +1692,7 @@ function Index() {
               onMoveDown={() => movePanel(panelId, 1)}
               canMoveUp={panelIndex > 0}
               canMoveDown={panelIndex < panelOrder.length - 1}
-              wide={panelId === "subtitles"}
+              wide={panelId === "subtitles" || panelId === "language-player"}
             >
               {panelId === "player" && (
                 <div>
@@ -2412,44 +2433,38 @@ function Index() {
 
               {panelId === "languages" && (
                 <>
-                  <div className="mb-4 space-y-2 border-b border-border pb-4">
-                    <div className="flex items-center justify-between">
-                      <label htmlFor="target-language-select" className="font-medium text-sm">
-                        Favorite languages
-                      </label>
-                      <span className="text-xs text-muted-foreground" suppressHydrationWarning>
-                        {targetLanguages.length} selected
-                      </span>
+                  <div className="mb-4 space-y-3 border-b border-border pb-4">
+                    <LanguageBoxesSelector
+                      catalog={isAndroid ? SUPPORTED_LANGUAGES_CATALOG : LANGS}
+                      selectedLanguages={targetLanguages}
+                      onSelectionChange={handleTargetLanguagesChange}
+                      isAndroid={isAndroid}
+                    />
+                    <div className="flex items-center justify-between p-2.5 rounded-lg border border-border bg-muted/20">
+                      <div className="space-y-0.5">
+                        <label
+                          htmlFor="auto-speak-on-fetch-toggle"
+                          className="text-xs font-medium text-foreground cursor-pointer"
+                        >
+                          Auto speak language upon fetching
+                        </label>
+                        <div className="text-[11px] text-muted-foreground">
+                          Automatically enable the "Speak" checkbox for languages when their
+                          subtitles are loaded
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        id="auto-speak-on-fetch-toggle"
+                        data-testid="auto-speak-on-fetch-toggle"
+                        checked={autoSpeakOnFetch}
+                        onChange={(e) => {
+                          setAutoSpeakOnFetch(e.target.checked);
+                          setAutoSpeakOnFetchSetting(e.target.checked);
+                        }}
+                        className="h-4 w-4 rounded border-input text-primary focus:ring-primary cursor-pointer"
+                      />
                     </div>
-                    <select
-                      id="target-language-select"
-                      aria-label="Target languages"
-                      suppressHydrationWarning
-                      multiple
-                      size={
-                        isAndroid ? Math.min(SUPPORTED_LANGUAGES_CATALOG.length, 6) : LANGS.length
-                      }
-                      value={targetLanguages}
-                      onChange={(event) => {
-                        const next = Array.from(
-                          event.target.selectedOptions,
-                          (option) => option.value,
-                        );
-                        handleTargetLanguagesChange(next);
-                      }}
-                      className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
-                    >
-                      {(isAndroid ? SUPPORTED_LANGUAGES_CATALOG : LANGS).map((lang) => (
-                        <option key={lang.code} value={lang.code}>
-                          {lang.name}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-xs text-muted-foreground">
-                      {isAndroid
-                        ? "Select desired favorite languages to learn from all 84 supported languages. Android fetches each translation track via tlang."
-                        : `Select favorite languages from available demo tracks (${LANGS.length} available). Main screen controls present only favorite languages.`}
-                    </p>
                   </div>
                   <table className="w-full">
                     <thead>
@@ -2724,6 +2739,33 @@ function Index() {
                       })}
                   </div>
                 </>
+              )}
+
+              {panelId === "language-player" && (
+                <LanguageVideoPlayerPanel
+                  currentVideoId={videoId}
+                  availableLanguages={isAndroid ? SUPPORTED_LANGUAGES_CATALOG : LANGS}
+                  onOpenNetworkInspector={() => {
+                    setDebugModeState(true);
+                    setDebugModeSetting(true);
+                    setNetworkInspectorOpen(true);
+                  }}
+                  onSubtitlesLoaded={(lang, json) => {
+                    startSubtitlesTransition(() => {
+                      setTracks((prev) => ({ ...prev, [lang]: json }));
+                      setShown((prev) => (prev.includes(lang) ? prev : [...prev, lang]));
+                    });
+                    if (autoSpeakOnFetch) {
+                      setSpoken((prev) => (prev.includes(lang) ? prev : [...prev, lang]));
+                    }
+                  }}
+                  autoSpeakEnabled={autoSpeakOnFetch}
+                  onSpeakLanguage={(langCode) => {
+                    if (autoSpeakOnFetch) {
+                      setSpoken((prev) => (prev.includes(langCode) ? prev : [...prev, langCode]));
+                    }
+                  }}
+                />
               )}
 
               {panelId === "subtitles" &&
@@ -3109,6 +3151,7 @@ function HighlightedSubtitle({
 }
 
 function AccordionSection({
+  id,
   title,
   children,
   open,
@@ -3119,6 +3162,7 @@ function AccordionSection({
   canMoveDown,
   wide = false,
 }: {
+  id: PanelId;
   title: string;
   children: React.ReactNode;
   open: boolean;
@@ -3129,19 +3173,40 @@ function AccordionSection({
   canMoveDown: boolean;
   wide?: boolean;
 }) {
+  const theme = ACCORDION_THEMES[id] || {
+    borderLeft: "border-l-4 border-l-neutral-500",
+    summaryBg: "bg-muted/30 hover:bg-muted/50",
+    badgeBg: "bg-neutral-500/20 text-neutral-600 dark:text-neutral-300 border-neutral-500/30",
+    dotBg: "bg-neutral-500",
+    tagColor: "neutral",
+  };
+
   return (
     <details
       data-panel={title.toLowerCase().replace(/\s+/g, "-")}
+      data-panel-id={id}
+      data-accordion-type={id}
+      data-accordion-color={theme.tagColor}
       open={open}
       onToggle={(event) => onOpenChange(event.currentTarget.open)}
-      className={`overflow-hidden rounded-lg border border-border bg-card text-sm ${wide ? "lg:col-span-2" : ""}`}
+      className={`overflow-hidden rounded-lg border border-border bg-card text-sm ${theme.borderLeft} ${wide ? "lg:col-span-2" : ""}`}
     >
-      <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 marker:hidden">
+      <summary
+        data-testid={`accordion-bar-${id}`}
+        className={`flex cursor-pointer list-none items-center gap-2 px-4 py-3 marker:hidden transition-colors ${theme.summaryBg}`}
+      >
         <ChevronDown
           aria-hidden="true"
           className={`size-4 transition-transform ${open ? "rotate-180" : ""}`}
         />
-        <h2 className="mr-auto text-xs uppercase tracking-wider text-muted-foreground">{title}</h2>
+        <h2 className="mr-auto text-xs font-semibold uppercase tracking-wider text-foreground flex items-center gap-2">
+          <span>{title}</span>
+          <span
+            data-testid={`accordion-color-badge-${id}`}
+            className={`inline-block size-2 rounded-full ${theme.dotBg}`}
+            aria-hidden="true"
+          />
+        </h2>
         <Button
           type="button"
           variant="ghost"
