@@ -13,6 +13,7 @@ import {
   RotateCcw,
   SlidersHorizontal,
   Smartphone,
+  Subtitles,
   Sun,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -148,10 +149,10 @@ type PanelId = "player" | "playback" | "library" | "parser" | "languages" | "sub
 const PANELS: { id: PanelId; title: string }[] = [
   { id: "player", title: "Video" },
   { id: "playback", title: "Playback" },
-  { id: "library", title: "Video library" },
   { id: "parser", title: "Parser" },
   { id: "languages", title: "Languages" },
   { id: "subtitles", title: "Parallel subtitles" },
+  { id: "library", title: "Video library" },
 ];
 
 function cancelSpeech() {
@@ -315,6 +316,10 @@ function Index() {
         const id = parseVideoId(target);
         if (id) return id;
       }
+      const isAndroidEnv = Boolean(nativeShell()) || params.get("android") === "true";
+      if (isAndroidEnv) {
+        return DEFAULT_VIDEO_ID;
+      }
     }
     return DEMO_VIDEO;
   });
@@ -435,6 +440,10 @@ function Index() {
     if (typeof window !== "undefined") {
       const saved = getUserLearningLanguages();
       if (saved && saved.length > 0) return saved;
+      const isAndroidEnv =
+        Boolean(nativeShell()) ||
+        new URLSearchParams(window.location.search).get("android") === "true";
+      if (isAndroidEnv) return ["he", "it"];
     }
     return [];
   });
@@ -667,12 +676,12 @@ function Index() {
   const [showVideoSubtitles, setShowVideoSubtitles] = useState(true);
   const [panelOrder, setPanelOrder] = useState<PanelId[]>(() => PANELS.map((panel) => panel.id));
   const [openPanels, setOpenPanels] = useState<Record<PanelId, boolean>>({
-    player: true,
-    playback: true,
-    library: true,
-    parser: true,
-    languages: true,
-    subtitles: true,
+    player: false,
+    playback: false,
+    parser: false,
+    languages: false,
+    subtitles: false,
+    library: false,
   });
 
   const handleSelectLibraryVideo = (newId: string, customUrl?: string) => {
@@ -901,9 +910,7 @@ function Index() {
     } catch (_e) {
       // ignore malformed URL
     }
-    const selected = [
-      ...new Set(targetLanguages.filter((code) => code && (!defaultLang || code !== defaultLang))),
-    ];
+    const selected = [...new Set(targetLanguages.filter((code) => Boolean(code)))];
     if (selected.length > 0) {
       setCaptionStatus("Fetching live subtitles for favorite languages…");
       void fetchFavoriteLanguageSubtitles(selected, observedUrl);
@@ -1572,6 +1579,20 @@ function Index() {
           </Button>
         )}
         <Button
+          id="caption-toggle-button"
+          data-testid="caption-toggle-button"
+          type="button"
+          size="sm"
+          variant={showVideoSubtitles ? "default" : "outline"}
+          aria-pressed={showVideoSubtitles}
+          onClick={() => setShowVideoSubtitles((prev) => !prev)}
+          className="gap-1.5"
+          title="Toggle video subtitles"
+        >
+          <Subtitles className="h-4 w-4" />
+          <span className="hidden sm:inline">Captions</span>
+        </Button>
+        <Button
           id="open-apk-release-button"
           data-testid="open-apk-release-button"
           type="button"
@@ -1585,6 +1606,56 @@ function Index() {
           <span className="hidden sm:inline">Latest APK</span>
         </Button>
       </header>
+
+      <div className="px-4 pt-4 md:px-6 md:pt-6">
+        <form
+          id="youtube-url-form"
+          className="flex items-center gap-2 max-w-2xl mx-auto rounded-xl border border-border bg-card p-2 shadow-sm"
+          onSubmit={(event) => {
+            event.preventDefault();
+            const id = parseVideoId(videoInput);
+            if (id) {
+              if (id !== videoId) {
+                setTracks(null);
+                setObservedUrl("");
+                setDefaultCaptionsLoaded(false);
+                setActive(-1);
+                setSpeakingLang(null);
+                setSpeakingRow(-1);
+                setSpeechProgress(null);
+                cancelSpeech();
+                if (typeof window !== "undefined") {
+                  const currentSearch = new URLSearchParams(window.location.search);
+                  if (currentSearch.get("v") !== id) {
+                    currentSearch.set("v", id);
+                    window.history.pushState(
+                      { videoId: id },
+                      "",
+                      `${window.location.pathname}?${currentSearch.toString()}${window.location.hash}`,
+                    );
+                  }
+                }
+              }
+              setVideoId(id);
+            } else {
+              setCaptionStatus("Enter a valid YouTube link or video ID.");
+            }
+          }}
+        >
+          <input
+            id="youtube-url-input"
+            data-testid="youtube-url-input"
+            aria-label="YouTube video URL or ID"
+            value={videoInput}
+            onChange={(event) => setVideoInput(event.target.value)}
+            placeholder="Paste YouTube video link (e.g. https://www.youtube.com/watch?v=vBURridJXZ0)"
+            className="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm"
+          />
+          <Button id="play-video-button" data-testid="play-video-button" type="submit" size="sm">
+            Load video
+          </Button>
+        </form>
+      </div>
 
       <div className="grid items-start gap-4 p-4 md:p-6 lg:grid-cols-2">
         {panelOrder.map((panelId, panelIndex) => {
@@ -1661,24 +1732,36 @@ function Index() {
                         return (
                           <div className="relative h-full w-full">
                             <div ref={playerEl} className="h-full w-full" />
-                            {showVideoSubtitles && speakingLang && speakingRow >= 0 && (
+                            {showVideoSubtitles && (
                               <div
                                 className="pointer-events-none absolute inset-x-3 top-3 text-center"
                                 aria-live="polite"
                               >
                                 <p
-                                  dir={RTL.has(speakingLang) ? "rtl" : "ltr"}
+                                  id="active-subtitle-cue-text"
+                                  data-testid="active-subtitle-cue-text"
+                                  dir={speakingLang && RTL.has(speakingLang) ? "rtl" : "ltr"}
                                   className="inline-block max-w-[92%] rounded-md bg-foreground/90 px-3 py-2 text-base font-medium text-background shadow-lg md:text-lg"
                                 >
-                                  <HighlightedSubtitle
-                                    text={rows[speakingRow]?.texts[speakingLang] ?? ""}
-                                    progress={
-                                      speechProgress?.row === speakingRow &&
-                                      speechProgress.lang === speakingLang
-                                        ? speechProgress
-                                        : null
-                                    }
-                                  />
+                                  {speakingLang && speakingRow >= 0 ? (
+                                    <HighlightedSubtitle
+                                      text={rows[speakingRow]?.texts[speakingLang] ?? ""}
+                                      progress={
+                                        speechProgress?.row === speakingRow &&
+                                        speechProgress.lang === speakingLang
+                                          ? speechProgress
+                                          : null
+                                      }
+                                    />
+                                  ) : active >= 0 && rows[active] ? (
+                                    <span>
+                                      {baseLanguage && rows[active]?.texts[baseLanguage]
+                                        ? rows[active]?.texts[baseLanguage]
+                                        : Object.values(rows[active]?.texts || {})[0] || ""}
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs opacity-75">Subtitles active</span>
+                                  )}
                                 </p>
                               </div>
                             )}
@@ -2917,6 +3000,8 @@ const SubtitleRow = memo(function SubtitleRow({
   return (
     <tr
       key={actualIndex}
+      id={`subtitle-cue-row-${actualIndex}`}
+      data-testid={`subtitle-cue-row-${actualIndex}`}
       data-row={actualIndex}
       onClick={() => onSeek(r, actualIndex)}
       className={`cursor-pointer border-t border-border align-top ${isActive ? "bg-accent" : "hover:bg-muted"}`}

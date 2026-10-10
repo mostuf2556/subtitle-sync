@@ -182,16 +182,21 @@ jobs:
             echo "Starting adb screenrecord..."
             adb shell screenrecord --time-limit 180 --bit-rate 4000000 /sdcard/android-emulator-video.mp4 >/dev/null 2>&1 &
             RECORD_PID=$!
-            adb shell am start -a android.intent.action.VIEW -n com.ytviewer.app/.MainActivity -d "https://www.youtube.com/watch?v=n9qwEOsqsoo"
+            cleanup_recording() {
+              echo "Stopping adb screenrecord..."
+              adb shell kill -2 $(adb shell pidof screenrecord 2>/dev/null) 2>/dev/null || adb shell pkill -2 -f "screenrecord" 2>/dev/null || true
+              wait $RECORD_PID 2>/dev/null || true
+              sleep 2
+              adb pull /sdcard/android-emulator-video.mp4 ./android-emulator-video.mp4 2>/dev/null || true
+              [ -f ./android-emulator-video.mp4 ] && echo "Successfully pulled android-emulator-video.mp4 ($(stat -c%s ./android-emulator-video.mp4 2>/dev/null || echo 0) bytes)"
+            }
+            trap cleanup_recording EXIT INT TERM ERR
+            adb shell am start -a android.intent.action.VIEW -n com.ytviewer.app/.MainActivity -d "https://www.youtube.com/watch?v=vBURridJXZ0"
             adb shell screencap -p /sdcard/screen.png; adb pull /sdcard/screen.png ./android-emulator-screenshot.png || true
             bash scripts/android-e2e-assert.sh
             adb shell screencap -p /sdcard/screen.png; adb pull /sdcard/screen.png ./android-emulator-screenshot.png
-            echo "Stopping adb screenrecord..."
-            adb shell pkill -2 -f "screenrecord" 2>/dev/null || true
-            wait $RECORD_PID 2>/dev/null || true
-            sleep 2
-            adb pull /sdcard/android-emulator-video.mp4 ./android-emulator-video.mp4 || true
-            [ -f ./android-emulator-video.mp4 ] && echo "Successfully pulled android-emulator-video.mp4"
+            cleanup_recording
+            trap - EXIT INT TERM ERR
 
       - name: Publish Android E2E Result to Job Summary
         if: always()
@@ -245,27 +250,34 @@ jobs:
         env:
           E2E_OUTCOME: ${{ steps.android_e2e.outcome }}
         run: |
-          mkdir -p gh-pages-staging/screenshots
+          mkdir -p gh-pages-staging/screenshots gh-pages-staging/android/screenshots
           if [ -f "./android-emulator-screenshot.png" ]; then
             cp ./android-emulator-screenshot.png gh-pages-staging/screenshots/android-emulator-screenshot.png
+            cp ./android-emulator-screenshot.png gh-pages-staging/android/screenshots/android-emulator-screenshot.png
             echo "Staged android-emulator-screenshot.png to gh-pages-staging/screenshots/"
           fi
           if [ -f "./android-emulator-video.mp4" ]; then
             cp ./android-emulator-video.mp4 gh-pages-staging/screenshots/android-emulator-video.mp4
-            echo "Staged android-emulator-video.mp4 to gh-pages-staging/screenshots/"
+            cp ./android-emulator-video.mp4 gh-pages-staging/android/android-emulator-video.mp4
+            cp ./android-emulator-video.mp4 gh-pages-staging/android/screenshots/android-emulator-video.mp4
+            echo "Staged android-emulator-video.mp4 to gh-pages-staging/screenshots/ and gh-pages-staging/android/"
           fi
           if [ -f "./android-emulator-logcat.txt" ]; then
             cp ./android-emulator-logcat.txt gh-pages-staging/screenshots/android-emulator-logcat.txt
+            cp ./android-emulator-logcat.txt gh-pages-staging/android/screenshots/android-emulator-logcat.txt
             echo "Staged android-emulator-logcat.txt to gh-pages-staging/screenshots/"
           fi
           if [ -f "./android-emulator-device-info.json" ]; then
             cp ./android-emulator-device-info.json gh-pages-staging/screenshots/android-emulator-device-info.json
             cp ./android-emulator-device-info.json gh-pages-staging/android-emulator-device-info.json
+            cp ./android-emulator-device-info.json gh-pages-staging/android/screenshots/android-emulator-device-info.json
             echo "Staged android-emulator-device-info.json to gh-pages-staging/"
           fi
           if [ -f "./public/android-emulator-report.html" ]; then
             cp ./public/android-emulator-report.html gh-pages-staging/android-emulator-report.html
-            echo "Staged rich public/android-emulator-report.html to gh-pages-staging/"
+            mkdir -p gh-pages-staging/android
+            cp ./public/android-emulator-report.html gh-pages-staging/android/index.html
+            echo "Staged rich public/android-emulator-report.html to gh-pages-staging/ and gh-pages-staging/android/index.html"
           fi
           if [ -d "./public/screenshots" ]; then
             cp -r ./public/screenshots/* gh-pages-staging/screenshots/ 2>/dev/null || true

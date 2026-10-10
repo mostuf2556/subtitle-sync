@@ -114,8 +114,8 @@ console.log(`✅ PASS: Default demo video word-level alignment OK (${wordRows.le
 console.log("\n--- [2] Android Native Shell Default Video Subtitles Verification ---");
 assert.strictEqual(
   DEFAULT_VIDEO_ID,
-  "n9qwEOsqsoo",
-  "Android Shell default video ID must be n9qwEOsqsoo",
+  "vBURridJXZ0",
+  "Android Shell default video ID must be vBURridJXZ0",
 );
 console.log(`✅ PASS: Android default video ID verified: ${DEFAULT_VIDEO_ID}`);
 console.log(`✅ PASS: Android default video URL verified: ${DEFAULT_VIDEO_URL}`);
@@ -211,5 +211,5 @@ console.log(
 console.log("\n====================================================");
 console.log("🎉 ALL E2E DEFAULT VIDEO SUBTITLES CHECKS PASSED!");
 console.log("   ✓ Web Demo App: default video L2Ryrr6txwA subtitles OK");
-console.log("   ✓ Android Shell: default video n9qwEOsqsoo subtitles OK");
+console.log("   ✓ Android Shell: default video vBURridJXZ0 subtitles OK");
 console.log("====================================================");

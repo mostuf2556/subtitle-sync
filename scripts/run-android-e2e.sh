@@ -12,7 +12,7 @@ set -uo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PACKAGE_NAME="com.ytviewer.app"
 MAIN_ACTIVITY="com.ytviewer.app/.MainActivity"
-TARGET_VIDEO_URL="https://www.youtube.com/watch?v=n9qwEOsqsoo"
+TARGET_VIDEO_URL="https://www.youtube.com/watch?v=vBURridJXZ0"
 TARGET_LANG="es"
 APK_PATH="${ROOT_DIR}/android-shell/app/build/outputs/apk/debug/app-debug.apk"
 SCREENSHOT_OUT="${ROOT_DIR}/android-emulator-screenshot.png"
@@ -182,18 +182,19 @@ EOF
         # Send SIGINT to adb screenrecord process so it finalizes MP4 container
         adb_cmd shell pkill -2 -f "screenrecord" 2>/dev/null || true
         wait "${RECORDING_PID}" 2>/dev/null || true
-        sleep 2
+        sleep 3
       fi
       adb_cmd pull "${VIDEO_REMOTE}" "${VIDEO_OUT}" 2>/dev/null || true
-      if [[ -f "${VIDEO_OUT}" ]]; then
+      if [[ -f "${VIDEO_OUT}" && -s "${VIDEO_OUT}" ]]; then
         echo "✓ Video screencast pulled to: ${VIDEO_OUT}"
-        mkdir -p "${ROOT_DIR}/public/screenshots"
+        mkdir -p "${ROOT_DIR}/public/screenshots" "${ROOT_DIR}/public/android/screenshots"
         cp -f "${VIDEO_OUT}" "${ROOT_DIR}/public/screenshots/android-emulator-video.mp4" 2>/dev/null || true
+        cp -f "${VIDEO_OUT}" "${ROOT_DIR}/public/android/screenshots/android-emulator-video.mp4" 2>/dev/null || true
       else
         echo "ℹ️ No video file retrieved from emulator/device."
       fi
     }
-    trap stop_recording_and_pull EXIT
+    trap stop_recording_and_pull EXIT INT TERM ERR
 
     echo "--> Capturing device screenshot..."
     adb_cmd shell screencap -p /sdcard/android_test_screen.png
@@ -204,12 +205,15 @@ EOF
     adb_cmd logcat -d -s "YT_CAPTION_INTERCEPTOR" "TTS_ENGINE" "ActivityTaskManager" | tail -n 60 > "${LOGCAT_OUT}" || true
     echo "✓ Logcat telemetry saved to: ${LOGCAT_OUT}"
 
-    ANDROID_SERIAL="${ANDROID_SERIAL}" LOGCAT_OUT="${LOGCAT_OUT}" bash "${ROOT_DIR}/scripts/android-e2e-assert.sh" || exit 1
+    ANDROID_SERIAL="${ANDROID_SERIAL}" LOGCAT_OUT="${LOGCAT_OUT}" bash "${ROOT_DIR}/scripts/android-e2e-assert.sh" || {
+      stop_recording_and_pull
+      exit 1
+    }
     echo "=================================================================="
     echo "✓ Android device/emulator E2E run complete!"
     echo "=================================================================="
     stop_recording_and_pull
-    trap - EXIT
+    trap - EXIT INT TERM ERR
   else
     echo "❌ No active Android device/emulator detected via adb."
     exit 1

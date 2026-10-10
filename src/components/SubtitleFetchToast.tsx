@@ -39,7 +39,7 @@ export const SubtitleFetchToast: React.FC<Props> = ({ onViewSubtitles }) => {
 
   return (
     <div
-      id="subtitle-fetch-toast"
+      id="restored-subtitles-toast"
       data-testid="subtitle-fetch-toast"
       role="status"
       aria-live="polite"

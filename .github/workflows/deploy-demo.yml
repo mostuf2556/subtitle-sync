@@ -66,11 +66,15 @@ jobs:
             git checkout gh-pages -- playwright 2>/dev/null || true
             git checkout gh-pages -- android-emulator-report.html 2>/dev/null || true
             git checkout gh-pages -- screenshots 2>/dev/null || true
+            git checkout gh-pages -- android 2>/dev/null || true
+            git checkout gh-pages -- web 2>/dev/null || true
 
             [ -f mochawesome.html ] && cp mochawesome.html dist/mochawesome.html && echo "Preserved mochawesome.html"
             [ -d playwright ] && cp -r playwright dist/ && echo "Preserved playwright report"
-            [ -f android-emulator-report.html ] && cp android-emulator-report.html dist/android-emulator-report.html && echo "Preserved android-emulator-report.html"
+            [ -f android-emulator-report.html ] && cp android-emulator-report.html dist/android-emulator-report.html && mkdir -p dist/android && cp android-emulator-report.html dist/android/index.html && echo "Preserved android-emulator-report.html"
             [ -d screenshots ] && cp -r screenshots dist/ && echo "Preserved screenshots directory"
+            [ -d android ] && cp -r android dist/ && echo "Preserved android directory"
+            [ -d web ] && cp -r web dist/ && echo "Preserved web directory"
           fi
           # Also stage any locally generated test reports
           if [ -d "cypress/reports" ]; then

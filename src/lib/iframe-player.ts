@@ -24,6 +24,7 @@ export function createIframePlayer(
     playsinline: "1",
     rel: "0",
     autoplay: opts.autoplay ? "1" : "0",
+    cc_load_policy: "1",
     origin,
   });
   iframe.src = `https://www.youtube.com/embed/${videoId}?${params}`;
