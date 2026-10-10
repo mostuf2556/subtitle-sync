@@ -263,30 +263,32 @@ export const NetworkRequestsInspector: React.FC<Props> = ({ isOpen, onClose }) =
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-5xl h-[100dvh] sm:h-[85vh] bg-neutral-900 border-0 sm:border border-neutral-800 rounded-none sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden text-neutral-200"
+        className="relative w-full max-w-5xl h-[100dvh] sm:h-[85vh] max-h-[100dvh] bg-neutral-900 border-0 sm:border border-neutral-800 rounded-none sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden text-neutral-200 pb-[env(safe-area-inset-bottom)]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header Toolbar */}
-        <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-5 py-2 sm:py-3.5 pt-[max(0.5rem,env(safe-area-inset-top))] bg-neutral-950/80 border-b border-neutral-800">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
-              <Activity className="w-5 h-5 animate-pulse" />
+        <div className="flex items-center justify-between gap-2 px-3 sm:px-5 py-2 sm:py-3.5 pt-[max(0.6rem,env(safe-area-inset-top))] bg-neutral-950/90 border-b border-neutral-800 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="p-1.5 sm:p-2 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 shrink-0">
+              <Activity className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />
             </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-sm sm:text-base font-bold text-neutral-100">Network</h2>
-                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-neutral-800 text-neutral-300 border border-neutral-700">
-                  {requests.length} captured
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <h2 className="text-sm sm:text-base font-bold text-neutral-100 truncate">
+                  Network
+                </h2>
+                <span className="px-1.5 sm:px-2 py-0.5 rounded-full text-[11px] sm:text-xs font-semibold bg-neutral-800 text-neutral-300 border border-neutral-700">
+                  {requests.length} cap
                 </span>
-                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-950 text-blue-300 border border-blue-800">
-                  {filtered.length} shown
+                <span className="px-1.5 sm:px-2 py-0.5 rounded-full text-[11px] sm:text-xs font-semibold bg-blue-950 text-blue-300 border border-blue-800">
+                  {filtered.length} show
                 </span>
                 {hideFailed && failedCount > 0 && (
                   <span
                     data-testid="failed-hidden-counter"
-                    className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-950/60 text-red-300 border border-red-800/60"
+                    className="hidden xs:inline-block px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-red-950/60 text-red-300 border border-red-800/60"
                   >
-                    {failedCount} failed hidden
+                    {failedCount} fail hid
                   </span>
                 )}
               </div>
@@ -296,26 +298,26 @@ export const NetworkRequestsInspector: React.FC<Props> = ({ isOpen, onClose }) =
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <button
               id="clear-network-logs-button"
               data-testid="clear-network-logs-button"
               type="button"
               onClick={clearNetworkRequests}
               disabled={requests.length === 0}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg text-neutral-300 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 disabled:opacity-50 transition"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl text-neutral-300 bg-neutral-800 hover:bg-neutral-700 active:scale-95 border border-neutral-700 disabled:opacity-50 transition touch-manipulation min-h-[36px]"
               title="Clear all recorded logs"
               aria-label="Clear Network Logs"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              <span>Clear</span>
+              <span className="hidden xs:inline">Clear</span>
             </button>
             <button
               id="collapse-network-inspector-button"
               data-testid="collapse-network-inspector-button"
               type="button"
               onClick={() => setIsMinimized(true)}
-              className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition"
+              className="p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-neutral-800 active:scale-95 transition touch-manipulation min-h-[36px] min-w-[36px] flex items-center justify-center"
               title="Minimize inspector"
               aria-label="Minimize Network Inspector"
             >
@@ -326,24 +328,53 @@ export const NetworkRequestsInspector: React.FC<Props> = ({ isOpen, onClose }) =
               data-testid="close-network-inspector-button"
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition"
+              className="p-2 rounded-xl text-neutral-300 hover:text-white bg-neutral-800/80 hover:bg-neutral-700 active:scale-95 border border-neutral-700/60 transition touch-manipulation min-h-[36px] min-w-[36px] flex items-center justify-center"
               title="Close inspector (Esc)"
               aria-label="Close Network Inspector"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
+        {/* Mobile Segmented Tab Switcher (Visible only on small screens) */}
+        <div className="md:hidden flex border-b border-neutral-800 bg-neutral-950/80 p-1.5 gap-1.5 text-xs shrink-0">
+          <button
+            type="button"
+            onClick={() => setMobileView("list")}
+            className={`flex-1 py-2 rounded-xl text-center font-semibold transition touch-manipulation min-h-[38px] ${
+              mobileView === "list"
+                ? "bg-blue-600 text-white shadow-sm"
+                : "text-neutral-400 hover:text-neutral-200 bg-neutral-900/60"
+            }`}
+          >
+            Requests ({filtered.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileView("detail")}
+            disabled={!selectedRequest}
+            className={`flex-1 py-2 rounded-xl text-center font-semibold transition touch-manipulation min-h-[38px] ${
+              mobileView === "detail"
+                ? "bg-blue-600 text-white shadow-sm"
+                : selectedRequest
+                  ? "text-neutral-400 hover:text-neutral-200 bg-neutral-900/60"
+                  : "text-neutral-600 cursor-not-allowed bg-neutral-950/40"
+            }`}
+          >
+            {selectedRequest ? `Detail (${selectedRequest.method})` : "Select request"}
+          </button>
+        </div>
+
         {/* Filter and Search Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-2.5 bg-neutral-900/90 border-b border-neutral-800 text-xs">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-neutral-500 flex items-center gap-1 mr-1">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-neutral-900/90 border-b border-neutral-800 text-xs shrink-0">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 text-nowrap scrollbar-none">
+            <span className="text-neutral-500 hidden xs:flex items-center gap-1 mr-1 shrink-0">
               <Filter className="w-3.5 h-3.5" /> Filters:
             </span>
             {(
               [
-                { key: "all", label: "All Requests" },
+                { key: "all", label: "All" },
                 { key: "timedtext", label: "TimedText" },
                 { key: "native", label: "Native Bridge" },
               ] as const
@@ -352,7 +383,7 @@ export const NetworkRequestsInspector: React.FC<Props> = ({ isOpen, onClose }) =
                 key={tab.key}
                 type="button"
                 onClick={() => setFilterType(tab.key)}
-                className={`px-2.5 py-1 rounded-md transition font-medium ${
+                className={`px-2.5 py-1 rounded-md transition font-medium shrink-0 ${
                   filterType === tab.key
                     ? "bg-blue-600 text-white"
                     : "bg-neutral-800 hover:bg-neutral-700 text-neutral-300"
@@ -368,7 +399,7 @@ export const NetworkRequestsInspector: React.FC<Props> = ({ isOpen, onClose }) =
               data-testid="toggle-hide-failed-requests"
               type="button"
               onClick={() => setHideFailed((prev) => !prev)}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-medium transition ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-medium transition shrink-0 ${
                 hideFailed
                   ? "bg-emerald-950/60 border-emerald-700 text-emerald-300 hover:bg-emerald-900/60"
                   : "bg-red-950/60 border-red-700 text-red-300 hover:bg-red-900/60"
@@ -378,22 +409,22 @@ export const NetworkRequestsInspector: React.FC<Props> = ({ isOpen, onClose }) =
               {hideFailed ? (
                 <>
                   <EyeOff className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Hide Failed: ON (Default)</span>
+                  <span>Hide Failed: ON</span>
                 </>
               ) : (
                 <>
                   <Eye className="w-3.5 h-3.5 text-red-400" />
-                  <span>Hide Failed: OFF (Showing all)</span>
+                  <span>Hide Failed: OFF</span>
                 </>
               )}
             </button>
           </div>
 
-          <div className="relative w-full min-w-0 flex-1 sm:min-w-[200px] sm:max-w-xs">
+          <div className="relative w-full min-w-0 flex-1 sm:min-w-[180px] sm:max-w-xs">
             <Search className="w-3.5 h-3.5 text-neutral-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search URL, method, tlang, preview…"
+              placeholder="Search URL, method, tlang…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-8 pr-3 py-1 bg-neutral-950 border border-neutral-800 rounded-lg text-xs text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-blue-500 transition"
@@ -610,14 +641,16 @@ export const NetworkRequestsInspector: React.FC<Props> = ({ isOpen, onClose }) =
           <div
             className={`${mobileView === "list" ? "hidden md:block" : "block"} min-h-0 overflow-y-auto overscroll-contain p-3 sm:p-4 space-y-4 text-xs break-words`}
           >
-            <button
-              type="button"
-              data-testid="network-back-to-list"
-              onClick={() => setMobileView("list")}
-              className="md:hidden mb-2 inline-flex items-center gap-1 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-xs font-medium text-neutral-200"
-            >
-              ← Back to requests
-            </button>
+            <div className="md:hidden sticky top-0 z-10 -mx-3 -mt-3 mb-3 p-2 bg-neutral-900/95 backdrop-blur-md border-b border-neutral-800 shadow-md">
+              <button
+                type="button"
+                data-testid="network-back-to-list"
+                onClick={() => setMobileView("list")}
+                className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-neutral-700 bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-600 px-4 py-2.5 text-xs font-semibold text-neutral-100 shadow-sm transition touch-manipulation min-h-[40px]"
+              >
+                ← Back to Requests List
+              </button>
+            </div>
             {selectedRequest ? (
               <>
                 <div className="flex items-center justify-between border-b border-neutral-800 pb-3 flex-wrap gap-2">
@@ -667,15 +700,16 @@ export const NetworkRequestsInspector: React.FC<Props> = ({ isOpen, onClose }) =
                     )}
 
                     {/* Good fetch green badge in detail header */}
-                    {(extractTlang(selectedRequest.url) || extractLang(selectedRequest.url)) && isSuccessfulFetch(selectedRequest) && (
-                      <span
-                        data-testid="detail-good-fetch-badge"
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                      >
-                        <Check className="w-3 h-3 text-emerald-400" />
-                        <span>Good Fetch</span>
-                      </span>
-                    )}
+                    {(extractTlang(selectedRequest.url) || extractLang(selectedRequest.url)) &&
+                      isSuccessfulFetch(selectedRequest) && (
+                        <span
+                          data-testid="detail-good-fetch-badge"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                        >
+                          <Check className="w-3 h-3 text-emerald-400" />
+                          <span>Good Fetch</span>
+                        </span>
+                      )}
                   </div>
 
                   <div className="flex items-center gap-1.5">

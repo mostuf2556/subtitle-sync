@@ -139,6 +139,14 @@ jobs:
             cp -r playwright-report/* cypress/reports/playwright/
             echo "Staged playwright-report to cypress/reports/playwright/"
           fi
+          mkdir -p cypress/reports/web
+          if [ -f "public/web/index.html" ]; then
+            cp public/web/index.html cypress/reports/web/index.html
+          fi
+          if [ -d "playwright-report" ]; then
+            cp -r playwright-report/* cypress/reports/web/ 2>/dev/null || true
+          fi
+          echo "Staged web report to cypress/reports/web/"
 
       - name: Deploy Web Test Outputs to GitHub Pages (gh-pages)
         if: always() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && (github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.head_branch == 'master'))) && !cancelled()
