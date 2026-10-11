@@ -289,6 +289,7 @@
       </p>
       <div style="margin-top: 1rem">
         <video
+          id="screencast-video"
           controls
           autoplay
           muted
@@ -302,25 +303,27 @@
             border: 1px solid #374151;
             display: block;
           "
-          onerror="this.parentElement.querySelector('.video-fallback').style.display = 'block'"
         >
           <source src="./screenshots/android-emulator-video.mp4" type="video/mp4" />
+          <source src="./android-emulator-video.mp4" type="video/mp4" />
+          <source src="../screenshots/android-emulator-video.mp4" type="video/mp4" />
           Your browser does not support the video tag.
         </video>
         <div
+          id="screencast-fallback"
           class="video-fallback"
           style="
             display: none;
             padding: 1rem;
             background: #1e293b;
+            border: 1px solid #334155;
             border-radius: 6px;
             margin-top: 0.5rem;
             font-size: 0.875rem;
             color: #94a3b8;
           "
         >
-          ℹ️ The screencast video artifact will load when deployed to GitHub Pages or generated via
-          <code>scripts/run-android-e2e.sh</code>.
+          🎬 <strong>Screencast Video Lifecycle</strong>: The MP4 video recording is generated dynamically when the Android emulator E2E workflow (<code>.github/workflows/emulation.yml</code>) runs on GitHub Actions and publishes to the <code>gh-pages</code> branch. If the workflow run has not completed yet or is currently executing, the video will appear automatically once the run finishes.
         </div>
       </div>
       <p style="margin-top: 0.75rem">
@@ -378,6 +381,23 @@ SUBTITLE_FETCH kind=translated lang=it mode=lang http=200 bytes=1640 cues=15</pr
           if (data.serial) document.getElementById("telem-serial").textContent = data.serial;
         })
         .catch(() => {});
+
+      // Robust fallback handling when video has not yet finished generating in CI
+      const vEl = document.getElementById("screencast-video");
+      const fallbackEl = document.getElementById("screencast-fallback");
+      if (vEl && fallbackEl) {
+        vEl.addEventListener("error", () => { fallbackEl.style.display = "block"; }, true);
+        vEl.querySelectorAll("source").forEach((src) => {
+          src.addEventListener("error", () => {
+            // Check if all sources failed
+            setTimeout(() => {
+              if (vEl.networkState === HTMLMediaElement.NETWORK_NO_SOURCE) {
+                fallbackEl.style.display = "block";
+              }
+            }, 500);
+          });
+        });
+      }
     </script>
   </body>
 </html>
