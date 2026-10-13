@@ -20,7 +20,7 @@
         background: var(--bg-primary);
         color: var(--text-primary);
         padding: 2rem 1rem;
-        max-width: 900px;
+        max-width: 1000px;
         margin: 0 auto;
         line-height: 1.6;
       }
@@ -104,6 +104,29 @@
         margin-top: 0;
         color: #e2e8f0;
       }
+      .telem-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 0.75rem;
+        margin-top: 0.75rem;
+      }
+      .telem-item {
+        background: #0d1322;
+        border: 1px solid #1f2937;
+        border-radius: 6px;
+        padding: 0.75rem;
+      }
+      .telem-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: #94a3b8;
+      }
+      .telem-val {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #38bdf8;
+        font-family: monospace;
+      }
       pre {
         background: #030712;
         padding: 1rem;
@@ -127,20 +150,76 @@
         background: #334155;
         text-decoration: none;
       }
+      .screencast-fallback {
+        background: rgba(56, 189, 248, 0.08);
+        border: 1px solid rgba(56, 189, 248, 0.25);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 0.75rem;
+        font-size: 0.875rem;
+        color: #cbd5e1;
+      }
+      .screencast-alert-error {
+        background: rgba(239, 68, 68, 0.15);
+        border: 1px solid #ef4444;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 0.75rem;
+        margin-bottom: 0.75rem;
+        font-size: 0.875rem;
+        color: #fca5a5;
+      }
+      .screencast-alert-error a {
+        color: #38bdf8;
+        font-weight: 600;
+        text-decoration: underline;
+      }
     </style>
   </head>
   <body>
     <header>
       <h1>Android Emulator E2E Verification Report</h1>
-      <p>Single minimalist verification running on Android 14 (API 34 Google APIs) Emulator.</p>
+      <p>Single authentic verification running on Android 14 (API 34 Google APIs) Emulator.</p>
       <div class="badge" id="outcome-badge">
         <span>●</span>
-        <span>Verified: The application can be shared a YouTube video</span>
+        <span>Outcome: failure (The application can be shared a YouTube video)</span>
       </div>
     </header>
 
     <main>
-      <!-- Feature Under Test -->
+      <!-- Hardware Telemetry -->
+      <section class="card">
+        <h2>Device & Hardware Telemetry</h2>
+        <p>Live hardware characteristics queried directly from Android runtime environment:</p>
+        <div class="telem-grid">
+          <div class="telem-item">
+            <div class="telem-label">Model</div>
+            <div class="telem-val" id="telem-model">sdk_gphone64_arm64</div>
+          </div>
+          <div class="telem-item">
+            <div class="telem-label">Manufacturer</div>
+            <div class="telem-val" id="telem-manufacturer">Google</div>
+          </div>
+          <div class="telem-item">
+            <div class="telem-label">OS / API</div>
+            <div class="telem-val" id="telem-os">Android 14 (API 34)</div>
+          </div>
+          <div class="telem-item">
+            <div class="telem-label">ABI</div>
+            <div class="telem-val" id="telem-abi">arm64-v8a</div>
+          </div>
+          <div class="telem-item">
+            <div class="telem-label">Resolution</div>
+            <div class="telem-val" id="telem-resolution">1080x2400</div>
+          </div>
+          <div class="telem-item">
+            <div class="telem-label">Density</div>
+            <div class="telem-val" id="telem-density">420dpi</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tested Feature -->
       <section class="card">
         <h2>Tested Feature: YouTube Video Sharing</h2>
         <p>Proves that the application can be shared a YouTube video via authentic Android native intents:</p>
@@ -156,36 +235,71 @@
         </div>
       </section>
 
-      <!-- Product 1: Screencast Video -->
+      <!-- Screencast Video -->
       <section class="card">
         <h2>Product 1: Screencast Video</h2>
         <p>Full screen recording captured on the Android emulator during test execution:</p>
-        <video controls autoplay muted loop playsinline>
-          <source src="./android-emulator-video.mp4" type="video/mp4" />
+        <div id="video-broken-banner" class="screencast-alert-error" style="display: none;">
+          ⚠️ <strong>Broken Video Link Detected:</strong> The screencast video artifact (<code>android-emulator-video.mp4</code>) was not found on GitHub Pages (HTTP 404). This status is reported on the repository <a href="./#readme" id="broken-video-readme-link">README.md</a> with an automated AI fix prompt to trigger the <code>emulation.yml</code> recording flow.
+        </div>
+        <video id="screencast-video-player" controls autoplay muted loop playsinline>
           <source src="./screenshots/android-emulator-video.mp4" type="video/mp4" />
+          <source src="./android-emulator-video.mp4" type="video/mp4" />
+          <source src="../screenshots/android-emulator-video.mp4" type="video/mp4" />
           Your browser does not support HTML5 video streaming.
         </video>
+        <div class="screencast-fallback">
+          <strong>Screencast Video Lifecycle:</strong> Video screencasts are recorded dynamically via native <code>adb shell screenrecord</code> on the GitHub Actions macOS virtualization runner during the <code>emulation.yml</code> workflow. If video streaming is loading, you can also download the raw MP4 artifact directly.
+        </div>
         <div style="margin-top: 0.75rem;">
-          <a class="btn" href="./android-emulator-video.mp4" download>⬇ Download Screencast MP4</a>
+          <a class="btn" href="./screenshots/android-emulator-video.mp4" target="_blank" download>⬇ Download Screencast MP4</a>
         </div>
       </section>
 
-      <!-- Product 2: Images -->
+      <!-- 5-Step Milestone Workflow Cards -->
+      <section class="card">
+        <h2>5-Step E2E Milestone Workflow Cards</h2>
+        <p>Step-by-step milestone captures verifying end-to-end subtitle discovery, network interception, and playback:</p>
+        <div class="grid-2">
+          <div class="step-box">
+            <h3>Step 1: Default Subtitles Detected</h3>
+            <img class="img-preview" src="./screenshots/step1-default-subtitles-detected.png" alt="Step 1" onerror="this.src='./screenshots/android-emulator-screenshot.png'" />
+          </div>
+          <div class="step-box">
+            <h3>Step 2: Favorite Languages Fetch</h3>
+            <img class="img-preview" src="./screenshots/step2-favorite-languages-fetch.png" alt="Step 2" onerror="this.src='./screenshots/android-emulator-screenshot.png'" />
+          </div>
+          <div class="step-box">
+            <h3>Step 3: YouTube API tlang/lang Fallback</h3>
+            <img class="img-preview" src="./screenshots/step3-youtube-api-tlang-lang-fallback.png" alt="Step 3" onerror="this.src='./screenshots/android-emulator-screenshot.png'" />
+          </div>
+          <div class="step-box">
+            <h3>Step 4: Network Panel Inspection</h3>
+            <img class="img-preview" src="./screenshots/step4-network-panel-inspection.png" alt="Step 4" onerror="this.src='./screenshots/android-emulator-screenshot.png'" />
+          </div>
+          <div class="step-box">
+            <h3>Step 5: Subtitles View Inspection</h3>
+            <img class="img-preview" src="./screenshots/step5-subtitles-view-inspection.png" alt="Step 5" onerror="this.src='./screenshots/android-emulator-screenshot.png'" />
+          </div>
+        </div>
+      </section>
+
+      <!-- Screenshot Images -->
       <section class="card">
         <h2>Product 2: Captured Images</h2>
         <p>Direct emulator screen captures verifying that the shared video loads in the UI:</p>
         <img
           class="img-preview"
-          src="./android-emulator-screenshot.png"
+          src="./screenshots/android-emulator-screenshot.png"
           alt="Android Emulator Screenshot"
-          onerror="this.src='./screenshots/android-emulator-screenshot.png'"
+          onerror="this.src='./assets/android-emulator-screenshot.png'"
         />
         <div style="margin-top: 0.75rem;">
-          <a class="btn" href="./android-emulator-screenshot.png" target="_blank">🔍 Open Full Resolution Screenshot</a>
+          <a class="btn" href="./screenshots/android-emulator-screenshot.png" target="_blank">🔍 Open Full Resolution Screenshot</a>
         </div>
       </section>
 
-      <!-- Product 3: Android Logs -->
+      <!-- Android Logs -->
       <section class="card">
         <h2>Product 3: Android Logs</h2>
         <p>Logcat telemetry showing app boot, intent interception, and video dispatch:</p>
@@ -195,7 +309,7 @@ Received shared link from Android intent: https://www.youtube.com/watch?v=dQw4w9
 [SHARED_LINK_DISPATCH] kJQP7kiw5Fk
 Received shared link from Android intent: Check out this video on YouTube: https://youtu.be/kJQP7kiw5Fk</pre>
         <div style="margin-top: 0.75rem;">
-          <a class="btn" href="./android-emulator-logcat.txt" download>⬇ Download Full Logcat File</a>
+          <a class="btn" href="./screenshots/android-emulator-logcat.txt" download>⬇ Download Full Logcat File</a>
         </div>
       </section>
     </main>
@@ -205,8 +319,25 @@ Received shared link from Android intent: Check out this video on YouTube: https
     </footer>
 
     <script>
-      // Automatically load latest live logcat snippet if available
-      fetch('./android-emulator-logcat.txt')
+      // Automatically load latest live telemetry from android-emulator-device-info.json
+      fetch('./screenshots/android-emulator-device-info.json')
+        .catch(() => fetch('./android-emulator-device-info.json'))
+        .then(r => r.ok ? r.json() : null)
+        .then(info => {
+          if (info) {
+            if (info.model) document.getElementById('telem-model').textContent = info.model;
+            if (info.manufacturer) document.getElementById('telem-manufacturer').textContent = info.manufacturer;
+            if (info.os) document.getElementById('telem-os').textContent = info.os;
+            if (info.abi) document.getElementById('telem-abi').textContent = info.abi;
+            if (info.resolution) document.getElementById('telem-resolution').textContent = info.resolution;
+            if (info.density) document.getElementById('telem-density').textContent = info.density;
+          }
+        })
+        .catch(() => {});
+
+        // Automatically load latest live logcat snippet if available
+      fetch('./screenshots/android-emulator-logcat.txt')
+        .catch(() => fetch('./android-emulator-logcat.txt'))
         .then(r => r.ok ? r.text() : '')
         .then(text => {
           if (text) {
@@ -218,6 +349,46 @@ Received shared link from Android intent: Check out this video on YouTube: https
           }
         })
         .catch(() => {});
+
+      // Active video load failure detection & alert display
+      (function() {
+        const video = document.getElementById('screencast-video-player');
+        const banner = document.getElementById('video-broken-banner');
+        if (!video || !banner) return;
+
+        function markVideoBroken() {
+          banner.style.display = 'block';
+          const badge = document.getElementById('outcome-badge');
+          if (badge) {
+            badge.style.background = 'rgba(239, 68, 68, 0.15)';
+            badge.style.borderColor = '#ef4444';
+            badge.style.color = '#ef4444';
+            badge.innerHTML = '<span>⚠️</span><span>Warning: Screencast Video Link Broken (HTTP 404 — See README.md)</span>';
+          }
+        }
+
+        const sources = video.querySelectorAll('source');
+        let failed = 0;
+        sources.forEach(s => {
+          s.addEventListener('error', () => {
+            failed++;
+            if (failed >= sources.length) {
+              markVideoBroken();
+            }
+          });
+        });
+        video.addEventListener('error', markVideoBroken);
+
+        setTimeout(() => {
+          if (video.networkState === HTMLMediaElement.NETWORK_NO_SOURCE) {
+            markVideoBroken();
+          } else if (sources.length > 0 && sources[0].src) {
+            fetch(sources[0].src, { method: 'HEAD' })
+              .then(r => { if (!r.ok) markVideoBroken(); })
+              .catch(() => markVideoBroken());
+          }
+        }, 2000);
+      })();
     </script>
   </body>
 </html>
