@@ -254,13 +254,13 @@
           ⚠️ <strong>Broken Video Link Detected:</strong> The screencast video artifact
           (<code>android-emulator-video.mp4</code>) was not found on GitHub Pages (HTTP 404). This
           status is reported on the repository
-          <a href="./#readme" id="broken-video-readme-link">README.md</a> with an automated AI fix
+          <a href="../#readme" id="broken-video-readme-link">README.md</a> with an automated AI fix
           prompt to trigger the <code>emulation.yml</code> recording flow.
         </div>
         <video id="screencast-video-player" controls autoplay muted loop playsinline>
-          <source src="./screenshots/android-emulator-video.mp4" type="video/mp4" />
-          <source src="./android-emulator-video.mp4" type="video/mp4" />
           <source src="../screenshots/android-emulator-video.mp4" type="video/mp4" />
+          <source src="../android-emulator-video.mp4" type="video/mp4" />
+          <source src="./screenshots/android-emulator-video.mp4" type="video/mp4" />
           Your browser does not support HTML5 video streaming.
         </video>
         <div class="screencast-fallback">
@@ -270,7 +270,7 @@
           can also download the raw MP4 artifact directly.
         </div>
         <div style="margin-top: 0.75rem">
-          <a class="btn" href="./screenshots/android-emulator-video.mp4" target="_blank" download
+          <a class="btn" href="../screenshots/android-emulator-video.mp4" target="_blank" download
             >⬇ Download Screencast MP4</a
           >
         </div>
@@ -288,45 +288,45 @@
             <h3>Step 1: Default Subtitles Detected</h3>
             <img
               class="img-preview"
-              src="./screenshots/step1-default-subtitles-detected.png"
+              src="../screenshots/step1-default-subtitles-detected.png"
               alt="Step 1"
-              onerror="this.src = './screenshots/android-emulator-screenshot.png'"
+              onerror="this.src = '../screenshots/android-emulator-screenshot.png'"
             />
           </div>
           <div class="step-box">
             <h3>Step 2: Favorite Languages Fetch</h3>
             <img
               class="img-preview"
-              src="./screenshots/step2-favorite-languages-fetch.png"
+              src="../screenshots/step2-favorite-languages-fetch.png"
               alt="Step 2"
-              onerror="this.src = './screenshots/android-emulator-screenshot.png'"
+              onerror="this.src = '../screenshots/android-emulator-screenshot.png'"
             />
           </div>
           <div class="step-box">
             <h3>Step 3: YouTube API tlang/lang Fallback</h3>
             <img
               class="img-preview"
-              src="./screenshots/step3-youtube-api-tlang-lang-fallback.png"
+              src="../screenshots/step3-youtube-api-tlang-lang-fallback.png"
               alt="Step 3"
-              onerror="this.src = './screenshots/android-emulator-screenshot.png'"
+              onerror="this.src = '../screenshots/android-emulator-screenshot.png'"
             />
           </div>
           <div class="step-box">
             <h3>Step 4: Network Panel Inspection</h3>
             <img
               class="img-preview"
-              src="./screenshots/step4-network-panel-inspection.png"
+              src="../screenshots/step4-network-panel-inspection.png"
               alt="Step 4"
-              onerror="this.src = './screenshots/android-emulator-screenshot.png'"
+              onerror="this.src = '../screenshots/android-emulator-screenshot.png'"
             />
           </div>
           <div class="step-box">
             <h3>Step 5: Subtitles View Inspection</h3>
             <img
               class="img-preview"
-              src="./screenshots/step5-subtitles-view-inspection.png"
+              src="../screenshots/step5-subtitles-view-inspection.png"
               alt="Step 5"
-              onerror="this.src = './screenshots/android-emulator-screenshot.png'"
+              onerror="this.src = '../screenshots/android-emulator-screenshot.png'"
             />
           </div>
         </div>
@@ -338,12 +338,12 @@
         <p>Direct emulator screen captures verifying that the shared video loads in the UI:</p>
         <img
           class="img-preview"
-          src="./screenshots/android-emulator-screenshot.png"
+          src="../screenshots/android-emulator-screenshot.png"
           alt="Android Emulator Screenshot"
-          onerror="this.src = './assets/android-emulator-screenshot.png'"
+          onerror="this.src = '../assets/android-emulator-screenshot.png'"
         />
         <div style="margin-top: 0.75rem">
-          <a class="btn" href="./screenshots/android-emulator-screenshot.png" target="_blank"
+          <a class="btn" href="../screenshots/android-emulator-screenshot.png" target="_blank"
             >🔍 Open Full Resolution Screenshot</a
           >
         </div>
@@ -360,7 +360,7 @@ Received shared link from Android intent: https://www.youtube.com/watch?v=dQw4w9
 [SHARED_LINK_DISPATCH] kJQP7kiw5Fk
 Received shared link from Android intent: Check out this video on YouTube: https://youtu.be/kJQP7kiw5Fk</pre>
         <div style="margin-top: 0.75rem">
-          <a class="btn" href="./screenshots/android-emulator-logcat.txt" download
+          <a class="btn" href="../screenshots/android-emulator-logcat.txt" download
             >⬇ Download Full Logcat File</a
           >
         </div>
@@ -373,8 +373,8 @@ Received shared link from Android intent: Check out this video on YouTube: https
 
     <script>
       // Automatically load latest live telemetry from android-emulator-device-info.json
-      fetch("./screenshots/android-emulator-device-info.json")
-        .catch(() => fetch("./android-emulator-device-info.json"))
+      fetch("../screenshots/android-emulator-device-info.json")
+        .catch(() => fetch("./screenshots/android-emulator-device-info.json"))
         .then((r) => (r.ok ? r.json() : null))
         .then((info) => {
           if (info) {
@@ -391,8 +391,8 @@ Received shared link from Android intent: Check out this video on YouTube: https
         .catch(() => {});
 
       // Automatically load latest live logcat snippet if available
-      fetch("./screenshots/android-emulator-logcat.txt")
-        .catch(() => fetch("./android-emulator-logcat.txt"))
+      fetch("../screenshots/android-emulator-logcat.txt")
+        .catch(() => fetch("./screenshots/android-emulator-logcat.txt"))
         .then((r) => (r.ok ? r.text() : ""))
         .then((text) => {
           if (text) {
