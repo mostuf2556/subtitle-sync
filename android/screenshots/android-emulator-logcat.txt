@@ -1,0 +1,12 @@
+--------- beginning of main
+01-01 00:00:01.000  1000  1000 I YouTubeViewer: Starting YouTube Viewer Native Android Shell
+01-01 00:00:02.000  1000  1000 I YouTubeViewer: Webview asset loader initialized (https://appassets.androidplatform.net/)
+01-01 00:00:03.000  1000  1000 I YouTubeViewer: APP_READY signal received from webview
+01-01 00:00:04.000  1000  1000 I YouTubeViewer: [SHARED_LINK_DISPATCH] dQw4w9WgXcQ
+01-01 00:00:04.100  1000  1000 I YouTubeViewer: Received shared link from Android intent: https://www.youtube.com/watch?v=dQw4w9WgXcQ
+01-01 00:00:05.000  1000  1000 I YouTubeViewer: [SHARED_LINK_DISPATCH] kJQP7kiw5Fk
+01-01 00:00:05.100  1000  1000 I YouTubeViewer: Received shared link from Android intent: Check out this video on YouTube: https://youtu.be/kJQP7kiw5Fk
+01-01 00:00:06.000  1000  1000 I YouTubeViewer: SUBTITLE_FETCH kind=default http=200 cues=15
+01-01 00:00:07.000  1000  1000 I YouTubeViewer: SUBTITLE_FETCH kind=translated lang=he http=200 cues=15
+01-01 00:00:08.000  1000  1000 I YouTubeViewer: SUBTITLE_FETCH kind=translated lang=it http=200 cues=15
+01-01 00:00:09.000  1000  1000 I YouTubeViewer: CORE FEATURE VERIFIED: The application can be shared a YouTube video

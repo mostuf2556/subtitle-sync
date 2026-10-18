@@ -1,0 +1,12 @@
+{
+  "serial": "emulator-5554",
+  "manufacturer": "Google",
+  "brand": "google",
+  "model": "sdk_gphone64_arm64",
+  "androidVersion": "14",
+  "apiLevel": "34",
+  "abi": "arm64-v8a",
+  "resolution": "1080x2400",
+  "density": "420dpi",
+  "timestamp": "2026-10-18T23:03:07.701Z"
+}
