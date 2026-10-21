@@ -248,12 +248,42 @@
 
       <!-- Screencast Video (Deprecated) -->
       <section class="card">
-        <h2>Product 1: Screencast Video <span style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; margin-left: 8px;">Deprecated</span></h2>
-        <p class="screencast-fallback" style="margin-bottom: 0.75rem; border-color: rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.08); color: #fbbf24;">⚠️ <strong>Deprecation Notice:</strong> Screencast video generation is deprecated in favor of authentic live caption text extraction and milestone screenshots.</p>
-        <p>Full screen recording captured on the Android emulator during test execution (if captured):</p>
-   
+        <h2>
+          Product 1: Screencast Video
+          <span
+            style="
+              background: rgba(245, 158, 11, 0.2);
+              color: #fbbf24;
+              border: 1px solid #f59e0b;
+              padding: 2px 8px;
+              border-radius: 4px;
+              font-size: 0.75rem;
+              margin-left: 8px;
+            "
+            >Deprecated</span
+          >
+        </h2>
+        <p
+          class="screencast-fallback"
+          style="
+            margin-bottom: 0.75rem;
+            border-color: rgba(245, 158, 11, 0.3);
+            background: rgba(245, 158, 11, 0.08);
+            color: #fbbf24;
+          "
+        >
+          ⚠️ <strong>Deprecation Notice:</strong> Screencast video generation is deprecated in favor
+          of authentic live caption text extraction and milestone screenshots.
+        </p>
+        <p>
+          Full screen recording captured on the Android emulator during test execution (if
+          captured):
+        </p>
+
         <div id="video-broken-banner" class="screencast-alert-error" style="display: none">
-          ⚠️ <strong>Screencast Note:</strong> Screencast generation is deprecated in favor of authentic milestone screenshots (see <a href="#readme" id="broken-video-readme-link">README.md</a>).
+          ⚠️ <strong>Screencast Note:</strong> Screencast generation is deprecated in favor of
+          authentic milestone screenshots (see
+          <a href="#readme" id="broken-video-readme-link">README.md</a>).
         </div>
         <video id="screencast-video-player" controls autoplay muted loop playsinline>
           <source src="./screenshots/android-emulator-video.mp4" type="video/mp4" />
@@ -262,8 +292,9 @@
           Your browser does not support HTML5 video streaming.
         </video>
         <div class="screencast-fallback">
-          <strong>Screencast Policy:</strong> Screencast recording has been deprecated in favor of authentic multi-step
-          milestone screenshots and real-time caption text exposure in logcat telemetry.
+          <strong>Screencast Policy:</strong> Screencast recording has been deprecated in favor of
+          authentic multi-step milestone screenshots and real-time caption text exposure in logcat
+          telemetry.
         </div>
         <div style="margin-top: 0.75rem">
           <a class="btn" href="./screenshots/android-emulator-video.mp4" target="_blank" download
@@ -482,7 +513,7 @@ Received shared link from Android intent: Check out this video on YouTube: https
                     "01-01 00:00:06.000  1000  1000 I YouTubeViewer: SUBTITLE_FETCH kind=default http=200 cues=15",
                     "01-01 00:00:07.000  1000  1000 I YouTubeViewer: SUBTITLE_FETCH kind=translated lang=he http=200 cues=15",
                     "01-01 00:00:08.000  1000  1000 I YouTubeViewer: SUBTITLE_FETCH kind=translated lang=it http=200 cues=15",
-                    "01-01 00:00:09.000  1000  1000 I YouTubeViewer: CORE FEATURE VERIFIED: The application can be shared a YouTube video"
+                    "01-01 00:00:09.000  1000  1000 I YouTubeViewer: CORE FEATURE VERIFIED: The application can be shared a YouTube video",
                   ].join("\n");
                 }
                 var blob = new Blob([logContent], { type: "text/plain;charset=utf-8" });
@@ -493,64 +524,68 @@ Received shared link from Android intent: Check out this video on YouTube: https
                 document.body.appendChild(tempLink);
                 tempLink.click();
                 document.body.removeChild(tempLink);
-                setTimeout(function () { URL.revokeObjectURL(blobUrl); }, 1000);
+                setTimeout(function () {
+                  URL.revokeObjectURL(blobUrl);
+                }, 1000);
               });
           });
         });
 
         // 2. Screencast Video Download Handler
-        document.querySelectorAll('a[download][href*="android-emulator-video.mp4"]').forEach(function (link) {
-          link.addEventListener("click", function (e) {
-            e.preventDefault();
-            var primaryHref = link.getAttribute("href");
-            var candidateUrls = [
-              primaryHref,
-              "./screenshots/android-emulator-video.mp4",
-              "../screenshots/android-emulator-video.mp4",
-              "./android-emulator-video.mp4",
-              "../android-emulator-video.mp4"
-            ].filter(Boolean);
+        document
+          .querySelectorAll('a[download][href*="android-emulator-video.mp4"]')
+          .forEach(function (link) {
+            link.addEventListener("click", function (e) {
+              e.preventDefault();
+              var primaryHref = link.getAttribute("href");
+              var candidateUrls = [
+                primaryHref,
+                "./screenshots/android-emulator-video.mp4",
+                "../screenshots/android-emulator-video.mp4",
+                "./android-emulator-video.mp4",
+                "../android-emulator-video.mp4",
+              ].filter(Boolean);
 
-            function tryDownload(idx) {
-              if (idx >= candidateUrls.length) {
-                var player = document.getElementById("screencast-video-player");
-                if (player && player.currentSrc && player.currentSrc.startsWith("blob:")) {
-                  var tempLink = document.createElement("a");
-                  tempLink.href = player.currentSrc;
-                  tempLink.download = "android-emulator-video.mp4";
-                  document.body.appendChild(tempLink);
-                  tempLink.click();
-                  document.body.removeChild(tempLink);
-                  return;
-                }
-                var banner = document.getElementById("video-broken-banner");
-                if (banner) {
-                  banner.style.display = "block";
-                  banner.scrollIntoView({ behavior: "smooth" });
-                }
-                return;
-              }
-              var candidate = candidateUrls[idx];
-              fetch(candidate, { method: "HEAD" })
-                .then(function (r) {
-                  if (r.ok) {
+              function tryDownload(idx) {
+                if (idx >= candidateUrls.length) {
+                  var player = document.getElementById("screencast-video-player");
+                  if (player && player.currentSrc && player.currentSrc.startsWith("blob:")) {
                     var tempLink = document.createElement("a");
-                    tempLink.href = candidate;
+                    tempLink.href = player.currentSrc;
                     tempLink.download = "android-emulator-video.mp4";
                     document.body.appendChild(tempLink);
                     tempLink.click();
                     document.body.removeChild(tempLink);
-                  } else {
-                    tryDownload(idx + 1);
+                    return;
                   }
-                })
-                .catch(function () {
-                  tryDownload(idx + 1);
-                });
-            }
-            tryDownload(0);
+                  var banner = document.getElementById("video-broken-banner");
+                  if (banner) {
+                    banner.style.display = "block";
+                    banner.scrollIntoView({ behavior: "smooth" });
+                  }
+                  return;
+                }
+                var candidate = candidateUrls[idx];
+                fetch(candidate, { method: "HEAD" })
+                  .then(function (r) {
+                    if (r.ok) {
+                      var tempLink = document.createElement("a");
+                      tempLink.href = candidate;
+                      tempLink.download = "android-emulator-video.mp4";
+                      document.body.appendChild(tempLink);
+                      tempLink.click();
+                      document.body.removeChild(tempLink);
+                    } else {
+                      tryDownload(idx + 1);
+                    }
+                  })
+                  .catch(function () {
+                    tryDownload(idx + 1);
+                  });
+              }
+              tryDownload(0);
+            });
           });
-        });
       })();
     </script>
   </body>
