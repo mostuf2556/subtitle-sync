@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Redirecting...</title>
+    <script>
+      // Single Page Application redirect for GitHub Pages preserving query parameters
+      (function () {
+        var l = window.location;
+        var pathParts = l.pathname.split("/").filter(Boolean);
+        var repoName = pathParts.length > 0 ? "/" + pathParts[0] + "/" : "/";
+        var query = l.search ? l.search.replace(/^\?/, "") : "";
+        var redirectUrl =
+          l.protocol + "//" + l.host + repoName + (query ? "?" + query : "") + l.hash;
+        l.replace(redirectUrl);
+      })();
+    </script>
+  </head>
+  <body>
+    <p>Loading application...</p>
+  </body>
+</html>
