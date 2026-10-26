@@ -4,9 +4,7 @@ This file is strictly the active backlog containing pending, active, and upcomin
 
 ## Active Tasks
 
-- [ ] **Task 242: Consolidate Codespaces, Docker, and E2E guidance**
-  - **242.2 Reusable experiment summaries**: Add `docs/codespace.md`, `docs/docker.md`, and `docs/e2e.md` with proven commands, prior failures and causes, successful resolutions, and runtime limits.
-  - **242.3 Finalize current feature**: Revalidate Task 241's action-log feature and browser test, then archive the task and clear the active mirrors.
+- None.
 
 ## Later Tasks
 

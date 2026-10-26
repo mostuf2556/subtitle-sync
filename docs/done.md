@@ -1,5 +1,17 @@
 # Done tasks
 
+## Task 242.2: Reusable experiment summaries
+
+- Added `docs/codespace.md`, `docs/docker.md`, and `docs/e2e.md` with the environment checks, exact commands, prior failures, root causes, proven resolutions, and platform limits encountered in the Codespace/Docker/browser workflow.
+- Recorded the successful Docker-based browser validation and the direct-host failure caused by missing OS libraries so future attempts use the supported container path instead of repeating the wrong fix.
+- Verification passed: `npm run test:md`, `npm run test:state-machine-action-logs`, and `./docker/manage.sh e2e web --grep 'state-machine action logs' --retries=0` in the official Playwright Docker image.
+
+## Task 242.3: Finalize current feature
+
+- Revalidated the state-machine action log feature in both the source verifier and the real Dockerized browser E2E run.
+- Cleared the active task mirrors and archived the completed work in the task ledger.
+- Verification passed: `npm run test:state-machine-action-logs`, `npm run test:md`, and the Docker browser E2E run above.
+
 ## Task 242.1: Make AGENTS.md point to Codespaces, Docker, and E2E runbooks
 
 - Added mandatory links to the three requested runbooks and existing detailed Docker/Android E2E guides, plus a rule to record reproducible environment, command, result, resolution, and limits.

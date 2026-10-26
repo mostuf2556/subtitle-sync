@@ -156,11 +156,5 @@ A subtitle HTTP response is considered valid and "good" ONLY when it satisfies a
 ## Last raw prompt
 
 ```
-1. 
-AGENTS.md -
-being aware of docs/codespace.md and docs/docker.md and docs/e2e.md
-
-2. those docs should summaries previous trials/experiments in order to make those effective for future usage and not to experience same issue over and over.
-
-3. ensure finalize current feature.
+go on
 ```
