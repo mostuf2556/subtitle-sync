@@ -219,6 +219,7 @@ import {
 } from "@/utils/newSubtitlesParser";
 import { BeginnerFlowContainer } from "@/components/beginner/BeginnerFlowContainer";
 import { PerLanguageTtsPreferences } from "@/components/beginner/PerLanguageTtsPreferences";
+import { LanguageTtsOrderSelect } from "@/components/LanguageTtsOrderSelect";
 import {
   BeginnerTtsServiceControl,
   type BeginnerTtsService,
@@ -228,20 +229,23 @@ import { getPlaybackSectionId } from "@/lib/playback-section-identity";
 import { subtitleRequestQueue } from "@/utils/subtitleRequestQueue";
 import {
   getSectionOrder,
+  setSectionOrder as saveSectionOrder,
+  getTtsLanguageOrdersPreference,
   getSubtitleRequestMode,
   getTtsRatiosPreference,
   getTtsRatesPreference,
   getLanguageTtsRatio,
+  partitionTtsLanguagesByOrder,
   isLanguageSpoken,
   isTtsSpeakableLanguage,
   isSubtitleInstanceEligibleForTTS,
   shouldHighlightSentenceForTTS,
   getPrimaryTtsLang,
   setPrimaryTtsLang,
+  setTtsLanguageOrderPreference,
   computePrimaryTtsLang,
   isLanguageEligibleForTtsWithRole,
   shouldHighlightSentenceForTtsWithRole,
-  setSectionOrder as saveSectionOrder,
   setSubtitleRequestMode as saveSubtitleRequestMode,
   setTtsRatioPreference as saveTtsRatioPreference,
   setTtsRatePreference as saveTtsRatePreference,
@@ -1012,6 +1016,7 @@ function Index() {
   const [favoriteLanguages, setFavoriteLanguagesState] = useState<string[]>(
     getInitialFavoriteLanguages,
   );
+  const [addFavoriteFilter, setAddFavoriteFilter] = useState("");
   const [targetLanguages, setTargetLanguages] = useState<string[]>(getInitialTargetLanguages);
 
   // For any favorite language - by default do checkbox on for both options: present in table & tts-play
@@ -1805,11 +1810,22 @@ function Index() {
     const defaults = Object.fromEntries(LANGS.map((lang) => [lang.code, 1]));
     return { ...defaults, ...saved };
   });
+  const [ttsLanguageOrders, setTtsLanguageOrders] = useState(() =>
+    getTtsLanguageOrdersPreference(),
+  );
   const primaryTtsLang = useMemo(() => {
     return computePrimaryTtsLang(spoken, ttsRatios) || getPrimaryTtsLang() || spoken[0] || "";
   }, [spoken, ttsRatios]);
   const handlePrimaryTtsLangChange = useCallback((code: string) => {
     setPrimaryTtsLang(code);
+  }, []);
+  const handleTtsLanguageOrderChange = useCallback((languageCode: string, order: SectionOrder) => {
+    setTtsLanguageOrders((current) => ({ ...current, [languageCode]: order }));
+    setTtsLanguageOrderPreference(languageCode, order);
+  }, []);
+  const handleSectionOrderChange = useCallback((newOrder: SectionOrder) => {
+    setSectionOrderState(newOrder);
+    saveSectionOrder(newOrder);
   }, []);
 
   useEffect(() => {
@@ -2248,8 +2264,7 @@ function Index() {
     setSpeakingLang(null);
     setSpeakingRow(-1);
     setSpeechProgress(null);
-    setPlayedRecordsCount(0);
-    playedTtsRecords.current.clear();
+    resetTtsPlaybackProgress();
     setSubtitlesPage(1);
     setOnDemandTranslations({});
     setDetectedPlaygroundTracks({});
@@ -2283,8 +2298,7 @@ function Index() {
         setSpeakingLang(null);
         setSpeakingRow(-1);
         setSpeechProgress(null);
-        setPlayedRecordsCount(0);
-        playedTtsRecords.current.clear();
+        resetTtsPlaybackProgress();
         setOnDemandTranslations({});
         setDetectedPlaygroundTracks({});
         setObservedUrl("");
@@ -2417,7 +2431,8 @@ function Index() {
         p.seekTo?.(seconds, true);
         setPlaybackCurrentTime(seconds);
         lastMs.current = seconds * 1000;
-        handledRow.current = -1;
+        handledTtsFirstSections.current.clear();
+        handledVideoFirstSections.current.clear();
       } catch (e) {
         logError("State Machine", "Playback seek failed", {
           error: e instanceof Error ? e.message : String(e),
@@ -3463,6 +3478,7 @@ function Index() {
     spoken,
     rates,
     ttsRatios,
+    ttsLanguageOrders,
     primaryTtsLang,
     voiceSelections,
     pauseMode,
@@ -3477,6 +3493,7 @@ function Index() {
     spoken,
     rates,
     ttsRatios,
+    ttsLanguageOrders,
     primaryTtsLang,
     voiceSelections,
     pauseMode,
@@ -3501,15 +3518,30 @@ function Index() {
   } | null>(null);
   const busy = useRef(false);
   const lastRow = useRef(-1);
-  const handledRow = useRef(-1);
   const lastMs = useRef(0);
   const playedTtsRecords = useRef<Set<string>>(new Set());
+  const playedTtsLanguageRecords = useRef<Map<string, Set<string>>>(new Map());
+  const handledTtsFirstSections = useRef<Set<string>>(new Set());
+  const handledVideoFirstSections = useRef<Set<string>>(new Set());
   const [playedRecordsCount, setPlayedRecordsCount] = useState(0);
 
+  const resetTtsPlaybackProgress = (sectionId?: string) => {
+    if (sectionId) {
+      playedTtsRecords.current.delete(sectionId);
+      playedTtsLanguageRecords.current.delete(sectionId);
+      handledTtsFirstSections.current.delete(sectionId);
+      handledVideoFirstSections.current.delete(sectionId);
+    } else {
+      playedTtsRecords.current.clear();
+      playedTtsLanguageRecords.current.clear();
+      handledTtsFirstSections.current.clear();
+      handledVideoFirstSections.current.clear();
+    }
+    setPlayedRecordsCount(playedTtsRecords.current.size);
+  };
+
   useEffect(() => {
-    playedTtsRecords.current.clear();
-    handledRow.current = -1;
-    setPlayedRecordsCount(0);
+    resetTtsPlaybackProgress();
   }, [videoId]);
 
   const handleSwitchToViewerAtTime = useCallback(
@@ -3606,8 +3638,7 @@ function Index() {
           setSpeakingRow(-1);
           setSpeechProgress(null);
           cancelSpeech();
-          playedTtsRecords.current.clear();
-          setPlayedRecordsCount(0);
+          resetTtsPlaybackProgress();
           setSubtitlesPage(1);
           setOnDemandTranslations({});
           setDetectedPlaygroundTracks({});
@@ -3846,7 +3877,8 @@ function Index() {
       }
       // Detect user manually seeking or scrubbing across playback timeline
       if (Math.abs(ms - lastMs.current) > 2500 || ms < lastMs.current - 1000) {
-        handledRow.current = -1;
+        handledTtsFirstSections.current.clear();
+        handledVideoFirstSections.current.clear();
       }
       lastMs.current = ms;
 
@@ -3894,12 +3926,12 @@ function Index() {
       const prev = lastRow.current;
       lastRow.current = idx;
 
-      const getEligibleLangs = (rowIdx: number) => {
+      const getEligibleLangs = (rowIdx: number, requestedOrder?: SectionOrder) => {
         if (rowIdx < 0 || playedTtsRecords.current.has(getPlaybackSectionId(rows[rowIdx]!)))
           return [];
         const baseText = st.current.rows[rowIdx]?.texts[st.current.baseLanguage] ?? "";
         if (!isSentenceWithinWordLimit(baseText, maxTtsWordsRef.current)) return [];
-        const matched = orderedLangs.filter(
+        let eligibleLanguages = orderedLangs.filter(
           (l) =>
             isTtsSpeakableLanguage(l.code, currentBaseLanguage) &&
             isLanguageSpoken(l.code, spoken) &&
@@ -3911,16 +3943,13 @@ function Index() {
               primaryRatio,
             }),
         );
-        if (matched.length > 0) return matched;
-        // When audioTrackMode is enabled with no spoken languages selected,
-        // fallback to base / primary language so the original video repeats the section with native audio
-        if (isAudioTrackMode && spoken.length === 0) {
+        if (eligibleLanguages.length === 0 && isAudioTrackMode && spoken.length === 0) {
           const fallbackLang = orderedLangs.find((l) => l.code === currentBaseLanguage) ||
             orderedLangs[0] || { code: "primary", tts: "en-US", name: "Primary" };
-          return [fallbackLang];
+          eligibleLanguages = [fallbackLang];
         }
-        // In beginner mode or default playback if spoken list is empty, speak the first available target/base subtitle
-        if (spoken.length === 0 && orderedLangs.length > 0) {
+        // In beginner mode or default playback, use the first available target subtitle when none are selected.
+        if (eligibleLanguages.length === 0 && spoken.length === 0 && orderedLangs.length > 0) {
           const fallbackLang =
             orderedLangs.find((l) => l.code !== currentBaseLanguage) || orderedLangs[0];
           if (
@@ -3930,17 +3959,31 @@ function Index() {
               getLanguageTtsRatio(currentTtsRatios, fallbackLang.code),
             )
           ) {
-            return [fallbackLang];
+            eligibleLanguages = [fallbackLang];
           }
         }
-        return [];
+        const sectionId = getPlaybackSectionId(rows[rowIdx]!);
+        const alreadySpoken = playedTtsLanguageRecords.current.get(sectionId) ?? new Set<string>();
+        const pendingLanguages = eligibleLanguages.filter(
+          (language) => !alreadySpoken.has(language.code),
+        );
+        if (!requestedOrder) return pendingLanguages;
+        const orderGroups = partitionTtsLanguagesByOrder(
+          pendingLanguages,
+          st.current.ttsLanguageOrders,
+          st.current.sectionOrder,
+        );
+        return requestedOrder === "tts-first" ? orderGroups.ttsFirst : orderGroups.videoFirst;
       };
 
-      const speakRow = async (rowIdx: number) => {
+      const speakRow = async (rowIdx: number, requestedOrder: SectionOrder) => {
         if (rowIdx < 0 || playedTtsRecords.current.has(getPlaybackSectionId(rows[rowIdx]!))) return;
-        const langs = getEligibleLangs(rowIdx);
+        const langs = getEligibleLangs(rowIdx, requestedOrder);
         if (langs.length === 0) return;
         const sectionId = getPlaybackSectionId(rows[rowIdx]!);
+        const spokenLanguages =
+          playedTtsLanguageRecords.current.get(sectionId) ?? new Set<string>();
+        playedTtsLanguageRecords.current.set(sectionId, spokenLanguages);
         logStateMachineAction("TTS_SECTION_STARTED", {
           videoId,
           sectionId,
@@ -3993,10 +4036,15 @@ function Index() {
                 setSpeechProgress,
               );
             }
+            spokenLanguages.add(l.code);
           }
           if (isAudioTrackMode) {
             multiVideoPlayerRegistry.pauseAllExcept("primary");
             multiVideoPlayerRegistry.unmuteOnly("primary");
+          }
+          if (getEligibleLangs(rowIdx).length === 0) {
+            playedTtsRecords.current.add(sectionId);
+            setPlayedRecordsCount(playedTtsRecords.current.size);
           }
         } catch (error) {
           logError("State Machine", "TTS section playback failed", {
@@ -4019,28 +4067,28 @@ function Index() {
         }
       };
       const isPlaying = p.getPlayerState() === 1;
-      if (pauseMode && st.current.sectionOrder === "tts-first") {
-        // Speech first: on entering a section, pause, speak it, then play that section's video.
+      if (pauseMode) {
+        // Languages configured for speech-first pause on section entry; others wait until its end.
+        const sectionId = idx >= 0 ? getPlaybackSectionId(rows[idx]!) : "";
         if (
           idx >= 0 &&
           isPlaying &&
-          !playedTtsRecords.current.has(getPlaybackSectionId(rows[idx]!)) &&
-          handledRow.current !== idx
+          !playedTtsRecords.current.has(sectionId) &&
+          !handledTtsFirstSections.current.has(sectionId)
         ) {
-          handledRow.current = idx;
-          const eligibleLangs = getEligibleLangs(idx);
+          const eligibleLangs = getEligibleLangs(idx, "tts-first");
           if (eligibleLangs.length > 0) {
+            handledTtsFirstSections.current.add(sectionId);
             busy.current = true;
             const langLabels = eligibleLangs
               .map((c) => LANGS.find((l) => l.code === c)?.name || c)
               .join(", ");
             setPauseReason(`Waiting for speech synthesis (${langLabels}) before playing`);
             p.pauseVideo();
-            await speakRow(idx);
+            await speakRow(idx, "tts-first");
             setPauseReason(null);
             const wasCancelled = !busy.current;
             busy.current = false;
-            handledRow.current = idx;
             if (wasCancelled || st.current.isSetupPaused || userExplicitlyPausedRef.current) return;
             const targetSec = (rows[idx]?.start ?? 0) / 1000;
             lastMs.current = targetSec * 1000;
@@ -4055,25 +4103,25 @@ function Index() {
       if (pauseMode && isPlaying) {
         const candidateRow =
           prev >= 0 && (idx !== prev || ms >= (rows[prev]?.end ?? Infinity) - 80) ? prev : -1;
+        const sectionId = candidateRow >= 0 ? getPlaybackSectionId(rows[candidateRow]!) : "";
         if (
           candidateRow >= 0 &&
-          !playedTtsRecords.current.has(getPlaybackSectionId(rows[candidateRow]!)) &&
-          handledRow.current !== candidateRow
+          !playedTtsRecords.current.has(sectionId) &&
+          !handledVideoFirstSections.current.has(sectionId)
         ) {
-          handledRow.current = candidateRow;
-          const eligibleLangs = getEligibleLangs(candidateRow);
+          const eligibleLangs = getEligibleLangs(candidateRow, "video-first");
           if (eligibleLangs.length > 0) {
+            handledVideoFirstSections.current.add(sectionId);
             busy.current = true;
             const langLabels = eligibleLangs
               .map((c) => LANGS.find((l) => l.code === c)?.name || c)
               .join(", ");
             setPauseReason(`Section complete: speaking translation (${langLabels})`);
             p.pauseVideo();
-            await speakRow(candidateRow);
+            await speakRow(candidateRow, "video-first");
             setPauseReason(null);
             const wasCancelled = !busy.current;
             busy.current = false;
-            handledRow.current = candidateRow;
             if (wasCancelled || st.current.isSetupPaused || userExplicitlyPausedRef.current) return;
             const nextRowIdx = candidateRow + 1;
             if (nextRowIdx < rows.length && rows[nextRowIdx]) {
@@ -4246,8 +4294,7 @@ function Index() {
     setPauseReason(null);
     setIsVideoPlaying(true);
     lastRow.current = i;
-    handledRow.current = -1;
-    playedTtsRecords.current.delete(getPlaybackSectionId(r));
+    resetTtsPlaybackProgress(getPlaybackSectionId(r));
     lastMs.current = r.start;
     setActive(i);
     player.current?.seekTo(r.start / 1000, true);
@@ -4797,6 +4844,7 @@ function Index() {
         <BeginnerFlowContainer
           url={videoInput || (videoId ? `https://www.youtube.com/watch?v=${videoId}` : "")}
           videoId={videoId}
+          isAndroid={isAndroid}
           onUrlChange={(newUrl) => setVideoInput(newUrl)}
           onSubmitUrl={(submittedUrl) => {
             const parsed = parseVideoId(submittedUrl);
@@ -4985,11 +5033,6 @@ function Index() {
           baseLanguage={baseLanguage}
           selectedTargetLanguages={targetLanguages}
           onTargetLanguagesChange={handleTargetLanguagesChange}
-          onOrderChange={(newOrder) => {
-            const prefOrder = newOrder === "tts-first" ? "tts-first" : "video-first";
-            setSectionOrderState(prefOrder);
-            saveSectionOrder(prefOrder);
-          }}
           onTtsSpeedChange={(newSpeed) => {
             setRates((prev) => {
               const updated = { ...prev };
@@ -5010,6 +5053,8 @@ function Index() {
           onFavoriteLanguagesChange={(newFavs) => {
             handleUpdateFavoriteLanguages(newFavs);
           }}
+          onApplyFavoritesToVideo={handleResetVideoToFavorites}
+          onSaveCurrentSelectionAsFavorites={handleSaveCurrentAsFavorites}
           onBaseLangChange={(lang) => {
             setBaseLanguage(lang);
             if (!spoken.includes(lang)) {
@@ -5051,6 +5096,8 @@ function Index() {
               voices={voices}
               ratios={ttsRatios}
               rates={rates}
+              languageOrders={ttsLanguageOrders}
+              defaultOrder={sectionOrder}
               voiceSelections={voiceSelections}
               primaryLang={primaryTtsLang}
               onPrimaryLangChange={handlePrimaryTtsLangChange}
@@ -5079,6 +5126,8 @@ function Index() {
                   return next;
                 });
               }}
+              onOrderChange={handleTtsLanguageOrderChange}
+              onDefaultOrderChange={handleSectionOrderChange}
             />
           }
           onSwitchToAdvanced={() => handleWorkflowModeChange("expert")}
@@ -5198,8 +5247,7 @@ function Index() {
                           setSpeakingRow(-1);
                           setSpeechProgress(null);
                           cancelSpeech();
-                          playedTtsRecords.current.clear();
-                          setPlayedRecordsCount(0);
+                          resetTtsPlaybackProgress();
                           setSubtitlesPage(1);
                           setOnDemandTranslations({});
                           setDetectedPlaygroundTracks({});
@@ -5214,8 +5262,8 @@ function Index() {
                               );
                             }
                           }
+                          setVideoId(id);
                         }
-                        setVideoId(id);
                       } else {
                         setCaptionStatus("Enter a valid YouTube link or video ID.");
                       }
@@ -5623,9 +5671,7 @@ function Index() {
                                 type="button"
                                 data-testid="reset-played-subtitles-btn"
                                 onClick={() => {
-                                  playedTtsRecords.current.clear();
-                                  handledRow.current = -1;
-                                  setPlayedRecordsCount(0);
+                                  resetTtsPlaybackProgress();
                                 }}
                                 className="text-xs text-primary hover:underline font-medium"
                                 title="Reset history of spoken subtitle records so they can be spoken again"
@@ -5634,22 +5680,6 @@ function Index() {
                               </button>
                             )}
                           </div>
-                          <label className="flex flex-wrap items-center gap-2">
-                            <span>For each section, play first:</span>
-                            <select
-                              data-testid="section-order-select"
-                              value={sectionOrder}
-                              onChange={(e) => {
-                                const v = e.target.value as SectionOrder;
-                                setSectionOrderState(v);
-                                saveSectionOrder(v);
-                              }}
-                              className="rounded-md border border-input bg-background px-2 py-1"
-                            >
-                              <option value="video-first">Video, then speech</option>
-                              <option value="tts-first">Speech, then video</option>
-                            </select>
-                          </label>
                           {isAndroid && (
                             <>
                               <label className="flex flex-wrap items-center gap-2">
@@ -7242,6 +7272,35 @@ function Index() {
                             <div className="flex items-center justify-between p-2.5 rounded-lg border border-border bg-muted/20">
                               <div className="space-y-0.5">
                                 <label
+                                  htmlFor="section-order-select"
+                                  className="text-xs font-medium text-foreground cursor-pointer"
+                                >
+                                  Video &amp; TTS Playback Sequence
+                                </label>
+                                <div className="text-[11px] text-muted-foreground">
+                                  Choose whether video plays before, after, or in between TTS-play
+                                  groups
+                                </div>
+                              </div>
+                              <select
+                                id="section-order-select"
+                                data-testid="section-order-select"
+                                value={sectionOrder}
+                                onChange={(e) =>
+                                  handleSectionOrderChange(e.target.value as SectionOrder)
+                                }
+                                className="rounded border border-input bg-background px-2.5 py-1 text-xs text-foreground cursor-pointer font-medium"
+                              >
+                                <option value="video-first">Video before TTS (Video first)</option>
+                                <option value="tts-first">Video after TTS (TTS first)</option>
+                                <option value="video-middle">
+                                  Video in between TTS groups (1 group before, 1 group after)
+                                </option>
+                              </select>
+                            </div>
+                            <div className="flex items-center justify-between p-2.5 rounded-lg border border-border bg-muted/20">
+                              <div className="space-y-0.5">
+                                <label
                                   htmlFor="auto-speak-on-fetch-toggle"
                                   className="text-xs font-medium text-foreground cursor-pointer"
                                 >
@@ -7362,6 +7421,12 @@ function Index() {
                                   </th>
                                   <th
                                     className="font-normal text-center py-1.5 px-1.5"
+                                    title="Choose whether each language speaks before or after its video section"
+                                  >
+                                    TTS Order
+                                  </th>
+                                  <th
+                                    className="font-normal text-center py-1.5 px-1.5"
                                     title="1 input per 1 favorite language for subtitle URL"
                                   >
                                     Subtitle URL
@@ -7401,6 +7466,7 @@ function Index() {
                                                 <span className="flex items-center gap-1 font-semibold text-primary">
                                                   <span
                                                     data-testid={`tts-switch-primary-${lang.code}`}
+                                                    title={`Click to set ${lang.name} as Primary`}
                                                   >
                                                     {lang.name}
                                                   </span>
@@ -7415,6 +7481,7 @@ function Index() {
                                                 <span className="flex items-center gap-1 font-medium text-foreground">
                                                   <span
                                                     data-testid={`tts-switch-primary-${lang.code}`}
+                                                    title={`Click to set ${lang.name} as Primary`}
                                                   >
                                                     {lang.name}
                                                   </span>
@@ -7563,6 +7630,14 @@ function Index() {
                                             onChange={() => toggle(shown, setShown, lang.code)}
                                           />
                                         </td>
+                                        <td className="py-1 px-1.5">
+                                          <LanguageTtsOrderSelect
+                                            languageCode={lang.code}
+                                            languageName={lang.name}
+                                            order={ttsLanguageOrders[lang.code] ?? sectionOrder}
+                                            onChange={handleTtsLanguageOrderChange}
+                                          />
+                                        </td>
                                         <td className="text-center py-1 px-1.5">
                                           <Button
                                             type="button"
@@ -7618,7 +7693,7 @@ function Index() {
                                           data-testid={`url-input-row-${lang.code}`}
                                           className="bg-primary/5 border-y border-primary/20"
                                         >
-                                          <td colSpan={7} className="p-2.5">
+                                          <td colSpan={8} className="p-2.5">
                                             <div className="space-y-2 max-w-xl text-xs">
                                               <div className="flex items-center justify-between">
                                                 <span className="font-semibold text-foreground flex items-center gap-1.5">

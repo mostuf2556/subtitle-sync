@@ -16,6 +16,7 @@ import { getBeginnerDefaultBaseLanguage } from "@/utils/beginnerLanguageSelectio
 export interface BeginnerFlowContainerProps {
   url: string;
   videoId: string;
+  isAndroid?: boolean;
   onUrlChange: (newUrl: string) => void;
   onSubmitUrl: (urlToLoad: string) => void;
   observedUrl: string | null;
@@ -36,18 +37,20 @@ export interface BeginnerFlowContainerProps {
   webDemoUrlsSlot?: React.ReactNode;
   showVideoSubtitles: boolean;
   onToggleVideoSubtitles: () => void;
-  onOrderChange?: (order: "video-first" | "tts-first") => void;
   onTtsSpeedChange?: (speed: number) => void;
   onTtsVoiceChange?: (voiceURI: string) => void;
   onSubtitlesRatioChange?: (ratio: number) => void;
   onFavoriteLanguagesChange?: (langs: string[]) => void;
   onBaseLangChange?: (baseLang: string) => void;
+  onApplyFavoritesToVideo?: () => void;
+  onSaveCurrentSelectionAsFavorites?: () => void;
   onSwitchToAdvanced?: () => void;
 }
 
 export const BeginnerFlowContainer: React.FC<BeginnerFlowContainerProps> = ({
   url,
   videoId,
+  isAndroid = false,
   onUrlChange,
   onSubmitUrl,
   observedUrl,
@@ -68,12 +71,13 @@ export const BeginnerFlowContainer: React.FC<BeginnerFlowContainerProps> = ({
   webDemoUrlsSlot,
   showVideoSubtitles,
   onToggleVideoSubtitles,
-  onOrderChange,
   onTtsSpeedChange,
   onTtsVoiceChange,
   onSubtitlesRatioChange,
   onFavoriteLanguagesChange,
   onBaseLangChange,
+  onApplyFavoritesToVideo,
+  onSaveCurrentSelectionAsFavorites,
   onSwitchToAdvanced,
 }) => {
   // Load initial settings
@@ -81,9 +85,6 @@ export const BeginnerFlowContainer: React.FC<BeginnerFlowContainerProps> = ({
 
   const [activeTab, setActiveTab] = useState<BeginnerTabId>(
     settings.beginnerActiveTab === "video" ? "video" : "preferences",
-  );
-  const [order, setOrder] = useState<"video-first" | "tts-first">(
-    settings.playOrder === "tts_then_video" ? "tts-first" : "video-first",
   );
   const [ttsSpeed, setTtsSpeed] = useState<number>(settings.beginnerTtsSpeed ?? 1.0);
   const [ttsVoice, setTtsVoice] = useState<string>(settings.beginnerTtsVoice ?? "");
@@ -162,6 +163,7 @@ export const BeginnerFlowContainer: React.FC<BeginnerFlowContainerProps> = ({
             onUrlChange={onUrlChange}
             onSubmitUrl={handleSubmitUrl}
             videoId={videoId}
+            isAndroid={isAndroid}
             onOpenLibrary={() => setIsLibraryOpen(true)}
             observedUrl={observedUrl}
             observedTracks={observedTracks}
@@ -190,14 +192,6 @@ export const BeginnerFlowContainer: React.FC<BeginnerFlowContainerProps> = ({
 
         <div hidden={activeTab !== "preferences"}>
           <BeginnerPreferencesTab
-            order={order}
-            onOrderChange={(o) => {
-              setOrder(o);
-              updateSettings({
-                playOrder: o === "tts-first" ? "tts_then_video" : "video_then_tts",
-              });
-              onOrderChange?.(o);
-            }}
             ttsSpeed={ttsSpeed}
             onTtsSpeedChange={(s) => {
               setTtsSpeed(s);
@@ -217,6 +211,11 @@ export const BeginnerFlowContainer: React.FC<BeginnerFlowContainerProps> = ({
             baseLanguage={baseLanguage}
             perLanguageTtsSettingsSlot={perLanguageTtsSettingsSlot}
             onContinueToNextTab={() => handleTabChange("video")}
+            catalog={favoriteLanguageCatalog}
+            targetLanguages={selectedTargetLanguages}
+            videoId={videoId}
+            onApplyFavoritesToVideo={onApplyFavoritesToVideo}
+            onSaveCurrentSelectionAsFavorites={onSaveCurrentSelectionAsFavorites}
           />
         </div>
       </main>

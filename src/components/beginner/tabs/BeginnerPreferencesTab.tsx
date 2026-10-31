@@ -60,9 +60,9 @@ import {
   type LovableTtsProvider,
 } from "@/lib/alternative-tts";
 
+import { GlobalFavoriteLanguagesPanel } from "@/components/GlobalFavoriteLanguagesPanel";
+
 export interface BeginnerPreferencesTabProps {
-  order: "video-first" | "tts-first";
-  onOrderChange: (order: "video-first" | "tts-first") => void;
   ttsSpeed: number;
   onTtsSpeedChange: (speed: number) => void;
   ttsVoice: string;
@@ -74,11 +74,14 @@ export interface BeginnerPreferencesTabProps {
   baseLanguage?: string;
   perLanguageTtsSettingsSlot?: React.ReactNode;
   onContinueToNextTab?: () => void;
+  catalog?: Array<{ code: string; name: string }>;
+  targetLanguages?: string[];
+  videoId?: string;
+  onApplyFavoritesToVideo?: () => void;
+  onSaveCurrentSelectionAsFavorites?: () => void;
 }
 
 export const BeginnerPreferencesTab: React.FC<BeginnerPreferencesTabProps> = ({
-  order,
-  onOrderChange,
   ttsSpeed,
   onTtsSpeedChange,
   ttsVoice,
@@ -90,10 +93,14 @@ export const BeginnerPreferencesTab: React.FC<BeginnerPreferencesTabProps> = ({
   baseLanguage = "en",
   perLanguageTtsSettingsSlot,
   onContinueToNextTab,
+  catalog,
+  targetLanguages,
+  videoId,
+  onApplyFavoritesToVideo,
+  onSaveCurrentSelectionAsFavorites,
 }) => {
   const [voices, setVoices] = useState<SpeechVoiceLike[]>(() => getCachedVoices());
   const [isAuditioning, setIsAuditioning] = useState(false);
-  const [newLangCode, setNewLangCode] = useState("");
   const [useAlternativeTtsState, setUseAlternativeTtsState] = useState<boolean>(() =>
     typeof window !== "undefined" ? getUseAlternativeTts() : false,
   );
@@ -260,29 +267,6 @@ export const BeginnerPreferencesTab: React.FC<BeginnerPreferencesTabProps> = ({
     }
   };
 
-  const handleAddLanguage = (codeToAdd: string) => {
-    if (!codeToAdd) return;
-    const clean = codeToAdd.trim().toLowerCase();
-    if (!favoriteLanguages.includes(clean)) {
-      onFavoriteLanguagesChange([...favoriteLanguages, clean]);
-    }
-    setNewLangCode("");
-  };
-
-  const handleRemoveLanguage = (codeToRemove: string) => {
-    onFavoriteLanguagesChange(favoriteLanguages.filter((l) => l !== codeToRemove));
-  };
-
-  const commonPresets = [
-    { code: "en", name: "English" },
-    { code: "he", name: "Hebrew (עברית)" },
-    { code: "es", name: "Spanish (Español)" },
-    { code: "fr", name: "French (Français)" },
-    { code: "ru", name: "Russian (Русский)" },
-    { code: "ar", name: "Arabic (العربية)" },
-    { code: "de", name: "German (Deutsch)" },
-  ];
-
   return (
     <div
       className="space-y-4 max-w-4xl mx-auto p-3 rounded-2xl border border-amber-500/30 bg-amber-500/5"
@@ -322,101 +306,7 @@ export const BeginnerPreferencesTab: React.FC<BeginnerPreferencesTabProps> = ({
         />
       </label>
 
-      {/* 1. Playback Order */}
-      <div className="bg-card border border-border rounded-xl p-3.5 shadow-sm space-y-2.5">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-            <Sliders className="w-3.5 h-3.5 text-primary" />
-            <span>Playback Narration Order</span>
-          </h3>
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => setShowOrderHelp(!showOrderHelp)}
-              className="text-[11px] text-primary hover:underline flex items-center gap-1 font-medium"
-              title="Learn how narration order works"
-              aria-expanded={showOrderHelp}
-            >
-              <HelpCircle className="w-3 h-3" />
-              <span>{showOrderHelp ? "Hide Info" : "Order Info"}</span>
-            </button>
-            <Badge variant="outline" className="text-[10px] text-muted-foreground border-border">
-              {order === "video-first" ? "Video First" : "TTS First"}
-            </Badge>
-          </div>
-        </div>
-
-        {showOrderHelp && (
-          <div className="rounded-md border border-border/60 bg-muted/30 p-2.5 text-[11px] leading-relaxed text-muted-foreground animate-in fade-in duration-150">
-            Determine whether video audio leads and TTS follows, or TTS narrates the translated
-            subtitle before continuing video playback.
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-          <button
-            type="button"
-            onClick={() => onOrderChange("video-first")}
-            className={`flex items-center gap-3 p-3 rounded-lg border text-left transition-all ${
-              order === "video-first"
-                ? "bg-primary/10 border-primary text-foreground ring-1 ring-primary/40 shadow-2xs"
-                : "bg-background border-border hover:border-primary/50 text-foreground"
-            }`}
-            data-testid="order-video-first"
-          >
-            <div
-              className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                order === "video-first"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground"
-              }`}
-            >
-              <Film className="w-4 h-4" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-xs font-semibold text-foreground flex items-center justify-between">
-                <span>Video First</span>
-                {order === "video-first" && <Check className="w-3.5 h-3.5 text-primary" />}
-              </div>
-              <div className="text-[11px] text-muted-foreground truncate">
-                Video dialogue leads
-              </div>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onOrderChange("tts-first")}
-            className={`flex items-center gap-3 p-3 rounded-lg border text-left transition-all ${
-              order === "tts-first"
-                ? "bg-primary/10 border-primary text-foreground ring-1 ring-primary/40 shadow-2xs"
-                : "bg-background border-border hover:border-primary/50 text-foreground"
-            }`}
-            data-testid="order-tts-first"
-          >
-            <div
-              className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                order === "tts-first"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground"
-              }`}
-            >
-              <Mic className="w-4 h-4" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-xs font-semibold text-foreground flex items-center justify-between">
-                <span>TTS First</span>
-                {order === "tts-first" && <Check className="w-3.5 h-3.5 text-primary" />}
-              </div>
-              <div className="text-[11px] text-muted-foreground truncate">
-                Speech translation leads
-              </div>
-            </div>
-          </button>
-        </div>
-      </div>
-
-      {/* 2. TTS Speed & Voice Selection */}
+      {/* TTS Speed & Voice Selection */}
       <div className="bg-card border border-border rounded-xl p-3.5 shadow-sm space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -828,80 +718,17 @@ export const BeginnerPreferencesTab: React.FC<BeginnerPreferencesTabProps> = ({
 
       {perLanguageTtsSettingsSlot}
 
-      {/* 3. Favorite Languages Selector & Extender */}
+      {/* 3. Global Favorite Languages Panel (Shared Parity) */}
       <div className="bg-card border border-border rounded-xl p-3.5 shadow-sm space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Languages className="w-4 h-4 text-primary" />
-            <h3 className="text-xs font-semibold text-foreground">Favorite Target Languages</h3>
-          </div>
-          <span className="text-[11px] text-muted-foreground">
-            {favoriteLanguages.length} active
-          </span>
-        </div>
-
-        {/* Active Languages Chips */}
-        <div className="flex flex-wrap gap-1.5 pt-1" data-testid="favorite-languages-chips">
-          {favoriteLanguages.map((code) => {
-            const found = ALL_KNOWN_LANGUAGES.find((l) => l.code === code);
-            return (
-              <Badge
-                key={code}
-                variant="secondary"
-                className="bg-background border border-border text-foreground text-xs pl-2.5 pr-1 py-1 flex items-center gap-1.5"
-                data-testid={`fav-lang-${code}`}
-              >
-                <span>{found ? found.name : code.toUpperCase()}</span>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveLanguage(code)}
-                  className="w-4 h-4 rounded hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground"
-                  aria-label={`Remove ${code}`}
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </Badge>
-            );
-          })}
-        </div>
-
-        {/* Add Language Form */}
-        <div className="flex items-center gap-2 pt-1">
-          <select
-            value={newLangCode}
-            onChange={(e) => {
-              if (e.target.value) {
-                handleAddLanguage(e.target.value);
-              }
-            }}
-            className="flex-1 h-8 rounded-md bg-background border border-border text-foreground text-xs px-2.5 focus:outline-none focus:ring-1 focus:ring-primary"
-            data-testid="add-lang-select"
-          >
-            <option value="">+ Add language to favorites...</option>
-            {ALL_KNOWN_LANGUAGES.filter((l) => !favoriteLanguages.includes(l.code)).map((l) => (
-              <option key={l.code} value={l.code}>
-                {l.name} ({l.code})
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Quick Presets */}
-        <div className="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground pt-1">
-          <span className="text-[10px] text-muted-foreground/70 mr-1">Quick add:</span>
-          {commonPresets
-            .filter((p) => !favoriteLanguages.includes(p.code))
-            .map((p) => (
-              <button
-                key={p.code}
-                type="button"
-                onClick={() => handleAddLanguage(p.code)}
-                className="px-2 py-0.5 rounded bg-background border border-border hover:border-primary/50 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-              >
-                +{p.name.split(" ")[0]}
-              </button>
-            ))}
-        </div>
+        <GlobalFavoriteLanguagesPanel
+          catalog={catalog || ALL_KNOWN_LANGUAGES}
+          favoriteLanguages={favoriteLanguages}
+          targetLanguages={targetLanguages || []}
+          videoId={videoId || ""}
+          onFavoriteLanguagesChange={onFavoriteLanguagesChange}
+          onApplyFavoritesToVideo={onApplyFavoritesToVideo || (() => {})}
+          onSaveCurrentSelectionAsFavorites={onSaveCurrentSelectionAsFavorites || (() => {})}
+        />
       </div>
 
       {/* Navigation Footer */}

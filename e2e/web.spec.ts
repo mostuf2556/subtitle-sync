@@ -73,7 +73,7 @@ test("beginner mode has two flows and presents the daily video, favorites, parse
     "page",
   );
   await expect(page.getByTestId("beginner-preferences-tab")).toBeVisible();
-  await expect(page.getByText("Step 1: General Preferences")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Preferences" })).toBeVisible();
   await expect(page.getByTestId("beginner-overlay-preference")).toBeVisible();
   await expect(page.getByTestId("beginner-flow-arrow-preferences")).toBeVisible();
 
@@ -88,7 +88,7 @@ test("beginner mode has two flows and presents the daily video, favorites, parse
   await expect(page.getByTestId("subtitle-overlay-size-decrease")).toBeVisible();
   await expect(page.getByTestId("subtitle-overlay-size-increase")).toBeVisible();
   await expect(page.getByTestId("video-subtitles-overlay-toggle")).toBeVisible();
-  await expect(page.getByTestId("beginner-favorite-language-selector")).toBeVisible();
+  await expect(page.getByTestId("language-boxes-selector-wrapper")).toBeVisible();
   await expect(page.getByTestId("beginner-parallel-subtitles")).toBeVisible();
   await expect(page.getByTestId("beginner-chars-removal-accordion")).toBeVisible();
   await expect(page.getByTestId("subtitles-table-panel")).toBeVisible();
@@ -103,14 +103,14 @@ test("beginner mode has two flows and presents the daily video, favorites, parse
     .evaluate((controls) =>
       Boolean(
         controls.compareDocumentPosition(
-          document.querySelector('[data-testid="beginner-favorite-language-selector"]')!,
+          document.querySelector('[data-testid="language-boxes-selector-wrapper"]')!,
         ) & Node.DOCUMENT_POSITION_FOLLOWING,
       ),
     );
   expect(controlsBeforeFavorites).toBe(true);
 
   const favoritesBeforeTable = await page
-    .getByTestId("beginner-favorite-language-selector")
+    .getByTestId("language-boxes-selector-wrapper")
     .evaluate((selector) =>
       Boolean(
         selector.compareDocumentPosition(
@@ -156,6 +156,58 @@ test("beginner mode has two flows and presents the daily video, favorites, parse
   );
   await page.getByTestId("beginner-tab-preferences").click();
   await expect(overlayPreference).toBeChecked({ checked: !initialOverlayPreference });
+});
+
+test("Beginner and Advanced render the shared language selector", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem("app_workflow_mode", "beginner");
+  });
+  await page.goto("./");
+  await page.getByTestId("beginner-tab-video").click();
+  await expect(page.getByTestId("language-boxes-selector-wrapper")).toBeVisible();
+  await expect(page.getByTestId("language-boxes-grid")).toBeVisible();
+  const hebrewLanguage = page.getByTestId("language-box-he");
+  await hebrewLanguage.click();
+  await expect(hebrewLanguage).toHaveAttribute("data-selected", "true");
+
+  await page.getByTestId("nav-switch-to-advanced").click();
+  await page.locator('details[data-panel-id="languages"] > summary').click();
+  await expect(page.getByTestId("language-boxes-selector-wrapper")).toBeVisible();
+  await expect(page.getByTestId("language-box-he")).toHaveAttribute("data-selected", "true");
+});
+
+test("Advanced mode mounts without a route render error", async ({ page }) => {
+  await page.goto("./?mode=expert");
+  await expect(page.getByTestId("top-tabs-nav")).toBeVisible();
+});
+
+test("per-language playback order is shared by Beginner and Advanced Language Settings", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem("app_workflow_mode", "beginner");
+    window.localStorage.setItem("yt_section_order_v1", "video-first");
+  });
+  await page.goto("./");
+
+  const hebrewOrder = page.getByTestId("tts-order-select-he");
+  const italianOrder = page.getByTestId("tts-order-select-it");
+  await hebrewOrder.selectOption("tts-first");
+  await italianOrder.selectOption("video-first");
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem("yt_tts_language_orders_v1")))
+    .toBe(JSON.stringify({ he: "tts-first", it: "video-first" }));
+
+  await page.getByTestId("beginner-tab-video").click();
+  await page.getByTestId("nav-switch-to-advanced").click();
+  await page.locator('details[data-panel-id="languages"] > summary').click();
+  await expect(page.getByTestId("tts-order-select-he")).toHaveValue("tts-first");
+  await expect(page.getByTestId("tts-order-select-it")).toHaveValue("video-first");
+
+  await page.getByTestId("tts-order-select-it").selectOption("tts-first");
+  await expect
+    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("yt_tts_language_orders_v1") || "{}").it))
+    .toBe("tts-first");
 });
 
 test("Beginner preferences persist ratio, speed, and voice per favorite language", async ({

@@ -4,17 +4,9 @@ This document establishes the lightweight, high-efficiency operational protocol 
 
 ---
 
-### Prompt Token Economy Flow (Task 265: Fix TTS Service URL and Direct Google TTS)
+### Current Prompt Routing
 
-- **Prompt Objective**:
-  1. Fix TTS service URL and endpoints: ensure `LOVABLE_TTS_BASE_URL = "https://tts3.lovable.app"` and `LOVABLE_TTS_ENDPOINT = "https://tts3.lovable.app/api/public/tts"`.
-  2. Implement/fix direct Google TTS selection and execution: allow users to directly select Google TTS in Beginner mode and Advanced mode without failing through remote proxy, routing directly to `buildGoogleTranslateTtsUrl`.
-  3. Enable `alternative-tts-engine-select` in both Beginner Preferences and Advanced Mode settings.
-  4. Fix legacy test assertions in `verify-lovable-alternative-tts.ts`, `verify-lovable-tts-ui.ts`, and `verify-lovable-tts-service-preference.ts`.
-  5. Synchronize app version to `2.0.55` across all 5 files (`package.json`, `android-shell/app/build.gradle.kts`, `src/config/appConfig.ts`, `src/utils/apkUpdater.ts`, `src/utils/appSettings.ts`).
-  6. Implement dedicated automated test `scripts/verify-tts-service-url-and-direct-google-tts.ts`.
-- **Status**: Completed (All subtasks verified & passing 100%).
-- **App Version**: `2.0.55`.
+Keep this file limited to the token-economy workflow, not per-prompt objectives or completion history. Stage numbered prompt items and their verification criteria in [`docs/tasks.md`](tasks.md), and keep only the current subtask in [`current-sub-task.md`](../current-sub-task.md).
 
 ---
 
@@ -129,6 +121,7 @@ When an unexpected defect, broken build, regression, or failing CI flow arises d
 
 - **Smart Read-Before-Write**: Never view entire files when a targeted slice is sufficient.
 - **One Sub-Task at a Time**: Never combine multiple unverified features.
+- **Default Mode Coverage**: Follow [`AGENTS.md`](../AGENTS.md): unless explicitly scoped otherwise, apply behavior and settings changes to Beginner and Advanced modes and test both.
 - **Fail Fast, Fix Fast**: Diagnose issues locally within the active subtask scope.
 - **Precedence**: This lightweight workflow governs agent task execution across all prompts.
 

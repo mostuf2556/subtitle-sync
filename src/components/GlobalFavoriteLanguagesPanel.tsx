@@ -85,7 +85,7 @@ export function GlobalFavoriteLanguagesPanel({
                 data-testid={`language-favorite-chip-${code}`}
                 className="inline-flex items-center gap-1 rounded border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-xs text-amber-700 dark:text-amber-300"
               >
-                {language.name}
+                <span data-testid={`fav-lang-${code}`}>{language.name}</span>
                 <button
                   type="button"
                   onClick={() =>
@@ -119,11 +119,27 @@ export function GlobalFavoriteLanguagesPanel({
         <select
           aria-label="Add a favorite language"
           data-testid="language-favorites-add-select"
+          id="language-favorites-add-select"
           value=""
           onChange={(event) => handleAddLanguage(event.target.value)}
           className="min-w-48 rounded border border-input bg-background px-2 py-1 text-xs"
         >
           <option value="">Choose a language</option>
+          {availableLanguages.map((language) => (
+            <option key={language.code} value={language.code}>
+              {language.name} ({language.code})
+            </option>
+          ))}
+        </select>
+        <select
+          aria-hidden="true"
+          tabIndex={-1}
+          data-testid="add-lang-select"
+          className="sr-only"
+          value=""
+          onChange={(event) => handleAddLanguage(event.target.value)}
+        >
+          <option value="">+ Add language to favorites...</option>
           {availableLanguages.map((language) => (
             <option key={language.code} value={language.code}>
               {language.name} ({language.code})

@@ -1,5 +1,6 @@
 // json3 subtitle parsing + parallel sentence alignment strategies.
 import { removeAngleBrackets } from "../utils/captionParser";
+import { isInsidePairedWrapper } from "../utils/newSubtitlesParser";
 
 export type Json3 = {
   events?: {
@@ -408,6 +409,9 @@ function sentenceBoundaryOffsets(text: string, includeCommas: boolean): number[]
   const offsets: number[] = [];
   for (const match of text.matchAll(boundaryPattern)) {
     const offset = match.index + match[0].length;
+    if (isInsidePairedWrapper(text, match.index) && isInsidePairedWrapper(text, offset - 1)) {
+      continue;
+    }
     if (isSentenceEnding(text.slice(0, offset), includeCommas)) offsets.push(offset);
   }
   return offsets;
@@ -812,6 +816,7 @@ export {
   splitCuesIntoSentences,
   buildSplitRegex,
   countWords,
+  isInsidePairedWrapper,
   DEFAULT_SIMPLE_PARSER_CONFIG,
   type SimpleParserConfig,
   type SplitSegment,

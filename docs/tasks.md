@@ -4,7 +4,7 @@ This file is strictly the active backlog containing pending, active, and upcomin
 
 ## Active Tasks
 
-*(No active tasks pending. All numbered items from the current prompt are completed.)*
+*(No active tasks currently pending; all prompt tasks completed and verified in docs/done.md)*
 
 ## Later Tasks
 

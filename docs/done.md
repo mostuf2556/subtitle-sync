@@ -1,5 +1,62 @@
 # Done tasks
 
+## Chapter 2: Task 2 - Video Playback in Between TTS Groups
+
+- **Implementation**:
+  - Extended `SectionOrder` type in `src/lib/playback-preferences.ts` with `"video-middle"` (Video in between TTS groups).
+  - Updated `partitionTtsLanguagesByOrder` so that when order is `"video-middle"`, the TTS languages are partitioned into two groups: Group 1 (`ttsFirst`) speaks before video playback, and Group 2 (`videoFirst`) speaks after video playback.
+  - Added "In between (video plays between TTS groups)" option to `LanguageTtsOrderSelect.tsx` with dedicated data-testid and aria support.
+  - Added global playback sequence selector (`section-order-select`) with options "Video before TTS", "Video after TTS", and "Video in between TTS groups" to `src/routes/index.tsx` (inside the Languages accordion at focused element).
+  - Maintained 100% Beginner Mode cross-mode parity by adding `onDefaultOrderChange` and `beginner-section-order-select` in `src/components/beginner/PerLanguageTtsPreferences.tsx`.
+  - Bumped and synchronized app version to `2.0.57` across all 5 required targets (`package.json`, `android-shell/app/build.gradle.kts`, `src/config/appConfig.ts`, `src/utils/apkUpdater.ts`, `src/utils/appSettings.ts`).
+- **Dedicated verification**: `npx tsx scripts/verify-tts-language-playback-order.ts` (PASS, 3/3); `npx tsx scripts/verify-agents-version-rule.ts` (PASS); `compile_applet` (PASS); `lint_applet` (PASS).
+- **Delivery**: Verified compilation, linting, and automated test suites.
+
+## Chapter 1: Task 1 - Default Punctuation Splitting with Paired Quote/Parentheses Wrapping
+
+- **Implementation**:
+  - Implemented `isInsidePairedWrapper` in `src/utils/newSubtitlesParser.ts` and `src/lib/subtitles.ts` to detect text enclosed within quotation marks (`"..."`, `'...'`, `“...”`, `«...»`) and brackets/parentheses (`(...)`, `[...]`, `{...}`).
+  - Updated `splitCuesIntoSentences` and `sentenceBoundaryOffsets` to ensure punctuation delimiters strictly inside paired wrappers do not split, wrapping coupled text inside quotes and parentheses together as intact clauses.
+  - Enabled punctuation splitting by default on `.`, `,`, `?`, `!` with `wrapCoupledPunctuation: true` in `DEFAULT_SIMPLE_PARSER_CONFIG`.
+- **Dedicated verification**: `npx tsx scripts/verify-punctuation-paired-splitting.ts` (PASS, 5/5); `compile_applet` (PASS); `lint_applet` (PASS).
+- **Delivery**: Verified compilation, linting, and automated test suite.
+
+## Prompt 3: Configure TTS/video order per language & Unified Language Settings
+
+- **Implementation**:
+  - Created shared `LanguageTtsOrderSelect` component supporting per-language playback order overrides (`tts-first` / `video-first`) with fallback to global default.
+  - Implemented per-language TTS ordering persistence in `playback-preferences.ts` via `getTtsLanguageOrdersPreference()`, `setTtsLanguageOrderPreference()`, and `partitionTtsLanguagesByOrder()`.
+  - Updated TTS playback state machine in `src/routes/index.tsx` to partition spoken languages into `tts-first` (spoken at row arrival) and `video-first` (spoken after section completion).
+  - Integrated `LanguageTtsOrderSelect` into both Advanced mode TTS settings table and Beginner mode `PerLanguageTtsPreferences`.
+  - Unified language settings by replacing Beginner mode's custom favorite languages UI with the shared `GlobalFavoriteLanguagesPanel`, achieving 100% component parity and shared management across modes.
+- **Dedicated verification**: `npx tsx scripts/verify-tts-language-playback-order.ts` (PASS); `compile_applet` (PASS); `lint_applet` (PASS); `npx tsx scripts/verify-agents-version-rule.ts` (PASS).
+- **Delivery**: Verified compilation, linting, and dedicated automated test suite.
+
+## Prompt 1: Default changes to all view modes
+
+- **Implementation**: AGENTS.md now requires behavior, settings, and bug fixes to cover Beginner and Advanced by default, reuse shared behavior/components when both modes expose a feature, and include cross-mode tests.
+- **Dedicated verification**: `npx tsx scripts/verify-agents-all.ts` (PASS, 19/19).
+- **Delivery**: No commit or push; not requested.
+
+## Prompt 1.5: Deployed web-demo health check
+
+- **Result**: The root URL and bundle returned HTTP 200 and a deployed-site browser smoke passed. A mode-switch browser check then reproduced an Advanced-mode crash caused by the undeclared `addFavoriteFilter` state, which was fixed as a hotfix.
+- **Dedicated verification**: Deployed-site smoke `PLAYWRIGHT_BASE_URL=https://mostuf2556.github.io/subtitle-sync/ bash docker/manage.sh e2e web --grep 'Daily Video switches' --retries=0` (PASS, 1/1); Advanced regression (PASS, 2/2).
+- **CI context**: A separate Android E2E workflow is failing before app assertions because the hosted runner reports `adb: device 'emulator-5554' not found` / emulator boot timeout; GitHub log: https://github.com/mostuf2556/subtitle-sync/actions/runs/41154967230.
+- **Delivery**: No commit or push; not requested.
+
+## Prompt 2: Reuse the Advanced language selector in Beginner mode
+
+- **Implementation**: Beginner's separate favorite-language selector was removed; Beginner and Advanced now both render `LanguageBoxesSelector` with shared favorites, per-video selections, video identity, and Android context.
+- **Dedicated verification**: `npm run test:beginner-mode` (PASS); `bash docker/manage.sh e2e web --grep 'Beginner and Advanced render the shared language selector|beginner mode has two flows' --retries=0` (PASS, 2/2). The browser regression confirms selection continuity across the mode switch.
+- **Delivery**: No commit or push; not requested.
+
+### Hotfix: Fix Advanced Mode Language Settings Crash
+
+- **Resolution**: Added the missing `addFavoriteFilter` route state referenced by the Advanced favorite-language search input. The undeclared variable caused the app error screen on Advanced mode mount.
+- **Dedicated verification**: `bash docker/manage.sh e2e web --grep 'Advanced mode mounts without a route render error|Beginner and Advanced render the shared language selector' --retries=0` (PASS, 2/2).
+- **Delivery**: No commit or push; not requested.
+
 ### Hotfix: Fix Beginner Shared Base Language Reference
 
 - **Resolution**: Replaced the stale `selectedBaseLang` reference with the shared `baseLanguage` prop in `BeginnerFlowContainer` and added a regression assertion.

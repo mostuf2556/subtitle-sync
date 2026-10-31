@@ -1,7 +1,8 @@
 /** Device-saved playback/fetch preferences (localStorage). */
 
 export type SubtitleRequestMode = "tlang" | "lang";
-export type SectionOrder = "video-first" | "tts-first";
+export type SectionOrder = "video-first" | "tts-first" | "video-middle";
+export type TtsLanguageOrders = Record<string, SectionOrder>;
 
 export const isTtsSpeakableLanguage = (languageCode: unknown, baseLanguage: unknown): boolean => {
   const code =
@@ -28,6 +29,7 @@ export const isTtsSpeakableLanguage = (languageCode: unknown, baseLanguage: unkn
 const KEYS = {
   requestMode: "yt_subtitle_request_mode_v1",
   sectionOrder: "yt_section_order_v1",
+  ttsLanguageOrders: "yt_tts_language_orders_v1",
   ttsRatios: "yt_tts_ratios_v1",
   ttsRates: "yt_tts_rates_v1",
   autoRetrySubtitles: "yt_auto_retry_subtitles_v1",
@@ -89,8 +91,75 @@ export const subtitleRequestModeOrder = (primary?: SubtitleRequestMode): Subtitl
 };
 
 export const getSectionOrder = () =>
-  read<SectionOrder>(KEYS.sectionOrder, ["video-first", "tts-first"], "video-first");
+  read<SectionOrder>(
+    KEYS.sectionOrder,
+    ["video-first", "tts-first", "video-middle"],
+    "video-first",
+  );
 export const setSectionOrder = (o: SectionOrder) => write(KEYS.sectionOrder, o);
+
+export const getTtsLanguageOrdersPreference = (): TtsLanguageOrders => {
+  try {
+    const raw = getStorage().getItem(KEYS.ttsLanguageOrders);
+    if (!raw) return {};
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    return Object.fromEntries(
+      Object.entries(parsed).filter(
+        ([languageCode, order]) =>
+          languageCode.trim().length > 0 &&
+          (order === "video-first" || order === "tts-first" || order === "video-middle"),
+      ),
+    ) as TtsLanguageOrders;
+  } catch {
+    return {};
+  }
+};
+
+export const setTtsLanguageOrderPreference = (languageCode: string, order: SectionOrder) => {
+  const normalizedCode = languageCode.trim();
+  if (!normalizedCode) return;
+  const orders = getTtsLanguageOrdersPreference();
+  orders[normalizedCode] = order;
+  write(KEYS.ttsLanguageOrders, JSON.stringify(orders));
+};
+
+export function partitionTtsLanguagesByOrder<T extends { code: string }>(
+  languages: T[],
+  languageOrders: TtsLanguageOrders,
+  defaultOrder: SectionOrder,
+): { ttsFirst: T[]; videoFirst: T[] } {
+  const ttsFirst: T[] = [];
+  const videoFirst: T[] = [];
+
+  if (defaultOrder === "video-middle") {
+    const unconfigured: T[] = [];
+    for (const language of languages) {
+      const explicit = languageOrders[language.code];
+      if (explicit === "tts-first") {
+        ttsFirst.push(language);
+      } else if (explicit === "video-first") {
+        videoFirst.push(language);
+      } else {
+        unconfigured.push(language);
+      }
+    }
+    const half = Math.ceil(unconfigured.length / 2);
+    ttsFirst.push(...unconfigured.slice(0, half));
+    videoFirst.push(...unconfigured.slice(half));
+  } else {
+    for (const language of languages) {
+      const order = languageOrders[language.code] ?? defaultOrder;
+      if (order === "tts-first") {
+        ttsFirst.push(language);
+      } else {
+        videoFirst.push(language);
+      }
+    }
+  }
+
+  return { ttsFirst, videoFirst };
+}
 
 export const getTtsRatiosPreference = (): Record<string, number> => {
   if (typeof window === "undefined") return {};

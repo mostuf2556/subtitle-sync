@@ -13,8 +13,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { LanguageBoxesSelector } from "@/components/LanguageBoxesSelector";
 import { extractYouTubeId } from "@/utils/youtube";
-import { BeginnerFavoriteLanguageSelector } from "../BeginnerFavoriteLanguageSelector";
 
 export interface ObservedSubtitleTrack {
   lang: string;
@@ -43,6 +43,7 @@ export interface BeginnerVideoTabProps {
   favoriteLanguageCatalog: Array<{ code: string; name: string }>;
   selectedTargetLanguages: string[];
   onTargetLanguagesChange: (languages: string[]) => void;
+  isAndroid?: boolean;
   webDemoUrlsSlot?: React.ReactNode;
   subtitlesRatio: number;
   onSubtitlesRatioChange: (ratio: number) => void;
@@ -69,6 +70,7 @@ export const BeginnerVideoTab: React.FC<BeginnerVideoTabProps> = ({
   favoriteLanguageCatalog,
   selectedTargetLanguages,
   onTargetLanguagesChange,
+  isAndroid = false,
   webDemoUrlsSlot,
   subtitlesRatio,
   onSubtitlesRatioChange,
@@ -256,11 +258,13 @@ export const BeginnerVideoTab: React.FC<BeginnerVideoTabProps> = ({
         {playbackControlsSlot && <div className="pt-2">{playbackControlsSlot}</div>}
       </div>
 
-      <BeginnerFavoriteLanguageSelector
+      <LanguageBoxesSelector
         catalog={favoriteLanguageCatalog}
-        favoriteLanguages={favoriteLanguages}
         selectedLanguages={selectedTargetLanguages}
         onSelectionChange={onTargetLanguagesChange}
+        favoriteLanguages={favoriteLanguages}
+        currentVideoId={videoId}
+        isAndroid={isAndroid}
       />
 
       {subtitlesTableSlot && (

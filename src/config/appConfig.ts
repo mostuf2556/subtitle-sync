@@ -4,13 +4,13 @@ import { LibraryVideoItem } from "../types";
  * Global Application Configuration & Default Settings
  */
 
-export const APP_VERSION = "2.0.56";
+export const APP_VERSION = "2.0.57";
 export const APP_COMMIT_ID =
   (typeof process !== "undefined" && process.env?.VITE_COMMIT_SHA) ||
   (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_COMMIT_SHA) ||
   "b845e21";
 export const APP_VERSION_DESCRIPTION =
-  "Preserve playback state and simplify language settings (Version 2.0.56)";
+  "Split by punctuation with paired quote/paren wrapping & video between TTS groups (Version 2.0.57)";
 
 export const ALL_RELEASES_URL = "https://github.com/mostuf2556/subtitle-sync/releases";
 

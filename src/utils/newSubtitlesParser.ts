@@ -18,6 +18,7 @@ export interface SimpleParserConfig {
   maxWordsPerSentence: number;
   customDelimiters: string;
   dotAbbreviationExceptions: string;
+  wrapCoupledPunctuation: boolean;
 }
 
 export const DEFAULT_SIMPLE_PARSER_CONFIG: SimpleParserConfig = {
@@ -32,6 +33,7 @@ export const DEFAULT_SIMPLE_PARSER_CONFIG: SimpleParserConfig = {
   maxWordsPerSentence: 10,
   customDelimiters: "",
   dotAbbreviationExceptions: "dr., mrs., mr., ms., prof., etc., e.g., i.e.",
+  wrapCoupledPunctuation: true,
 };
 
 export function parseAbbreviationExceptions(rawValue: string): string[] {
@@ -67,6 +69,65 @@ export function isDotAbbreviationBoundary(
     config.dotAbbreviationExceptions || DEFAULT_SIMPLE_PARSER_CONFIG.dotAbbreviationExceptions,
   );
   return exceptions.includes(normalized);
+}
+
+/**
+ * Checks whether character index in `text` is strictly inside an open paired wrapper
+ * such as quotes ("...", '...', “...”, «...») or brackets ((...), [...], {...}).
+ * Text within start/closing couples of punctuation chars is kept wrapped together.
+ */
+export function isInsidePairedWrapper(text: string, index: number): boolean {
+  if (index <= 0 || index >= text.length) return false;
+
+  const stack: string[] = [];
+
+  for (let i = 0; i <= index; i++) {
+    const ch = text[i]!;
+
+    if (stack.length > 0) {
+      const top = stack[stack.length - 1];
+      if (ch === top) {
+        stack.pop();
+        continue;
+      }
+      if (i === index) {
+        return true;
+      }
+      if (ch === "(") stack.push(")");
+      else if (ch === "[") stack.push("]");
+      else if (ch === "{") stack.push("}");
+      else if (ch === "“") stack.push("”");
+      else if (ch === "«") stack.push("»");
+      continue;
+    }
+
+    if (i === index) {
+      return false;
+    }
+
+    if (ch === '"') {
+      stack.push('"');
+    } else if (ch === "“") {
+      stack.push("”");
+    } else if (ch === "«") {
+      stack.push("»");
+    } else if (ch === "(") {
+      stack.push(")");
+    } else if (ch === "[") {
+      stack.push("]");
+    } else if (ch === "{") {
+      stack.push("}");
+    } else if (ch === "'") {
+      const prev = i > 0 ? text[i - 1]! : " ";
+      if (/\s|[([{"«]/.test(prev)) {
+        stack.push("'");
+      }
+    } else if (ch === "‘") {
+      stack.push("’");
+    }
+  }
+
+  return stack.length > 0;
 }
 
 /**
@@ -173,6 +234,13 @@ export function splitCuesIntoSentences(
 
     for (const match of matches) {
       const delimiterEnd = match.index + match[0].length;
+      if (
+        config.wrapCoupledPunctuation !== false &&
+        isInsidePairedWrapper(cueText, match.index) &&
+        isInsidePairedWrapper(cueText, delimiterEnd - 1)
+      ) {
+        continue;
+      }
       const actualDotIndex = match[0].includes(".") ? match.index + match[0].lastIndexOf(".") : -1;
       if (actualDotIndex >= 0 && isDotAbbreviationBoundary(cueText, actualDotIndex, config)) {
         continue;

@@ -1,6 +1,6 @@
 {
   "name": "subtitle-sync",
-  "version": "2.0.56",
+  "version": "2.0.57",
   "private": true,
   "sideEffects": false,
   "type": "module",
@@ -67,6 +67,7 @@
     "test:android-build-version-details": "tsx scripts/verify-android-build-and-version-details.ts",
     "test:e2e": "playwright test",
     "test:beginner-mode": "tsx scripts/verify-beginner-mode-tab-flow.ts",
+    "test:tts-language-playback-order": "tsx scripts/verify-tts-language-playback-order.ts",
     "test:beginner-default-language": "tsx scripts/verify-beginner-default-language-auto-selection.ts",
     "test:application-stages-pipeline": "tsx scripts/verify-application-stages-pipeline.ts",
     "test:angle-bracket-subtitle-cleanup": "tsx scripts/verify-angle-bracket-subtitle-cleanup.ts",
