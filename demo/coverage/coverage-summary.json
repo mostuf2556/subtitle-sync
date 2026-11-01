@@ -1,8 +1,8 @@
 {
-  "totalSuites": 260,
-  "totalAssertions": 5020,
+  "totalSuites": 262,
+  "totalAssertions": 5050,
   "totalSourceFiles": 133,
-  "totalSourceLines": 43298,
+  "totalSourceLines": 43363,
   "coveredSourceFiles": 133,
   "statementCoveragePct": 96.8,
   "branchCoveragePct": 93.5,
@@ -21,7 +21,7 @@
     "Pipeline Stage 4: Parser & Sentence Splitting": 19,
     "Pipeline Stage 1: Acquisition & Interception": 44,
     "UI Architecture & Mode Parity": 11,
-    "Pipeline Stage 2: Validation & Schema Conformance": 35,
+    "Pipeline Stage 2: Validation & Schema Conformance": 37,
     "Android Native Shell & Bridge": 51,
     "Pipeline Stage 5: Translation & Multi-Language": 27,
     "Pipeline Stage 3: Special Characters Removal": 6,
@@ -885,6 +885,19 @@
       ],
       "assertionsCount": 14,
       "scriptCommand": "npm run test:default-caption-presentation"
+    },
+    {
+      "filename": "verify-default-language-restricted-to-fetched.ts",
+      "name": "fetchedSubtitleLanguages definition",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 19,
+      "scriptCommand": "npm run test:default-language-restricted-to-fetched"
     },
     {
       "filename": "verify-default-midnight-theme.ts",
@@ -1838,6 +1851,19 @@
       ],
       "assertionsCount": 9,
       "scriptCommand": "npm run test:no-duplicate-md"
+    },
+    {
+      "filename": "verify-no-favorite-languages-duplication.ts",
+      "name": "Stage 2 isolation in Languages accordion",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 11,
+      "scriptCommand": "npm run test:no-favorite-languages-duplication"
     },
     {
       "filename": "verify-no-floating-notifications-tab.ts",

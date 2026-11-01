@@ -187,7 +187,7 @@
           </p>
         </div>
         <div>
-          <span class="badge">● 100% Passing · 260 Test Suites</span>
+          <span class="badge">● 100% Passing · 262 Test Suites</span>
         </div>
       </div>
       <div style="margin-top: 1rem;">
@@ -222,12 +222,12 @@
             <div class="progress-bar"><div class="progress-fill" style="width: 96.5%"></div></div>
           </div>
           <div class="kpi-box">
-            <div class="kpi-value">260</div>
+            <div class="kpi-value">262</div>
             <div class="kpi-label">Verified Suites</div>
             <div class="progress-bar"><div class="progress-fill" style="width: 100%"></div></div>
           </div>
           <div class="kpi-box">
-            <div class="kpi-value">5020+</div>
+            <div class="kpi-value">5050+</div>
             <div class="kpi-label">Tested Assertions</div>
             <div class="progress-bar"><div class="progress-fill" style="width: 100%"></div></div>
           </div>
@@ -247,7 +247,7 @@
           </div>
           <div class="stage-item">
             <div class="stage-title">Stage 2: Validation & Schema Guarding</div>
-            <div class="stage-status">✓ 100% Covered (35 suites)</div>
+            <div class="stage-status">✓ 100% Covered (37 suites)</div>
           </div>
           <div class="stage-item">
             <div class="stage-title">Stage 3: Special Characters Removal</div>
@@ -274,7 +274,7 @@
 
       <!-- Test Suites Table -->
       <section class="card">
-        <h2>Verified Test Suites (260)</h2>
+        <h2>Verified Test Suites (262)</h2>
         <input
           type="text"
           id="suite-search"
@@ -810,6 +810,13 @@
                 <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
                 <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
                 <td><code>npm run test:default-caption-presentation</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">fetchedSubtitleLanguages definition</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx</span></td>
+                <td><code>npm run test:default-language-restricted-to-fetched</code></td>
                 <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
               </tr>
 <tr>
@@ -1384,6 +1391,13 @@
                 <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 4: Parser & Sentence Splitting</span></td>
                 <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
                 <td><code>npm run test:no-duplicate-md</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Stage 2 isolation in Languages accordion</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx</span></td>
+                <td><code>npm run test:no-favorite-languages-duplication</code></td>
                 <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
               </tr>
 <tr>
