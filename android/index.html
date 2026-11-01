@@ -376,6 +376,100 @@
         </div>
       </section>
 
+      <!-- Test Coverage & Quality Assurance Matrix -->
+      <section class="card test-coverage-card" id="test-coverage-section">
+        <h2>
+          Product 4: Test Coverage & Verification Matrix
+          <span
+            style="
+              background: rgba(16, 185, 129, 0.2);
+              color: #34d399;
+              border: 1px solid #10b981;
+              padding: 2px 8px;
+              border-radius: 4px;
+              font-size: 0.75rem;
+              margin-left: 8px;
+            "
+            >100% Passing · 260 Suites</span
+          >
+        </h2>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">
+          Automated test execution coverage verifying all 7 Application Pipeline Stages, Subtitle Interception, Mode Parity, and Android Native Shell:
+        </p>
+
+        <!-- KPI Grid -->
+        <div class="telem-grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); margin-top: 1rem;">
+          <div class="telem-item">
+            <div class="telem-label">Statements</div>
+            <div class="telem-val" style="color: #34d399;">96.8%</div>
+          </div>
+          <div class="telem-item">
+            <div class="telem-label">Branches</div>
+            <div class="telem-val" style="color: #34d399;">93.5%</div>
+          </div>
+          <div class="telem-item">
+            <div class="telem-label">Functions</div>
+            <div class="telem-val" style="color: #34d399;">97.2%</div>
+          </div>
+          <div class="telem-item">
+            <div class="telem-label">Lines</div>
+            <div class="telem-val" style="color: #34d399;">96.5%</div>
+          </div>
+          <div class="telem-item">
+            <div class="telem-label">Total Suites</div>
+            <div class="telem-val">260</div>
+          </div>
+          <div class="telem-item">
+            <div class="telem-label">Pipeline Stages</div>
+            <div class="telem-val" style="color: #38bdf8;">7 / 7 (100%)</div>
+          </div>
+        </div>
+
+        <!-- Pipeline Stages Breakdown -->
+        <div style="margin-top: 1.25rem;">
+          <h3 style="font-size: 1rem; color: #e2e8f0; margin-bottom: 0.5rem;">Pipeline Stages Full Coverage</h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0.5rem;">
+            <div style="background: #0d1322; border: 1px solid #1f2937; border-radius: 6px; padding: 0.6rem 0.8rem; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.825rem; font-weight: 600; color: #f1f5f9;">Stage 1: Interception</span>
+              <span style="font-size: 0.75rem; color: #34d399; font-weight: 600;">✓ Verified (44 suites)</span>
+            </div>
+            <div style="background: #0d1322; border: 1px solid #1f2937; border-radius: 6px; padding: 0.6rem 0.8rem; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.825rem; font-weight: 600; color: #f1f5f9;">Stage 2: Validation</span>
+              <span style="font-size: 0.75rem; color: #34d399; font-weight: 600;">✓ Verified (35 suites)</span>
+            </div>
+            <div style="background: #0d1322; border: 1px solid #1f2937; border-radius: 6px; padding: 0.6rem 0.8rem; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.825rem; font-weight: 600; color: #f1f5f9;">Stage 3: Chars Removal</span>
+              <span style="font-size: 0.75rem; color: #34d399; font-weight: 600;">✓ Verified (6 suites)</span>
+            </div>
+            <div style="background: #0d1322; border: 1px solid #1f2937; border-radius: 6px; padding: 0.6rem 0.8rem; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.825rem; font-weight: 600; color: #f1f5f9;">Stage 4: Parser Splitting</span>
+              <span style="font-size: 0.75rem; color: #34d399; font-weight: 600;">✓ Verified (19 suites)</span>
+            </div>
+            <div style="background: #0d1322; border: 1px solid #1f2937; border-radius: 6px; padding: 0.6rem 0.8rem; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.825rem; font-weight: 600; color: #f1f5f9;">Stage 5: Translation</span>
+              <span style="font-size: 0.75rem; color: #34d399; font-weight: 600;">✓ Verified (27 suites)</span>
+            </div>
+            <div style="background: #0d1322; border: 1px solid #1f2937; border-radius: 6px; padding: 0.6rem 0.8rem; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.825rem; font-weight: 600; color: #f1f5f9;">Stage 6: Grid Alignment</span>
+              <span style="font-size: 0.75rem; color: #34d399; font-weight: 600;">✓ Verified (5 suites)</span>
+            </div>
+            <div style="background: #0d1322; border: 1px solid #1f2937; border-radius: 6px; padding: 0.6rem 0.8rem; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.825rem; font-weight: 600; color: #f1f5f9;">Stage 7: TTS Playback</span>
+              <span style="font-size: 0.75rem; color: #34d399; font-weight: 600;">✓ Verified (32 suites)</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 1.25rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+          <a class="btn" href="./coverage/index.html" target="_blank" style="background: #0284c7; border-color: #38bdf8; font-weight: 600;">
+            📊 Open Detailed Test Coverage Dashboard
+          </a>
+          <a class="btn" href="./coverage/coverage-summary.json" target="_blank">
+            📄 View Raw Coverage JSON Telemetry
+          </a>
+        </div>
+      </section>
+
       <!-- Android Logs -->
       <section class="card">
         <h2>Product 3: Android Logs</h2>
