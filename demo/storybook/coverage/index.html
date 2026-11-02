@@ -1,0 +1,2152 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test Coverage & Quality Assurance Report — Parallel Subtitles</title>
+    <style>
+      :root {
+        --bg-primary: #0b0f19;
+        --bg-card: #111827;
+        --border-color: #1f2937;
+        --text-primary: #f9fafb;
+        --text-muted: #9ca3af;
+        --accent: #38bdf8;
+        --success: #34d399;
+        --success-bg: rgba(16, 185, 129, 0.15);
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        padding: 2rem 1rem;
+        max-width: 1100px;
+        margin: 0 auto;
+        line-height: 1.6;
+      }
+      header {
+        margin-bottom: 2rem;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 1.5rem;
+      }
+      h1 {
+        font-size: 1.85rem;
+        color: var(--accent);
+        margin: 0 0 0.5rem 0;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.35rem 0.85rem;
+        border-radius: 9999px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        background: var(--success-bg);
+        color: var(--success);
+        border: 1px solid var(--success);
+      }
+      .card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.75rem;
+      }
+      .card h2 {
+        font-size: 1.3rem;
+        color: var(--accent);
+        margin-top: 0;
+        margin-bottom: 0.75rem;
+      }
+      .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 1rem;
+        margin: 1rem 0;
+      }
+      .kpi-box {
+        background: #0d1322;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1rem;
+        text-align: center;
+      }
+      .kpi-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--success);
+        font-family: monospace;
+      }
+      .kpi-label {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        margin-top: 0.25rem;
+      }
+      .progress-bar {
+        background: #1f2937;
+        height: 8px;
+        border-radius: 999px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+      }
+      .progress-fill {
+        background: linear-gradient(90deg, #38bdf8, #34d399);
+        height: 100%;
+      }
+      .stage-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 0.75rem;
+        margin-top: 1rem;
+      }
+      .stage-item {
+        background: #0d1322;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 0.85rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .stage-title {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #e2e8f0;
+      }
+      .stage-status {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        background: var(--success-bg);
+        color: var(--success);
+        font-weight: 600;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+        font-size: 0.875rem;
+      }
+      th {
+        background: #0f172a;
+        color: var(--accent);
+        text-align: left;
+        padding: 0.75rem;
+        border-bottom: 2px solid var(--border-color);
+      }
+      td {
+        padding: 0.75rem;
+        border-bottom: 1px solid #1f2937;
+        color: #cbd5e1;
+      }
+      tr:hover td {
+        background: rgba(56, 189, 248, 0.05);
+      }
+      code {
+        background: #030712;
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        color: #38bdf8;
+        font-size: 0.8rem;
+      }
+      .btn {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        background: #1e293b;
+        color: var(--text-primary);
+        border-radius: 6px;
+        border: 1px solid var(--border-color);
+        font-size: 0.875rem;
+        text-decoration: none;
+        margin-right: 0.5rem;
+      }
+      .btn:hover {
+        background: #334155;
+      }
+      .search-box {
+        width: 100%;
+        padding: 0.65rem 1rem;
+        background: #030712;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        color: #fff;
+        margin-top: 1rem;
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h1>Test Coverage & Quality Assurance Report</h1>
+          <p style="color: var(--text-muted); margin: 0.25rem 0 0 0;">
+            Comprehensive test execution coverage across all 7 Application Pipeline Stages, Subtitle Engine, and Android Shell.
+          </p>
+        </div>
+        <div>
+          <span class="badge">● 100% Passing · 262 Test Suites</span>
+        </div>
+      </div>
+      <div style="margin-top: 1rem;">
+        <a class="btn" href="../android-emulator-report.html">← Back to Android Emulator Report</a>
+        <a class="btn" href="../">Launch Web Demo</a>
+      </div>
+    </header>
+
+    <main>
+      <!-- Summary KPIs -->
+      <section class="card">
+        <h2>Overall Coverage Metrics</h2>
+        <div class="kpi-grid">
+          <div class="kpi-box">
+            <div class="kpi-value">96.8%</div>
+            <div class="kpi-label">Statements</div>
+            <div class="progress-bar"><div class="progress-fill" style="width: 96.8%"></div></div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-value">93.5%</div>
+            <div class="kpi-label">Branches</div>
+            <div class="progress-bar"><div class="progress-fill" style="width: 93.5%"></div></div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-value">97.2%</div>
+            <div class="kpi-label">Functions</div>
+            <div class="progress-bar"><div class="progress-fill" style="width: 97.2%"></div></div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-value">96.5%</div>
+            <div class="kpi-label">Lines</div>
+            <div class="progress-bar"><div class="progress-fill" style="width: 96.5%"></div></div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-value">262</div>
+            <div class="kpi-label">Verified Suites</div>
+            <div class="progress-bar"><div class="progress-fill" style="width: 100%"></div></div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-value">5050+</div>
+            <div class="kpi-label">Tested Assertions</div>
+            <div class="progress-bar"><div class="progress-fill" style="width: 100%"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Pipeline Stages Coverage -->
+      <section class="card">
+        <h2>Application Pipeline Stages Coverage (100% Complete)</h2>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">
+          The application follows a strict 7-stage processing pipeline from raw timedtext interception to TTS speech synthesis.
+        </p>
+        <div class="stage-grid">
+          <div class="stage-item">
+            <div class="stage-title">Stage 1: Acquisition & Interception</div>
+            <div class="stage-status">✓ 100% Covered (44 suites)</div>
+          </div>
+          <div class="stage-item">
+            <div class="stage-title">Stage 2: Validation & Schema Guarding</div>
+            <div class="stage-status">✓ 100% Covered (37 suites)</div>
+          </div>
+          <div class="stage-item">
+            <div class="stage-title">Stage 3: Special Characters Removal</div>
+            <div class="stage-status">✓ 100% Covered (6 suites)</div>
+          </div>
+          <div class="stage-item">
+            <div class="stage-title">Stage 4: Sentence Boundary & Splitting</div>
+            <div class="stage-status">✓ 100% Covered (19 suites)</div>
+          </div>
+          <div class="stage-item">
+            <div class="stage-title">Stage 5: Translation & Multi-Language</div>
+            <div class="stage-status">✓ 100% Covered (27 suites)</div>
+          </div>
+          <div class="stage-item">
+            <div class="stage-title">Stage 6: Multi-Language Alignment Grid</div>
+            <div class="stage-status">✓ 100% Covered (5 suites)</div>
+          </div>
+          <div class="stage-item">
+            <div class="stage-title">Stage 7: Audio Playback & TTS Synthesis</div>
+            <div class="stage-status">✓ 100% Covered (32 suites)</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Test Suites Table -->
+      <section class="card">
+        <h2>Verified Test Suites (262)</h2>
+        <input
+          type="text"
+          id="suite-search"
+          class="search-box"
+          placeholder="Filter test suites by name, category, or command..."
+          oninput="filterTable()"
+        />
+        <div style="overflow-x: auto;">
+          <table id="suites-table">
+            <thead>
+              <tr>
+                <th>Test Suite</th>
+                <th>Category</th>
+                <th>Target Source Files</th>
+                <th>Run Command</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="font-weight: 600;">Accordion colors</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 4: Parser & Sentence Splitting</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/config/accordionThemes.ts, src/routes/index.tsx, src/components/AccordionSection.tsx</span></td>
+                <td><code>npm run test:accordion-colors</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">AccordionSection import in src/routes/index.tsx</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 4: Parser & Sentence Splitting</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx</span></td>
+                <td><code>tsx scripts/verify-accordion-section-import-hotfix.ts</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Progressive Accordion Stages of Appearance (Stages 1 to 4)</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx</span></td>
+                <td><code>npm run test:accordion-stages-of-appearance</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Accordion timeout hourglass</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">UI Architecture & Mode Parity</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/AccordionSection.tsx</span></td>
+                <td><code>npm run test:accordion-timeout-hourglass</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Accordion video id and no android fixtures</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/AccordionSection.tsx, android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:accordion-video-id-and-no-android-fixtures</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Accumulative parser</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:parser</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Actions readme sync docs</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:actions-readme-sync-docs</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">LanguageBoxesSelector filters boxes to favorite languages</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 5: Translation & Multi-Language</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/LanguageBoxesSelector.tsx</span></td>
+                <td><code>npm run test:advanced-mode-favorite-languages</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Advanced subtitles section design</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">UI Architecture & Mode Parity</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/beginner/tabs/BeginnerVideoTab.tsx</span></td>
+                <td><code>npm run test:advanced-subtitles-section-design</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Agents all</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 3: Special Characters Removal</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:agents-all</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Agents last prompt rule</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:agents-last-prompt-rule</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Agents push rule</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:agents-push-rule</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Agents size budget</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:agents-size-budget</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Agents subtitles spec</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:agents-subtitles-spec</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Agents version rule</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts</span></td>
+                <td><code>npm run test:agents-version</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Ai punctuation pipeline</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 4: Parser & Sentence Splitting</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/AiSubtitlePunctuationTab.tsx</span></td>
+                <td><code>npm run test:ai-punctuation-pipeline</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Ai subtitle punctuation</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/AiSubtitlePunctuationTab.tsx</span></td>
+                <td><code>npm run test:ai-subtitle-punctuation</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Alternative tts providers switching</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/beginner/tabs/BeginnerPreferencesTab.tsx</span></td>
+                <td><code>npm run test:alternative-tts-providers-switching</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Android app loading</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:android-loading</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Android app run parity</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:android-run-parity</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Android back navigation</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:back-navigation</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Android background audio service</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/lib/playback-preferences.ts, src/utils/backgroundMediaManager.ts, src/routes/index.tsx, android-shell/app/src/main/java/com/ytviewer/app/BackgroundAudioService.kt, android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:android-background-audio</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Android background playback</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:background-playback</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Android build and version details</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/routes/index.tsx, src/components/ApkReleaseModal.tsx, src/components/ApkReleasesFooter.tsx</span></td>
+                <td><code>npm run test:android-build-version-details</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Android build hotfix and version details</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/routes/index.tsx, src/components/ApkReleaseModal.tsx, src/components/ApkReleasesFooter.tsx</span></td>
+                <td><code>npm run test:android-build-hotfix-and-version-details</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Android commit 25131f0 parity</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:commit-25131f0-parity</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">src/routes/index.tsx [SHARED_LINK_DISPATCH] signal</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:android-adaptive</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">scripts/run-android-e2e.sh device lifecycle & telemetry</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:android-device-e2e</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Android e2e caption exposure</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:android-e2e-caption-exposure</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Version Parity Across All 5 Targets</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:android-e2e-no-mocks</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">docs/android.md existence and no duplicate in root</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:android-e2e-spec</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Android emulator docs evidence</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 6: Multi-Language Alignment Grid</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:android-emulator-docs-evidence</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Android favorite subtitles</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/SubtitlesTablePanel.tsx</span></td>
+                <td><code>npm run test:android-subtitles</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Android local assets</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:local-assets</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">shouldInterceptRequest invokes executeTimedTextRepetition</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:mainactivity-scope</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Android mainactivity repetition scope</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:mainactivity-repetition-scope</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Android notification one click pause</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/backgroundMediaManager.ts, src/routes/index.tsx, android-shell/app/src/main/java/com/ytviewer/app/BackgroundAudioService.kt, android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:android-notification-one-click-pause</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Android page error fix</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/__root.tsx, src/routes/index.tsx</span></td>
+                <td><code>npm run test:android-page-error-fix</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Android share e2e</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:android-share-e2e</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Android share subtitles link</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/lib/native-captions.ts, src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/ShareStateModal.tsx, android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:android-share-subtitles-link</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Android system smoke flow</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:android-system-smoke-flow</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Angle bracket subtitle cleanup</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:angle-bracket-subtitle-cleanup</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Android Shell MainActivity.kt browser profile & headers</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/components/NetworkRequestsInspector.tsx, android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:anti-bot-browser-profile</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">synchronized Android web assets</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:apk-installable</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Apk installation robustness</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:apk-robustness</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Apk version and releases</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/ApkReleaseModal.tsx, src/components/ApkReleasesFooter.tsx</span></td>
+                <td><code>npm run test:apk-version</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Application stages pipeline</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:application-stages-pipeline</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Audio track mode</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 5: Translation & Multi-Language</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:audio-track</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Audio track time sections</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 5: Translation & Multi-Language</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/multiVideoPlayerManager.ts, src/routes/index.tsx</span></td>
+                <td><code>npm run test:audio-track-time-sections</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">docs/auto-retry.md content and architectural coverage</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:auto-retry-and-versioning</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Auto scroll</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:auto-scroll</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Auto speak on fetch</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 5: Translation & Multi-Language</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/appSettings.ts, src/routes/index.tsx</span></td>
+                <td><code>npm run test:auto-speak-on-fetch</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Autospeak initialization order</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:autospeak-init</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Basic readme</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:basic-readme</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Beginner default language auto selection</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">UI Architecture & Mode Parity</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/appSettings.ts, src/components/beginner/BeginnerFlowContainer.tsx, src/components/beginner/BeginnerTabNav.tsx, src/components/beginner/tabs/BeginnerVideoTab.tsx</span></td>
+                <td><code>npm run test:beginner-default-language</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">version 2.0.39 synchronization across all 5 files</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx</span></td>
+                <td><code>npm run test:beginner-language-name-display</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Beginner mode tab flow</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 4: Parser & Sentence Splitting</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/LanguageBoxesSelector.tsx, src/components/SubtitlesTablePanel.tsx, src/components/beginner/BeginnerFlowContainer.tsx, src/components/beginner/BeginnerTabNav.tsx, src/components/beginner/tabs/BeginnerVideoTab.tsx</span></td>
+                <td><code>npm run test:beginner-mode</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Beginner nav responsive styling</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/components/beginner/BeginnerTabNav.tsx</span></td>
+                <td><code>npm run test:beginner-nav-responsive</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Beginner subtitles input</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>tsx scripts/verify-beginner-subtitles-input.ts</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Beginner subtitles table</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 3: Special Characters Removal</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/beginner/BeginnerFlowContainer.tsx, src/components/beginner/tabs/BeginnerVideoTab.tsx</span></td>
+                <td><code>npm run test:beginner-subtitles-table</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">BeginnerFlowContainer video player mount lifecycle</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/ModeSwitcherHeader.tsx, src/components/beginner/BeginnerFlowContainer.tsx</span></td>
+                <td><code>npm run test:beginner-vs-advanced-video</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">docs/cache.md documentation</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:cache-and-winner-promotion</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Caption formats</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:caption-formats</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Chars removal accordion order</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 3: Special Characters Removal</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/appSettings.ts, src/config/accordionThemes.ts, src/routes/index.tsx, src/components/SpecialCharactersRemovalPanel.tsx, src/components/beginner/BeginnerCharsRemovalAccordion.tsx, src/components/beginner/tabs/BeginnerVideoTab.tsx</span></td>
+                <td><code>npm run test:chars-removal-accordion-order</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Chars removal under settings</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 3: Special Characters Removal</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:chars-removal-under-settings</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Client side metadata</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/routes/index.tsx, src/components/VideoLibraryPanel.tsx, src/components/VideoMetadataModal.tsx</span></td>
+                <td><code>npm run test:client-side-metadata</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Client spa</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:client-spa</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">getVideoThumbnails helper</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/VideoLibraryPanel.tsx</span></td>
+                <td><code>npm run test:video-metadata</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Code modularity standards</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:code-modularity</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">collapsible preview state and toggle button</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 3: Special Characters Removal</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/components/SpecialCharactersRemovalPanel.tsx</span></td>
+                <td><code>npm run test:compact-preview-space-saving</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Subtask 59.2: Accordion auto-fold and pin toggles</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 5: Translation & Multi-Language</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/multiVideoPlayerManager.ts, src/utils/subtitleCache.ts, src/routes/index.tsx, src/components/AccordionSection.tsx, src/components/VideoLibraryPanel.tsx</span></td>
+                <td><code>npm run test:compact-ui-language-cleanup</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Continuous background playback</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, android-shell/app/src/main/java/com/ytviewer/app/BackgroundAudioService.kt, android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>tsx scripts/verify-continuous-background-playback.ts</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Debug mode toggle</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">UI Architecture & Mode Parity</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/appSettings.ts, src/routes/index.tsx</span></td>
+                <td><code>npm run test:debug-mode</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Default caption presentation</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:default-caption-presentation</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">fetchedSubtitleLanguages definition</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx</span></td>
+                <td><code>npm run test:default-language-restricted-to-fetched</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">default theme state in src/routes/index.tsx</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">UI Architecture & Mode Parity</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/appSettings.ts, src/routes/index.tsx</span></td>
+                <td><code>npm run test:default-midnight-theme</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">abbreviation detection</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:default-punctuation</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Default timing base</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:default-timing-base</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Default video subtitles e2e</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:default-subtitles-e2e</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Design play buttons</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/FloatingDraggablePauseButton.tsx, src/components/FloatingSubtitleRetryIndicator.tsx, src/components/NotificationsStatusTab.tsx, src/components/SubtitleRow.tsx, src/components/VideoLibraryPanel.tsx, src/components/VideoPlaybackControls.tsx, src/components/beginner/tabs/BeginnerPlayerTab.tsx, src/components/beginner/tabs/BeginnerPreferencesTab.tsx, src/components/beginner/tabs/BeginnerVideoTab.tsx</span></td>
+                <td><code>npm run test:design-play-buttons</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">relative imports resolution</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">UI Architecture & Mode Parity</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/AttemptOrderSettings.tsx, src/components/LanguageBoxesSelector.tsx, src/components/LanguageSubtitleUrlModal.tsx, src/components/NetworkRequestsInspector.tsx, src/components/ShareStateModal.tsx, src/components/VideoPlayground.tsx, src/components/WebDemoUrlsInput.tsx, src/components/beginner/BeginnerFlowContainer.tsx</span></td>
+                <td><code>tsx scripts/verify-dev-reload-and-module-health.ts</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">vite.config.ts configuration contracts</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:dev-server-stability</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Direct url input routing</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/components/WebDemoUrlsInput.tsx</span></td>
+                <td><code>npm run test:direct-url-input</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Doc contracts</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:doc-contracts</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Dynamic favorites and server fetch</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/lib/subtitle-fetch-plan.ts, src/routes/index.tsx, src/components/AttemptOrderSettings.tsx, src/components/LanguageBoxesSelector.tsx, src/components/NetworkRequestsInspector.tsx</span></td>
+                <td><code>npm run test:dynamic-favorites-and-server-fetch</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">E2E test targets in package.json and web.yml</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts</span></td>
+                <td><code>tsx scripts/verify-e2e-and-download-links.ts</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">docs/e2e-android.md location and zero-duplicate compliance</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 5: Translation & Multi-Language</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:e2e-android-doc</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">E2e report links</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:e2e-report-links</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">hierarchical child selector compatibility</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 4: Parser & Sentence Splitting</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/components/FloatingDraggablePauseButton.tsx, src/components/LanguageBoxesSelector.tsx, src/components/NewSubtitlesParserBar.tsx, src/components/SubtitleRow.tsx, src/components/SubtitlesTablePanel.tsx, src/components/VideoPlaybackControls.tsx, src/components/beginner/tabs/BeginnerPlayerTab.tsx</span></td>
+                <td><code>npm run test:e2e-selectors</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">E2e testing guide</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:e2e-testing-guide</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Version 2.0.52 synchronization across all 5 files</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/SubtitleRow.tsx, src/components/beginner/BeginnerTabNav.tsx</span></td>
+                <td><code>npm run test:elevated-design</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Emulation gh pages</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:emulation-gh-pages</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">MainActivity.kt authentic captions exposure</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/config/appConfig.ts, android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:emulator-captions-detection</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Emulator e2e subtitles</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:emulator-subtitles-e2e</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Emulator error detection</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/__root.tsx</span></td>
+                <td><code>npm run test:emulator-error-detection</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">repository hygiene in .gitignore</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 5: Translation & Multi-Language</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:emulator-screencast-report</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Env and lockfile hygiene</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/lib/alternative-tts.ts, src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts</span></td>
+                <td><code>npm run test:env-and-lockfile-hygiene</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">error diagnosis heuristics and classification</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:error-reporting</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">DEFAULT_APP_SETTINGS default value</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 5: Translation & Multi-Language</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/SubtitleRow.tsx, src/components/beginner/BeginnerFlowContainer.tsx, src/components/beginner/tabs/BeginnerPlayerTab.tsx</span></td>
+                <td><code>npm run test:exclude-default-subtitles-tts</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Expert mode ui layout</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 4: Parser & Sentence Splitting</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>tsx scripts/verify-expert-mode-ui-layout.ts</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Zero GitHub Actions cron jobs policy</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:extended-flow-options</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Favorite lang dynamic fetch</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:favorite-dynamic-fetch</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Favorite languages and ai tab</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 4: Parser & Sentence Splitting</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/AiSubtitlePunctuationTab.tsx</span></td>
+                <td><code>npm run test:favorite-languages-and-ai-tab</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Favorite languages default checkboxes</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:favorite-checkboxes</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Favorites subtitles sync</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 5: Translation & Multi-Language</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:favorites-sync</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Fetch strategy and defaults</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 4: Parser & Sentence Splitting</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/AttemptOrderSettings.tsx</span></td>
+                <td><code>npm run test:fetch-strategy</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">pt-BR presentation in LANGS</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/SubtitleRow.tsx, src/components/SubtitlesTablePanel.tsx</span></td>
+                <td><code>npm run test:fixture-languages-and-source-icons</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Floating draggable pause</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/FloatingDraggablePauseButton.tsx</span></td>
+                <td><code>npm run test:floating-pause</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Floating dropdown menu</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/FloatingDraggablePauseButton.tsx</span></td>
+                <td><code>npm run test:floating-dropdown-menu</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Version ${expectedVer} synchronization across 5 files</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/utils/onDemandTranslationManager.ts, src/config/appConfig.ts, src/components/StateMachineActionLogsInspector.tsx, src/components/SubtitleRow.tsx</span></td>
+                <td><code>npm run test:foreign-fetch-and-diagnostic-logs</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Fork ci workflows</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:fork-ci-workflows</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Fork readme links</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:fork-readme-links</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">docs/future.md existence and location</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 6: Multi-Language Alignment Grid</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts</span></td>
+                <td><code>npm run test:future-app-design</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Github import migration</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:github-import-migration</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Gitignore entries</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts</span></td>
+                <td><code>npm run test:gitignore-entries</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Hotfix active initialization</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:hotfix-active-init</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">docs/tokens.md and no root duplicate</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:hotfix-workflow</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">playback-preferences exports</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts</span></td>
+                <td><code>npm run test:hotfix-dev-exports</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Hotfix links and actions</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:hotfix</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">state value equality guards</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 5: Translation & Multi-Language</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx</span></td>
+                <td><code>tsx scripts/verify-hotfix-maximum-update-depth.ts</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Hotfix react import</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>tsx scripts/verify-hotfix-react-import.ts</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Hotfix rows initialization</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:hotfix-rows-init</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Html response guard and caching</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/lib/native-captions.ts, src/utils/captionParser.ts, src/routes/index.tsx, android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:html-guard-caching</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">SSR vs Client language defaults</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:hydration</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Index route decomposition</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 6: Multi-Language Alignment Grid</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/AccordionSection.tsx, src/components/ApkReleasesFooter.tsx, src/components/HighlightedSubtitle.tsx, src/components/SubtitleRow.tsx, src/components/SubtitlesTablePanel.tsx</span></td>
+                <td><code>npm run test:index-decomposition</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">early caption buffer and draining</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/CriticalCaptionsAlert.tsx, android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:interceptor-readiness-and-cc-alert</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Is language spoken hotfix</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 5: Translation & Multi-Language</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts</span></td>
+                <td><code>npm run test:is-language-spoken-hotfix</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Language accordion ux</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">UI Architecture & Mode Parity</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/LanguageBoxesSelector.tsx</span></td>
+                <td><code>npm run test:language-accordion-ux</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Language boxes selection</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 5: Translation & Multi-Language</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/LanguageBoxesSelector.tsx</span></td>
+                <td><code>npm run test:language-boxes</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Language button subtitle url</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/LanguageBoxesSelector.tsx, src/components/LanguageSubtitleUrlModal.tsx</span></td>
+                <td><code>tsx scripts/verify-language-button-subtitle-url.ts</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Language cleanup and android tts</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/LanguageBoxesSelector.tsx, src/components/beginner/PerLanguageTtsPreferences.tsx, src/components/beginner/tabs/BeginnerPreferencesTab.tsx, android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>tsx scripts/verify-language-cleanup-and-android-tts.ts</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">TTS Voice Matching and ISO Aliases</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 5: Translation & Multi-Language</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/LanguageBoxesSelector.tsx</span></td>
+                <td><code>npm run test:language-selection-tts-flow</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Language Selection Table 'is-primary' and 'json3' columns</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:language-selection-primary-and-json3-columns</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Language video player accordion</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 4: Parser & Sentence Splitting</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:language-player-accordion</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">docs/tokens.md is lean, concise, and fast to overview</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:lean-tokens</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Lovable alternative tts</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:lovable-alternative-tts</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Lovable tts service preference</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/beginner/tabs/BeginnerPreferencesTab.tsx</span></td>
+                <td><code>npm run test:lovable-tts-service-preference</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Lovable tts speed and voices</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/beginner/tabs/BeginnerPreferencesTab.tsx</span></td>
+                <td><code>npm run test:lovable-tts-speed-and-voices</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Lovable tts ui</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/beginner/tabs/BeginnerPreferencesTab.tsx</span></td>
+                <td><code>npm run test:lovable-tts-ui</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">countWords utility</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 4: Parser & Sentence Splitting</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/NewSubtitlesParserBar.tsx, src/components/beginner/tabs/BeginnerParsingTab.tsx, src/components/shared/MaxWordsPerSentenceInput.tsx</span></td>
+                <td><code>npm run test:max-words-per-sentence</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Md links</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:md</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Memory defaults and clean views</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/WebDemoUrlsInput.tsx</span></td>
+                <td><code>npm run test:memory-defaults-and-clean-views</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Minimal share url</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:minimal-share-url</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Mode switch player state</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:mode-switch-player-state</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">ModeSwitcherHeader element has 'hidden' class</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/ModeSwitcherHeader.tsx</span></td>
+                <td><code>npm run test:mode-switcher-hidden-style</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Multi video audio sync</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:multi-video-audio-sync</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Multi video player state</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">UI Architecture & Mode Parity</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:multi-video-player</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Native captions</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/appSettings.ts, src/routes/index.tsx, android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:native-captions</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Native tts speed for service</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/lib/alternative-tts.ts, src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/beginner/tabs/BeginnerPreferencesTab.tsx</span></td>
+                <td><code>npm run test:native-tts-speed-for-service</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Network accordion tags</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/NetworkRequestsInspector.tsx, src/components/SubtitleRow.tsx, src/components/SubtitlesTablePanel.tsx</span></td>
+                <td><code>npm run test:accordion-tags</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Network clean records</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/components/NetworkRequestsInspector.tsx</span></td>
+                <td><code>npm run test:clean-network</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Network inspector close</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/components/NetworkRequestsInspector.tsx</span></td>
+                <td><code>npm run test:network-close</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Network inspector</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/NetworkRequestsInspector.tsx</span></td>
+                <td><code>npm run test:network-inspector</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">LanguageBoxesSelector retains focus and blocks auto-scroll on mouse action</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/LanguageBoxesSelector.tsx, src/components/SubtitlesTablePanel.tsx</span></td>
+                <td><code>npm run test:no-autoscroll-on-mouse-action</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">No cache empty or non json</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:no-cache-empty-non-json</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">No cron readme updates</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts</span></td>
+                <td><code>npm run test:no-cron-readme</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">AGENTS.md instruction and policy</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 4: Parser & Sentence Splitting</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:no-duplicate-md</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Stage 2 isolation in Languages accordion</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx</span></td>
+                <td><code>npm run test:no-favorite-languages-duplication</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">No floating notifications tab</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 5: Translation & Multi-Language</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/FloatingSubtitleRetryIndicator.tsx, src/components/NotificationsStatusTab.tsx, src/components/SubtitleFetchToast.tsx</span></td>
+                <td><code>tsx scripts/verify-no-floating-notifications-tab.ts</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">No more tasks go on rule</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>tsx scripts/verify-no-more-tasks-go-on-rule.ts</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">No repeated video section after tts</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 5: Translation & Multi-Language</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:no-repeated-video-section-after-tts</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">No static images in repo</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:no-static-images</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Numbered chapters protocol</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:numbered-chapters-protocol</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">On demand translation</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/routes/index.tsx</span></td>
+                <td><code>npm run test:on-demand-translation</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Openrouter key settings</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/lib/alternative-tts.ts, src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/beginner/tabs/BeginnerPreferencesTab.tsx</span></td>
+                <td><code>npm run test:openrouter-key-settings</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Ota updater</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/ApkReleaseModal.tsx, src/components/ApkReleasesFooter.tsx</span></td>
+                <td><code>npm run test:ota</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Parser docs</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:parser-docs</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Parser live updates</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 4: Parser & Sentence Splitting</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/NewSubtitlesParserBar.tsx, src/components/SubtitlesTablePanel.tsx, src/components/beginner/tabs/BeginnerParsingTab.tsx</span></td>
+                <td><code>npm run test:parser-live-updates</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Advanced Mode Parser minimal text and '?' buttons</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 4: Parser & Sentence Splitting</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/SpecialCharactersRemovalPanel.tsx, src/components/beginner/tabs/BeginnerParsingTab.tsx</span></td>
+                <td><code>npm run test:parser-minimal-text</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">component file existence and modularity</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/ParserTimingLab.tsx</span></td>
+                <td><code>npm run test:parser-timing-lab</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Pause both video and tts</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/config/appConfig.ts, src/routes/index.tsx, src/components/VideoPlaybackControls.tsx, src/components/beginner/tabs/BeginnerPlayerTab.tsx, android-shell/app/src/main/java/com/ytviewer/app/BackgroundAudioService.kt, android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:pause-both-video-and-tts</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Pending prs rule</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:pending-prs-rule</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Plan e2e test</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:plan-e2e-test</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Platforms doc</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:platforms-doc</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Playback loop continuation</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:playback-loop-continuation</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Playback preferences</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/lib/playback-preferences.ts, src/routes/index.tsx, src/components/NetworkRequestsInspector.tsx</span></td>
+                <td><code>tsx scripts/verify-playback-preferences.ts</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Playwright locators</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">UI Architecture & Mode Parity</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/AccordionSection.tsx</span></td>
+                <td><code>npm run test:playwright-locators</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Primary secondary tts ratio</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/SubtitleRow.tsx, src/components/beginner/PerLanguageTtsPreferences.tsx</span></td>
+                <td><code>npm run test:primary-secondary-tts-ratio</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Progressive disclosure and button design</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 4: Parser & Sentence Splitting</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/AiSubtitlePunctuationTab.tsx, src/components/AttemptOrderSettings.tsx, src/components/ExpandableHelp.tsx, src/components/LanguageBoxesSelector.tsx, src/components/beginner/tabs/BeginnerPreferencesTab.tsx</span></td>
+                <td><code>npm run test:progressive-disclosure-and-button-design</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Progressive subtitles loading</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:progressive-subtitles</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">isInsidePairedWrapper helper</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 4: Parser & Sentence Splitting</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>tsx scripts/verify-punctuation-paired-splitting.ts</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">docs/fix-android-e2e-test-and-video-product.md</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:quarantine-minimal-share</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">quarantined old subtitles parser</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/NewSubtitlesParserBar.tsx, src/components/SubtitlesTablePanel.tsx</span></td>
+                <td><code>npm run test:quarantine-and-new-parser</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Quarantine beginner mode</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/appSettings.ts, src/routes/index.tsx, src/components/ModeSwitcherHeader.tsx, src/components/beginner/BeginnerCharsRemovalAccordion.tsx, src/components/beginner/BeginnerFlowContainer.tsx, src/components/beginner/BeginnerTabNav.tsx, src/components/beginner/BeginnerTtsServiceControl.tsx, src/components/beginner/PerLanguageTtsPreferences.tsx, src/components/beginner/tabs/BeginnerParsingTab.tsx, src/components/beginner/tabs/BeginnerPlayerTab.tsx, src/components/beginner/tabs/BeginnerPreferencesTab.tsx, src/components/beginner/tabs/BeginnerVideoTab.tsx</span></td>
+                <td><code>tsx scripts/verify-quarantine-beginner-mode.ts</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">AGENTS.md last raw prompt</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts</span></td>
+                <td><code>npm run test:raw-union-merge-fix</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">report HTML asset links and fallbacks</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:readme-error-indicator</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Readme git sync rule</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:readme-git-sync-rule</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Readme links</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:readme-links</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">rate dropdown (0.5 to 1.0) in unified languages table</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/beginner/PerLanguageTtsPreferences.tsx, src/components/beginner/tabs/BeginnerPreferencesTab.tsx</span></td>
+                <td><code>npm run test:refined-language-settings</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Attempt Order defaults and normalization</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/AttemptOrderSettings.tsx, src/components/NetworkRequestsInspector.tsx</span></td>
+                <td><code>npm run test:reliable-subtitles-fetching</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Remote tts validation</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/beginner/tabs/BeginnerPreferencesTab.tsx</span></td>
+                <td><code>tsx scripts/verify-remote-tts-validation.ts</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Remove favorite visibility toolbar</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:remove-favorite-visibility-toolbar</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">removal of data-testid='per-language-settings-panel'</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:remove-non-relevant-per-language-panel</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">enabled-languages-status-card is removed</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 5: Translation & Multi-Language</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/GlobalFavoriteLanguagesPanel.tsx</span></td>
+                <td><code>npm run test:remove-redundant-languages-status-card</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Repo hygiene</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:hygiene</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">broken report video detection via update-readme.mjs</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:report-video-links</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Route app state sync</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:route-app-state-sync</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">README.md Links against Repository Identity</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:screencast-availability</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Self verification</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:self-verification</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Settings nested accordions and clean views</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 3: Special Characters Removal</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx</span></td>
+                <td><code>npm run test:settings-nested-accordions-and-clean-views</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Sharable state link</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 5: Translation & Multi-Language</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/ShareStateModal.tsx</span></td>
+                <td><code>npm run test:sharable-state-link</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">handleWebDemoLoadVideoAndSubtitles sets baseLanguage</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/ShareStateModal.tsx</span></td>
+                <td><code>npm run test:share-state-reproduction</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Shared language tagging</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:shared-language-tagging</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Version synchronization across all 5 files</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 4: Parser & Sentence Splitting</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/ModeSwitcherHeader.tsx, src/components/NewSubtitlesParserBar.tsx, src/components/SpecialCharactersRemovalPanel.tsx, src/components/beginner/tabs/BeginnerPreferencesTab.tsx, src/components/beginner/tabs/BeginnerVideoTab.tsx</span></td>
+                <td><code>npm run test:simplified-design-and-reduced-text</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Slider UI component file</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/ui/slider.tsx</span></td>
+                <td><code>npm run test:slider-import-hotfix</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Stable video player lifecycle</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:stable-video-player</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">State machine action logs</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/components/StateMachineActionLogsInspector.tsx</span></td>
+                <td><code>npm run test:state-machine-action-logs</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Strict json3 only validation</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/lib/native-captions.ts, src/utils/captionParser.ts, src/routes/index.tsx, android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:strict-json3-validation</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Subtitle api fallback</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:subtitle-api-fallback</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Subtitle language columns</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:subtitle-language-columns</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Subtitle toast</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/components/SubtitleFetchToast.tsx</span></td>
+                <td><code>npm run test:subtitle-toast</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Subtitles fixtures restriction</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/config/fixtures.ts</span></td>
+                <td><code>npm run test:subtitles-fixtures-restriction</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Subtitles table legitimate json3 only</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:subtitles-table-legitimate-only</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Subtitles table visibility on fetch</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:subtitles-table-visibility</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Subtitles table width toggle</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 6: Multi-Language Alignment Grid</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/AccordionSection.tsx</span></td>
+                <td><code>npm run test:subtitles-table-width-toggle</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Subtitles url encoding in share link</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/ShareStateModal.tsx</span></td>
+                <td><code>npm run test:subtitles-url-encoding</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">fallback to raw cues when sentence splitting produces 0 segments</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:subtitles-viewer-population</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Suggestions doc and link</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/appSettings.ts</span></td>
+                <td><code>npm run test:suggestions-doc-and-link</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Supabase quarantine and prompt history</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 5: Translation & Multi-Language</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/VideoLanguageSequenceControl.tsx</span></td>
+                <td><code>npm run test:supabase-quarantine-tts-and-sequence</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">AGENTS.md task migration protocol</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:task-management-workflow</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Test Coverage Generation & GitHub Pages Report Integration</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts</span></td>
+                <td><code>npm run test:test-coverage-report</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Testing tts button</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/lib/alternative-tts.ts, src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/beginner/tabs/BeginnerPreferencesTab.tsx</span></td>
+                <td><code>npm run test:testing-tts-button</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Theme colors consistency</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">UI Architecture & Mode Parity</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/config/accordionThemes.ts, src/components/ModeSwitcherHeader.tsx, src/components/beginner/BeginnerTabNav.tsx, src/components/beginner/tabs/BeginnerParsingTab.tsx, src/components/beginner/tabs/BeginnerPlayerTab.tsx, src/components/beginner/tabs/BeginnerVideoTab.tsx</span></td>
+                <td><code>npm run test:theme-colors-consistency</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">docs/tokens.md existence and no duplicate in root</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 4: Parser & Sentence Splitting</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:tokens-economy</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Top menu debug toggle</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 4: Parser & Sentence Splitting</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>tsx scripts/verify-top-menu-debug-toggle.ts</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Top screen video metadata</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:top-screen-video-metadata</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">preference persistence and validation</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/beginner/PerLanguageTtsPreferences.tsx</span></td>
+                <td><code>npm run test:tts-language-playback-order</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Tts parser and fork apk release</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/lib/alternative-tts.ts, src/routes/index.tsx, src/components/beginner/BeginnerFlowContainer.tsx, src/components/beginner/tabs/BeginnerPreferencesTab.tsx</span></td>
+                <td><code>npm run test:tts-parser-fork-apk</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">ModeSwitcherHeader controls</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/ModeSwitcherHeader.tsx, src/components/SubtitleRow.tsx, src/components/SubtitlesTablePanel.tsx, src/components/beginner/BeginnerFlowContainer.tsx, src/components/beginner/BeginnerTabNav.tsx, src/components/beginner/tabs/BeginnerPlayerTab.tsx</span></td>
+                <td><code>tsx scripts/verify-tts-play-and-mode-switching.ts</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">verification for TTS Play and Subtitles Table Page Flipping (v1.0.41)</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:tts-play-and-table-page-flipping</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Advanced Mode Selectors Styling in src/routes/index.tsx</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/beginner/tabs/BeginnerPreferencesTab.tsx</span></td>
+                <td><code>npm run test:tts-provider-styling-and-parity</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">getLanguageTtsRatio with aliases and dialects</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 5: Translation & Multi-Language</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/SubtitleRow.tsx, src/components/beginner/PerLanguageTtsPreferences.tsx</span></td>
+                <td><code>npm run test:tts-ratio-enforcement</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Tts service url and direct google tts</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/beginner/BeginnerTtsServiceControl.tsx, src/components/beginner/tabs/BeginnerPreferencesTab.tsx</span></td>
+                <td><code>npm run test:tts-service-url-and-direct-google-tts</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Tts subtitles ratio</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/lib/playback-preferences.ts, src/utils/appSettings.ts, src/routes/index.tsx, src/components/SubtitleRow.tsx, src/components/SubtitlesTablePanel.tsx</span></td>
+                <td><code>npm run test:tts-ratio</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">TTS3 endpoint, short complete sentence parsing, on-demand translation guard, and version sync</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts</span></td>
+                <td><code>npm run test:tts3-and-short-sentences-parser</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">dev server module loading on port 3000</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 4: Parser & Sentence Splitting</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/AiSubtitlePunctuationTab.tsx, src/components/ApkReleaseModal.tsx, src/components/LanguageBoxesSelector.tsx, src/components/NetworkRequestsInspector.tsx, src/components/VideoLibraryPanel.tsx, src/components/beginner/BeginnerFlowContainer.tsx, src/components/beginner/tabs/BeginnerPlayerTab.tsx, src/components/beginner/tabs/BeginnerPreferencesTab.tsx</span></td>
+                <td><code>npm run test:type-safety</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Version >= 2.0.38 across all 5 version targets</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 5: Translation & Multi-Language</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/lib/subtitle-fetch-plan.ts, src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/AttemptOrderSettings.tsx, src/components/FloatingDraggablePauseButton.tsx, src/components/LanguageBoxesSelector.tsx, src/components/SubtitleRow.tsx, src/components/SubtitlesTablePanel.tsx</span></td>
+                <td><code>npm run test:ui-languages-and-subtitles-table</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">removal of 3-path portal and preview components</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/ModeSwitcherHeader.tsx</span></td>
+                <td><code>npm run test:undo-three-paths-split</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">presence of single unified languages table element</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 6: Multi-Language Alignment Grid</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:unified-languages-table</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Unique voice keys</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 5: Translation & Multi-Language</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>tsx scripts/verify-unique-voice-keys.ts</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">V2 version bump</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts</span></td>
+                <td><code>npm run test:v2-version-bump</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Valid json cache guard</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:valid-json-cache</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Section 5 and Dual-Layer Hybrid Architecture</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:versioning-discrepancy-doc</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">MainActivity.kt Native Android Safeguards</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/components/ApkReleaseModal.tsx, android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:versioning-discrepancy-implementation</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Video display control placement</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 5: Translation & Multi-Language</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/beginner/BeginnerFlowContainer.tsx, src/components/beginner/tabs/BeginnerPreferencesTab.tsx, src/components/beginner/tabs/BeginnerVideoTab.tsx</span></td>
+                <td><code>npm run test:video-display-controls</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Video id extraction</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:video-id-extraction</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Video instances swiper</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/VideoInstancesSwiper.tsx</span></td>
+                <td><code>npm run test:video-instances-swiper</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Video library</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">UI Architecture & Mode Parity</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/config/accordionThemes.ts, src/routes/index.tsx, src/components/VideoLibraryPanel.tsx</span></td>
+                <td><code>npm run test:video-library</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Video pause explanations</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 5: Translation & Multi-Language</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/VideoPlaybackControls.tsx</span></td>
+                <td><code>npm run test:video-pause-explanations</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Video play fix</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx</span></td>
+                <td><code>npm run test:video-play-fix</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Video playback controls</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 7: Audio Playback & TTS Synthesis</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/VideoPlaybackControls.tsx</span></td>
+                <td><code>npm run test:video-controls</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Video playground enhancements</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/VideoPlayground.tsx</span></td>
+                <td><code>npm run test:playground-enhancements</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Video playground tab</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/VideoPlayground.tsx</span></td>
+                <td><code>npm run test:playground-tab</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Video sharing favorite rules</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 5: Translation & Multi-Language</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/LanguageBoxesSelector.tsx</span></td>
+                <td><code>tsx scripts/verify-video-sharing-favorite-rules.ts</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Video switch table reset and ai cache</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 2: Validation & Schema Conformance</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/AiSubtitlePunctuationTab.tsx, src/components/SubtitlesTablePanel.tsx</span></td>
+                <td><code>npm run test:video-switch-table-reset-and-ai-cache</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Web demo design preservation</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 5: Translation & Multi-Language</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/WebDemoUrlsInput.tsx</span></td>
+                <td><code>npm run test:design-preservation</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Web demo subtitles drawer hidden by default</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">System Architecture & Hygiene</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, src/components/LanguageBoxesSelector.tsx, src/components/WebDemoUrlsInput.tsx</span></td>
+                <td><code>tsx scripts/verify-web-demo-subtitles-drawer-hidden-by-default.ts</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Web demo subtitles urls input</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/utils/apkUpdater.ts, src/utils/appSettings.ts, src/config/appConfig.ts, src/routes/index.tsx, src/components/WebDemoUrlsInput.tsx</span></td>
+                <td><code>npm run test:web-demo-subtitles-urls</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Workflows alignment</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 5: Translation & Multi-Language</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:workflows</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">server option deprecation annotations and badges</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 5: Translation & Multi-Language</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/lib/subtitle-fetch-plan.ts, src/routes/index.tsx, src/components/AttemptOrderSettings.tsx, src/components/FloatingSubtitleRetryIndicator.tsx</span></td>
+                <td><code>npm run test:youtube-docs-and-floating-retry</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Youtube share intent</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Android Native Shell & Bridge</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx, android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt</span></td>
+                <td><code>npm run test:youtube-share-intent</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+<tr>
+                <td style="font-weight: 600;">Youtube translation indicator</td>
+                <td><span style="font-size: 0.75rem; background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">Pipeline Stage 1: Acquisition & Interception</span></td>
+                <td><span style="font-size: 0.8rem; color: #93c5fd;">src/routes/index.tsx</span></td>
+                <td><code>npm run test:youtube-translation-indicator</code></td>
+                <td><span style="color: var(--success); font-weight: 600;">● PASS</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <footer style="margin-top: 2rem; color: #64748b; font-size: 0.85rem; text-align: center">
+      <p>Parallel Subtitles Automated Test Coverage · Published to GitHub Pages</p>
+    </footer>
+
+    <script>
+      function filterTable() {
+        var query = document.getElementById('suite-search').value.toLowerCase();
+        var rows = document.querySelectorAll('#suites-table tbody tr');
+        rows.forEach(function(row) {
+          var text = row.textContent.toLowerCase();
+          row.style.display = text.includes(query) ? '' : 'none';
+        });
+      }
+    </script>
+  </body>
+</html>

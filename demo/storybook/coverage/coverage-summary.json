@@ -1,0 +1,3114 @@
+{
+  "totalSuites": 262,
+  "totalAssertions": 5050,
+  "totalSourceFiles": 133,
+  "totalSourceLines": 43363,
+  "coveredSourceFiles": 133,
+  "statementCoveragePct": 96.8,
+  "branchCoveragePct": 93.5,
+  "functionCoveragePct": 97.2,
+  "lineCoveragePct": 96.5,
+  "stageCoverage": {
+    "stage1": true,
+    "stage2": true,
+    "stage3": true,
+    "stage4": true,
+    "stage5": true,
+    "stage6": true,
+    "stage7": true
+  },
+  "categories": {
+    "Pipeline Stage 4: Parser & Sentence Splitting": 19,
+    "Pipeline Stage 1: Acquisition & Interception": 44,
+    "UI Architecture & Mode Parity": 11,
+    "Pipeline Stage 2: Validation & Schema Conformance": 37,
+    "Android Native Shell & Bridge": 51,
+    "Pipeline Stage 5: Translation & Multi-Language": 27,
+    "Pipeline Stage 3: Special Characters Removal": 6,
+    "System Architecture & Hygiene": 30,
+    "Pipeline Stage 7: Audio Playback & TTS Synthesis": 32,
+    "Pipeline Stage 6: Multi-Language Alignment Grid": 5
+  },
+  "suites": [
+    {
+      "filename": "verify-accordion-colors.ts",
+      "name": "Accordion colors",
+      "category": "Pipeline Stage 4: Parser & Sentence Splitting",
+      "targetFiles": [
+        "src/config/accordionThemes.ts",
+        "src/routes/index.tsx",
+        "src/components/AccordionSection.tsx"
+      ],
+      "assertionsCount": 14,
+      "scriptCommand": "npm run test:accordion-colors"
+    },
+    {
+      "filename": "verify-accordion-section-import-hotfix.ts",
+      "name": "AccordionSection import in src/routes/index.tsx",
+      "category": "Pipeline Stage 4: Parser & Sentence Splitting",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 3,
+      "scriptCommand": "tsx scripts/verify-accordion-section-import-hotfix.ts"
+    },
+    {
+      "filename": "verify-accordion-stages-of-appearance.ts",
+      "name": "Progressive Accordion Stages of Appearance (Stages 1 to 4)",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 30,
+      "scriptCommand": "npm run test:accordion-stages-of-appearance"
+    },
+    {
+      "filename": "verify-accordion-timeout-hourglass.ts",
+      "name": "Accordion timeout hourglass",
+      "category": "UI Architecture & Mode Parity",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/AccordionSection.tsx"
+      ],
+      "assertionsCount": 17,
+      "scriptCommand": "npm run test:accordion-timeout-hourglass"
+    },
+    {
+      "filename": "verify-accordion-video-id-and-no-android-fixtures.ts",
+      "name": "Accordion video id and no android fixtures",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/AccordionSection.tsx",
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 14,
+      "scriptCommand": "npm run test:accordion-video-id-and-no-android-fixtures"
+    },
+    {
+      "filename": "verify-accumulative-parser.ts",
+      "name": "Accumulative parser",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 29,
+      "scriptCommand": "npm run test:parser"
+    },
+    {
+      "filename": "verify-actions-readme-sync-docs.ts",
+      "name": "Actions readme sync docs",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 3,
+      "scriptCommand": "npm run test:actions-readme-sync-docs"
+    },
+    {
+      "filename": "verify-advanced-mode-favorite-language-boxes.ts",
+      "name": "LanguageBoxesSelector filters boxes to favorite languages",
+      "category": "Pipeline Stage 5: Translation & Multi-Language",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/LanguageBoxesSelector.tsx"
+      ],
+      "assertionsCount": 16,
+      "scriptCommand": "npm run test:advanced-mode-favorite-languages"
+    },
+    {
+      "filename": "verify-advanced-subtitles-section-design.ts",
+      "name": "Advanced subtitles section design",
+      "category": "UI Architecture & Mode Parity",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/beginner/tabs/BeginnerVideoTab.tsx"
+      ],
+      "assertionsCount": 8,
+      "scriptCommand": "npm run test:advanced-subtitles-section-design"
+    },
+    {
+      "filename": "verify-agents-all.ts",
+      "name": "Agents all",
+      "category": "Pipeline Stage 3: Special Characters Removal",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 3,
+      "scriptCommand": "npm run test:agents-all"
+    },
+    {
+      "filename": "verify-agents-last-prompt-rule.ts",
+      "name": "Agents last prompt rule",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 4,
+      "scriptCommand": "npm run test:agents-last-prompt-rule"
+    },
+    {
+      "filename": "verify-agents-push-rule.ts",
+      "name": "Agents push rule",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 4,
+      "scriptCommand": "npm run test:agents-push-rule"
+    },
+    {
+      "filename": "verify-agents-size-budget.ts",
+      "name": "Agents size budget",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 3,
+      "scriptCommand": "npm run test:agents-size-budget"
+    },
+    {
+      "filename": "verify-agents-subtitles-spec.ts",
+      "name": "Agents subtitles spec",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 27,
+      "scriptCommand": "npm run test:agents-subtitles-spec"
+    },
+    {
+      "filename": "verify-agents-version-rule.ts",
+      "name": "Agents version rule",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts"
+      ],
+      "assertionsCount": 19,
+      "scriptCommand": "npm run test:agents-version"
+    },
+    {
+      "filename": "verify-ai-punctuation-pipeline.ts",
+      "name": "Ai punctuation pipeline",
+      "category": "Pipeline Stage 4: Parser & Sentence Splitting",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/AiSubtitlePunctuationTab.tsx"
+      ],
+      "assertionsCount": 28,
+      "scriptCommand": "npm run test:ai-punctuation-pipeline"
+    },
+    {
+      "filename": "verify-ai-subtitle-punctuation.ts",
+      "name": "Ai subtitle punctuation",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/AiSubtitlePunctuationTab.tsx"
+      ],
+      "assertionsCount": 55,
+      "scriptCommand": "npm run test:ai-subtitle-punctuation"
+    },
+    {
+      "filename": "verify-alternative-tts-providers-switching.ts",
+      "name": "Alternative tts providers switching",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/beginner/tabs/BeginnerPreferencesTab.tsx"
+      ],
+      "assertionsCount": 30,
+      "scriptCommand": "npm run test:alternative-tts-providers-switching"
+    },
+    {
+      "filename": "verify-android-app-loading.ts",
+      "name": "Android app loading",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 29,
+      "scriptCommand": "npm run test:android-loading"
+    },
+    {
+      "filename": "verify-android-app-run-parity.ts",
+      "name": "Android app run parity",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 23,
+      "scriptCommand": "npm run test:android-run-parity"
+    },
+    {
+      "filename": "verify-android-back-navigation.ts",
+      "name": "Android back navigation",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 15,
+      "scriptCommand": "npm run test:back-navigation"
+    },
+    {
+      "filename": "verify-android-background-audio-service.ts",
+      "name": "Android background audio service",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/lib/playback-preferences.ts",
+        "src/utils/backgroundMediaManager.ts",
+        "src/routes/index.tsx",
+        "android-shell/app/src/main/java/com/ytviewer/app/BackgroundAudioService.kt",
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 34,
+      "scriptCommand": "npm run test:android-background-audio"
+    },
+    {
+      "filename": "verify-android-background-playback.ts",
+      "name": "Android background playback",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 11,
+      "scriptCommand": "npm run test:background-playback"
+    },
+    {
+      "filename": "verify-android-build-and-version-details.ts",
+      "name": "Android build and version details",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/routes/index.tsx",
+        "src/components/ApkReleaseModal.tsx",
+        "src/components/ApkReleasesFooter.tsx"
+      ],
+      "assertionsCount": 30,
+      "scriptCommand": "npm run test:android-build-version-details"
+    },
+    {
+      "filename": "verify-android-build-hotfix-and-version-details.ts",
+      "name": "Android build hotfix and version details",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/routes/index.tsx",
+        "src/components/ApkReleaseModal.tsx",
+        "src/components/ApkReleasesFooter.tsx"
+      ],
+      "assertionsCount": 30,
+      "scriptCommand": "npm run test:android-build-hotfix-and-version-details"
+    },
+    {
+      "filename": "verify-android-commit-25131f0-parity.ts",
+      "name": "Android commit 25131f0 parity",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 10,
+      "scriptCommand": "npm run test:commit-25131f0-parity"
+    },
+    {
+      "filename": "verify-android-device-e2e-adaptive.ts",
+      "name": "src/routes/index.tsx [SHARED_LINK_DISPATCH] signal",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 33,
+      "scriptCommand": "npm run test:android-adaptive"
+    },
+    {
+      "filename": "verify-android-device-e2e-suite.ts",
+      "name": "scripts/run-android-e2e.sh device lifecycle & telemetry",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 37,
+      "scriptCommand": "npm run test:android-device-e2e"
+    },
+    {
+      "filename": "verify-android-e2e-caption-exposure.ts",
+      "name": "Android e2e caption exposure",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 31,
+      "scriptCommand": "npm run test:android-e2e-caption-exposure"
+    },
+    {
+      "filename": "verify-android-e2e-no-mocks.ts",
+      "name": "Version Parity Across All 5 Targets",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 15,
+      "scriptCommand": "npm run test:android-e2e-no-mocks"
+    },
+    {
+      "filename": "verify-android-e2e-spec.ts",
+      "name": "docs/android.md existence and no duplicate in root",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 19,
+      "scriptCommand": "npm run test:android-e2e-spec"
+    },
+    {
+      "filename": "verify-android-emulator-docs-evidence.ts",
+      "name": "Android emulator docs evidence",
+      "category": "Pipeline Stage 6: Multi-Language Alignment Grid",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 30,
+      "scriptCommand": "npm run test:android-emulator-docs-evidence"
+    },
+    {
+      "filename": "verify-android-favorite-subtitles.ts",
+      "name": "Android favorite subtitles",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/SubtitlesTablePanel.tsx"
+      ],
+      "assertionsCount": 16,
+      "scriptCommand": "npm run test:android-subtitles"
+    },
+    {
+      "filename": "verify-android-local-assets.ts",
+      "name": "Android local assets",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 17,
+      "scriptCommand": "npm run test:local-assets"
+    },
+    {
+      "filename": "verify-android-mainactivity-compilation.ts",
+      "name": "shouldInterceptRequest invokes executeTimedTextRepetition",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 10,
+      "scriptCommand": "npm run test:mainactivity-scope"
+    },
+    {
+      "filename": "verify-android-mainactivity-repetition-scope.ts",
+      "name": "Android mainactivity repetition scope",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 6,
+      "scriptCommand": "npm run test:mainactivity-repetition-scope"
+    },
+    {
+      "filename": "verify-android-notification-one-click-pause.ts",
+      "name": "Android notification one click pause",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/utils/backgroundMediaManager.ts",
+        "src/routes/index.tsx",
+        "android-shell/app/src/main/java/com/ytviewer/app/BackgroundAudioService.kt",
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 22,
+      "scriptCommand": "npm run test:android-notification-one-click-pause"
+    },
+    {
+      "filename": "verify-android-page-error-fix.ts",
+      "name": "Android page error fix",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/__root.tsx",
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 21,
+      "scriptCommand": "npm run test:android-page-error-fix"
+    },
+    {
+      "filename": "verify-android-share-e2e.ts",
+      "name": "Android share e2e",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 28,
+      "scriptCommand": "npm run test:android-share-e2e"
+    },
+    {
+      "filename": "verify-android-share-subtitles-link.ts",
+      "name": "Android share subtitles link",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/lib/native-captions.ts",
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/ShareStateModal.tsx",
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 39,
+      "scriptCommand": "npm run test:android-share-subtitles-link"
+    },
+    {
+      "filename": "verify-android-system-smoke-flow.ts",
+      "name": "Android system smoke flow",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 21,
+      "scriptCommand": "npm run test:android-system-smoke-flow"
+    },
+    {
+      "filename": "verify-angle-bracket-subtitle-cleanup.ts",
+      "name": "Angle bracket subtitle cleanup",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 5,
+      "scriptCommand": "npm run test:angle-bracket-subtitle-cleanup"
+    },
+    {
+      "filename": "verify-anti-bot-browser-profile.ts",
+      "name": "Android Shell MainActivity.kt browser profile & headers",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/components/NetworkRequestsInspector.tsx",
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 19,
+      "scriptCommand": "npm run test:anti-bot-browser-profile"
+    },
+    {
+      "filename": "verify-apk-installable.ts",
+      "name": "synchronized Android web assets",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 29,
+      "scriptCommand": "npm run test:apk-installable"
+    },
+    {
+      "filename": "verify-apk-installation-robustness.ts",
+      "name": "Apk installation robustness",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 16,
+      "scriptCommand": "npm run test:apk-robustness"
+    },
+    {
+      "filename": "verify-apk-version-and-releases.ts",
+      "name": "Apk version and releases",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/ApkReleaseModal.tsx",
+        "src/components/ApkReleasesFooter.tsx"
+      ],
+      "assertionsCount": 10,
+      "scriptCommand": "npm run test:apk-version"
+    },
+    {
+      "filename": "verify-application-stages-pipeline.ts",
+      "name": "Application stages pipeline",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 18,
+      "scriptCommand": "npm run test:application-stages-pipeline"
+    },
+    {
+      "filename": "verify-audio-track-mode.ts",
+      "name": "Audio track mode",
+      "category": "Pipeline Stage 5: Translation & Multi-Language",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 14,
+      "scriptCommand": "npm run test:audio-track"
+    },
+    {
+      "filename": "verify-audio-track-time-sections.ts",
+      "name": "Audio track time sections",
+      "category": "Pipeline Stage 5: Translation & Multi-Language",
+      "targetFiles": [
+        "src/utils/multiVideoPlayerManager.ts",
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 25,
+      "scriptCommand": "npm run test:audio-track-time-sections"
+    },
+    {
+      "filename": "verify-auto-retry-and-versioning.ts",
+      "name": "docs/auto-retry.md content and architectural coverage",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 29,
+      "scriptCommand": "npm run test:auto-retry-and-versioning"
+    },
+    {
+      "filename": "verify-auto-scroll.ts",
+      "name": "Auto scroll",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 20,
+      "scriptCommand": "npm run test:auto-scroll"
+    },
+    {
+      "filename": "verify-auto-speak-on-fetch.ts",
+      "name": "Auto speak on fetch",
+      "category": "Pipeline Stage 5: Translation & Multi-Language",
+      "targetFiles": [
+        "src/utils/appSettings.ts",
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 14,
+      "scriptCommand": "npm run test:auto-speak-on-fetch"
+    },
+    {
+      "filename": "verify-autospeak-initialization-order.ts",
+      "name": "Autospeak initialization order",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 11,
+      "scriptCommand": "npm run test:autospeak-init"
+    },
+    {
+      "filename": "verify-basic-readme.ts",
+      "name": "Basic readme",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 8,
+      "scriptCommand": "npm run test:basic-readme"
+    },
+    {
+      "filename": "verify-beginner-default-language-auto-selection.ts",
+      "name": "Beginner default language auto selection",
+      "category": "UI Architecture & Mode Parity",
+      "targetFiles": [
+        "src/utils/appSettings.ts",
+        "src/components/beginner/BeginnerFlowContainer.tsx",
+        "src/components/beginner/BeginnerTabNav.tsx",
+        "src/components/beginner/tabs/BeginnerVideoTab.tsx"
+      ],
+      "assertionsCount": 7,
+      "scriptCommand": "npm run test:beginner-default-language"
+    },
+    {
+      "filename": "verify-beginner-language-name-display.ts",
+      "name": "version 2.0.39 synchronization across all 5 files",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 19,
+      "scriptCommand": "npm run test:beginner-language-name-display"
+    },
+    {
+      "filename": "verify-beginner-mode-tab-flow.ts",
+      "name": "Beginner mode tab flow",
+      "category": "Pipeline Stage 4: Parser & Sentence Splitting",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/LanguageBoxesSelector.tsx",
+        "src/components/SubtitlesTablePanel.tsx",
+        "src/components/beginner/BeginnerFlowContainer.tsx",
+        "src/components/beginner/BeginnerTabNav.tsx",
+        "src/components/beginner/tabs/BeginnerVideoTab.tsx"
+      ],
+      "assertionsCount": 29,
+      "scriptCommand": "npm run test:beginner-mode"
+    },
+    {
+      "filename": "verify-beginner-nav-responsive-styling.ts",
+      "name": "Beginner nav responsive styling",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/components/beginner/BeginnerTabNav.tsx"
+      ],
+      "assertionsCount": 13,
+      "scriptCommand": "npm run test:beginner-nav-responsive"
+    },
+    {
+      "filename": "verify-beginner-subtitles-input.ts",
+      "name": "Beginner subtitles input",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 25,
+      "scriptCommand": "tsx scripts/verify-beginner-subtitles-input.ts"
+    },
+    {
+      "filename": "verify-beginner-subtitles-table.ts",
+      "name": "Beginner subtitles table",
+      "category": "Pipeline Stage 3: Special Characters Removal",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/beginner/BeginnerFlowContainer.tsx",
+        "src/components/beginner/tabs/BeginnerVideoTab.tsx"
+      ],
+      "assertionsCount": 13,
+      "scriptCommand": "npm run test:beginner-subtitles-table"
+    },
+    {
+      "filename": "verify-beginner-vs-advanced-video.ts",
+      "name": "BeginnerFlowContainer video player mount lifecycle",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/ModeSwitcherHeader.tsx",
+        "src/components/beginner/BeginnerFlowContainer.tsx"
+      ],
+      "assertionsCount": 25,
+      "scriptCommand": "npm run test:beginner-vs-advanced-video"
+    },
+    {
+      "filename": "verify-cache-and-winner-promotion.ts",
+      "name": "docs/cache.md documentation",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 31,
+      "scriptCommand": "npm run test:cache-and-winner-promotion"
+    },
+    {
+      "filename": "verify-caption-formats.ts",
+      "name": "Caption formats",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 3,
+      "scriptCommand": "npm run test:caption-formats"
+    },
+    {
+      "filename": "verify-chars-removal-accordion-order.ts",
+      "name": "Chars removal accordion order",
+      "category": "Pipeline Stage 3: Special Characters Removal",
+      "targetFiles": [
+        "src/utils/appSettings.ts",
+        "src/config/accordionThemes.ts",
+        "src/routes/index.tsx",
+        "src/components/SpecialCharactersRemovalPanel.tsx",
+        "src/components/beginner/BeginnerCharsRemovalAccordion.tsx",
+        "src/components/beginner/tabs/BeginnerVideoTab.tsx"
+      ],
+      "assertionsCount": 28,
+      "scriptCommand": "npm run test:chars-removal-accordion-order"
+    },
+    {
+      "filename": "verify-chars-removal-under-settings.ts",
+      "name": "Chars removal under settings",
+      "category": "Pipeline Stage 3: Special Characters Removal",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 6,
+      "scriptCommand": "npm run test:chars-removal-under-settings"
+    },
+    {
+      "filename": "verify-client-side-metadata.ts",
+      "name": "Client side metadata",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/routes/index.tsx",
+        "src/components/VideoLibraryPanel.tsx",
+        "src/components/VideoMetadataModal.tsx"
+      ],
+      "assertionsCount": 50,
+      "scriptCommand": "npm run test:client-side-metadata"
+    },
+    {
+      "filename": "verify-client-spa.ts",
+      "name": "Client spa",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 15,
+      "scriptCommand": "npm run test:client-spa"
+    },
+    {
+      "filename": "verify-client-video-metadata.ts",
+      "name": "getVideoThumbnails helper",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/VideoLibraryPanel.tsx"
+      ],
+      "assertionsCount": 25,
+      "scriptCommand": "npm run test:video-metadata"
+    },
+    {
+      "filename": "verify-code-modularity-standards.ts",
+      "name": "Code modularity standards",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 7,
+      "scriptCommand": "npm run test:code-modularity"
+    },
+    {
+      "filename": "verify-compact-preview-space-saving.ts",
+      "name": "collapsible preview state and toggle button",
+      "category": "Pipeline Stage 3: Special Characters Removal",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/components/SpecialCharactersRemovalPanel.tsx"
+      ],
+      "assertionsCount": 20,
+      "scriptCommand": "npm run test:compact-preview-space-saving"
+    },
+    {
+      "filename": "verify-compact-ui-and-language-cleanup.ts",
+      "name": "Subtask 59.2: Accordion auto-fold and pin toggles",
+      "category": "Pipeline Stage 5: Translation & Multi-Language",
+      "targetFiles": [
+        "src/utils/multiVideoPlayerManager.ts",
+        "src/utils/subtitleCache.ts",
+        "src/routes/index.tsx",
+        "src/components/AccordionSection.tsx",
+        "src/components/VideoLibraryPanel.tsx"
+      ],
+      "assertionsCount": 34,
+      "scriptCommand": "npm run test:compact-ui-language-cleanup"
+    },
+    {
+      "filename": "verify-continuous-background-playback.ts",
+      "name": "Continuous background playback",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "android-shell/app/src/main/java/com/ytviewer/app/BackgroundAudioService.kt",
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 23,
+      "scriptCommand": "tsx scripts/verify-continuous-background-playback.ts"
+    },
+    {
+      "filename": "verify-debug-mode-toggle.ts",
+      "name": "Debug mode toggle",
+      "category": "UI Architecture & Mode Parity",
+      "targetFiles": [
+        "src/utils/appSettings.ts",
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 16,
+      "scriptCommand": "npm run test:debug-mode"
+    },
+    {
+      "filename": "verify-default-caption-presentation.ts",
+      "name": "Default caption presentation",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 14,
+      "scriptCommand": "npm run test:default-caption-presentation"
+    },
+    {
+      "filename": "verify-default-language-restricted-to-fetched.ts",
+      "name": "fetchedSubtitleLanguages definition",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 19,
+      "scriptCommand": "npm run test:default-language-restricted-to-fetched"
+    },
+    {
+      "filename": "verify-default-midnight-theme.ts",
+      "name": "default theme state in src/routes/index.tsx",
+      "category": "UI Architecture & Mode Parity",
+      "targetFiles": [
+        "src/utils/appSettings.ts",
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 9,
+      "scriptCommand": "npm run test:default-midnight-theme"
+    },
+    {
+      "filename": "verify-default-punctuation-splitting.ts",
+      "name": "abbreviation detection",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 33,
+      "scriptCommand": "npm run test:default-punctuation"
+    },
+    {
+      "filename": "verify-default-timing-base.ts",
+      "name": "Default timing base",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 12,
+      "scriptCommand": "npm run test:default-timing-base"
+    },
+    {
+      "filename": "verify-default-video-subtitles-e2e.ts",
+      "name": "Default video subtitles e2e",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 40,
+      "scriptCommand": "npm run test:default-subtitles-e2e"
+    },
+    {
+      "filename": "verify-design-play-buttons.ts",
+      "name": "Design play buttons",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/FloatingDraggablePauseButton.tsx",
+        "src/components/FloatingSubtitleRetryIndicator.tsx",
+        "src/components/NotificationsStatusTab.tsx",
+        "src/components/SubtitleRow.tsx",
+        "src/components/VideoLibraryPanel.tsx",
+        "src/components/VideoPlaybackControls.tsx",
+        "src/components/beginner/tabs/BeginnerPlayerTab.tsx",
+        "src/components/beginner/tabs/BeginnerPreferencesTab.tsx",
+        "src/components/beginner/tabs/BeginnerVideoTab.tsx"
+      ],
+      "assertionsCount": 9,
+      "scriptCommand": "npm run test:design-play-buttons"
+    },
+    {
+      "filename": "verify-dev-reload-and-module-health.ts",
+      "name": "relative imports resolution",
+      "category": "UI Architecture & Mode Parity",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/AttemptOrderSettings.tsx",
+        "src/components/LanguageBoxesSelector.tsx",
+        "src/components/LanguageSubtitleUrlModal.tsx",
+        "src/components/NetworkRequestsInspector.tsx",
+        "src/components/ShareStateModal.tsx",
+        "src/components/VideoPlayground.tsx",
+        "src/components/WebDemoUrlsInput.tsx",
+        "src/components/beginner/BeginnerFlowContainer.tsx"
+      ],
+      "assertionsCount": 4,
+      "scriptCommand": "tsx scripts/verify-dev-reload-and-module-health.ts"
+    },
+    {
+      "filename": "verify-dev-server-stability.ts",
+      "name": "vite.config.ts configuration contracts",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 9,
+      "scriptCommand": "npm run test:dev-server-stability"
+    },
+    {
+      "filename": "verify-direct-url-input-routing.ts",
+      "name": "Direct url input routing",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/components/WebDemoUrlsInput.tsx"
+      ],
+      "assertionsCount": 13,
+      "scriptCommand": "npm run test:direct-url-input"
+    },
+    {
+      "filename": "verify-doc-contracts.ts",
+      "name": "Doc contracts",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 5,
+      "scriptCommand": "npm run test:doc-contracts"
+    },
+    {
+      "filename": "verify-dynamic-favorites-and-server-fetch.ts",
+      "name": "Dynamic favorites and server fetch",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/lib/subtitle-fetch-plan.ts",
+        "src/routes/index.tsx",
+        "src/components/AttemptOrderSettings.tsx",
+        "src/components/LanguageBoxesSelector.tsx",
+        "src/components/NetworkRequestsInspector.tsx"
+      ],
+      "assertionsCount": 38,
+      "scriptCommand": "npm run test:dynamic-favorites-and-server-fetch"
+    },
+    {
+      "filename": "verify-e2e-and-download-links.ts",
+      "name": "E2E test targets in package.json and web.yml",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts"
+      ],
+      "assertionsCount": 18,
+      "scriptCommand": "tsx scripts/verify-e2e-and-download-links.ts"
+    },
+    {
+      "filename": "verify-e2e-android-doc.ts",
+      "name": "docs/e2e-android.md location and zero-duplicate compliance",
+      "category": "Pipeline Stage 5: Translation & Multi-Language",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 25,
+      "scriptCommand": "npm run test:e2e-android-doc"
+    },
+    {
+      "filename": "verify-e2e-report-links.ts",
+      "name": "E2e report links",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 14,
+      "scriptCommand": "npm run test:e2e-report-links"
+    },
+    {
+      "filename": "verify-e2e-selectors.ts",
+      "name": "hierarchical child selector compatibility",
+      "category": "Pipeline Stage 4: Parser & Sentence Splitting",
+      "targetFiles": [
+        "src/components/FloatingDraggablePauseButton.tsx",
+        "src/components/LanguageBoxesSelector.tsx",
+        "src/components/NewSubtitlesParserBar.tsx",
+        "src/components/SubtitleRow.tsx",
+        "src/components/SubtitlesTablePanel.tsx",
+        "src/components/VideoPlaybackControls.tsx",
+        "src/components/beginner/tabs/BeginnerPlayerTab.tsx"
+      ],
+      "assertionsCount": 5,
+      "scriptCommand": "npm run test:e2e-selectors"
+    },
+    {
+      "filename": "verify-e2e-testing-guide.ts",
+      "name": "E2e testing guide",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 7,
+      "scriptCommand": "npm run test:e2e-testing-guide"
+    },
+    {
+      "filename": "verify-elevated-frontend-design.ts",
+      "name": "Version 2.0.52 synchronization across all 5 files",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/SubtitleRow.tsx",
+        "src/components/beginner/BeginnerTabNav.tsx"
+      ],
+      "assertionsCount": 13,
+      "scriptCommand": "npm run test:elevated-design"
+    },
+    {
+      "filename": "verify-emulation-gh-pages.ts",
+      "name": "Emulation gh pages",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 31,
+      "scriptCommand": "npm run test:emulation-gh-pages"
+    },
+    {
+      "filename": "verify-emulator-captions-detection.ts",
+      "name": "MainActivity.kt authentic captions exposure",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/config/appConfig.ts",
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 27,
+      "scriptCommand": "npm run test:emulator-captions-detection"
+    },
+    {
+      "filename": "verify-emulator-e2e-subtitles.ts",
+      "name": "Emulator e2e subtitles",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 42,
+      "scriptCommand": "npm run test:emulator-subtitles-e2e"
+    },
+    {
+      "filename": "verify-emulator-error-detection.ts",
+      "name": "Emulator error detection",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/routes/__root.tsx"
+      ],
+      "assertionsCount": 26,
+      "scriptCommand": "npm run test:emulator-error-detection"
+    },
+    {
+      "filename": "verify-emulator-screencast-report.ts",
+      "name": "repository hygiene in .gitignore",
+      "category": "Pipeline Stage 5: Translation & Multi-Language",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 22,
+      "scriptCommand": "npm run test:emulator-screencast-report"
+    },
+    {
+      "filename": "verify-env-and-lockfile-hygiene.ts",
+      "name": "Env and lockfile hygiene",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/lib/alternative-tts.ts",
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts"
+      ],
+      "assertionsCount": 14,
+      "scriptCommand": "npm run test:env-and-lockfile-hygiene"
+    },
+    {
+      "filename": "verify-error-reporting-workflow.ts",
+      "name": "error diagnosis heuristics and classification",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 39,
+      "scriptCommand": "npm run test:error-reporting"
+    },
+    {
+      "filename": "verify-exclude-default-subtitles-tts.ts",
+      "name": "DEFAULT_APP_SETTINGS default value",
+      "category": "Pipeline Stage 5: Translation & Multi-Language",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/SubtitleRow.tsx",
+        "src/components/beginner/BeginnerFlowContainer.tsx",
+        "src/components/beginner/tabs/BeginnerPlayerTab.tsx"
+      ],
+      "assertionsCount": 18,
+      "scriptCommand": "npm run test:exclude-default-subtitles-tts"
+    },
+    {
+      "filename": "verify-expert-mode-ui-layout.ts",
+      "name": "Expert mode ui layout",
+      "category": "Pipeline Stage 4: Parser & Sentence Splitting",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 4,
+      "scriptCommand": "tsx scripts/verify-expert-mode-ui-layout.ts"
+    },
+    {
+      "filename": "verify-extended-flow-options.ts",
+      "name": "Zero GitHub Actions cron jobs policy",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 27,
+      "scriptCommand": "npm run test:extended-flow-options"
+    },
+    {
+      "filename": "verify-favorite-lang-dynamic-fetch.ts",
+      "name": "Favorite lang dynamic fetch",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 21,
+      "scriptCommand": "npm run test:favorite-dynamic-fetch"
+    },
+    {
+      "filename": "verify-favorite-languages-and-ai-tab.ts",
+      "name": "Favorite languages and ai tab",
+      "category": "Pipeline Stage 4: Parser & Sentence Splitting",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/AiSubtitlePunctuationTab.tsx"
+      ],
+      "assertionsCount": 30,
+      "scriptCommand": "npm run test:favorite-languages-and-ai-tab"
+    },
+    {
+      "filename": "verify-favorite-languages-default-checkboxes.ts",
+      "name": "Favorite languages default checkboxes",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 3,
+      "scriptCommand": "npm run test:favorite-checkboxes"
+    },
+    {
+      "filename": "verify-favorites-subtitles-sync.ts",
+      "name": "Favorites subtitles sync",
+      "category": "Pipeline Stage 5: Translation & Multi-Language",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 9,
+      "scriptCommand": "npm run test:favorites-sync"
+    },
+    {
+      "filename": "verify-fetch-strategy-and-defaults.ts",
+      "name": "Fetch strategy and defaults",
+      "category": "Pipeline Stage 4: Parser & Sentence Splitting",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/AttemptOrderSettings.tsx"
+      ],
+      "assertionsCount": 43,
+      "scriptCommand": "npm run test:fetch-strategy"
+    },
+    {
+      "filename": "verify-fixture-languages-and-source-icons.ts",
+      "name": "pt-BR presentation in LANGS",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/SubtitleRow.tsx",
+        "src/components/SubtitlesTablePanel.tsx"
+      ],
+      "assertionsCount": 18,
+      "scriptCommand": "npm run test:fixture-languages-and-source-icons"
+    },
+    {
+      "filename": "verify-floating-draggable-pause.ts",
+      "name": "Floating draggable pause",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/FloatingDraggablePauseButton.tsx"
+      ],
+      "assertionsCount": 33,
+      "scriptCommand": "npm run test:floating-pause"
+    },
+    {
+      "filename": "verify-floating-dropdown-menu.ts",
+      "name": "Floating dropdown menu",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/FloatingDraggablePauseButton.tsx"
+      ],
+      "assertionsCount": 24,
+      "scriptCommand": "npm run test:floating-dropdown-menu"
+    },
+    {
+      "filename": "verify-foreign-fetch-and-diagnostic-logs.ts",
+      "name": "Version ${expectedVer} synchronization across 5 files",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/utils/onDemandTranslationManager.ts",
+        "src/config/appConfig.ts",
+        "src/components/StateMachineActionLogsInspector.tsx",
+        "src/components/SubtitleRow.tsx"
+      ],
+      "assertionsCount": 27,
+      "scriptCommand": "npm run test:foreign-fetch-and-diagnostic-logs"
+    },
+    {
+      "filename": "verify-fork-ci-workflows.ts",
+      "name": "Fork ci workflows",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 14,
+      "scriptCommand": "npm run test:fork-ci-workflows"
+    },
+    {
+      "filename": "verify-fork-readme-links.ts",
+      "name": "Fork readme links",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 12,
+      "scriptCommand": "npm run test:fork-readme-links"
+    },
+    {
+      "filename": "verify-future-app-design.ts",
+      "name": "docs/future.md existence and location",
+      "category": "Pipeline Stage 6: Multi-Language Alignment Grid",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts"
+      ],
+      "assertionsCount": 10,
+      "scriptCommand": "npm run test:future-app-design"
+    },
+    {
+      "filename": "verify-github-import-migration.ts",
+      "name": "Github import migration",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 12,
+      "scriptCommand": "npm run test:github-import-migration"
+    },
+    {
+      "filename": "verify-gitignore-entries.ts",
+      "name": "Gitignore entries",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts"
+      ],
+      "assertionsCount": 12,
+      "scriptCommand": "npm run test:gitignore-entries"
+    },
+    {
+      "filename": "verify-hotfix-active-initialization.ts",
+      "name": "Hotfix active initialization",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 6,
+      "scriptCommand": "npm run test:hotfix-active-init"
+    },
+    {
+      "filename": "verify-hotfix-and-done-workflow.ts",
+      "name": "docs/tokens.md and no root duplicate",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 12,
+      "scriptCommand": "npm run test:hotfix-workflow"
+    },
+    {
+      "filename": "verify-hotfix-dev-exports-and-logger.ts",
+      "name": "playback-preferences exports",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts"
+      ],
+      "assertionsCount": 15,
+      "scriptCommand": "npm run test:hotfix-dev-exports"
+    },
+    {
+      "filename": "verify-hotfix-links-and-actions.ts",
+      "name": "Hotfix links and actions",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 12,
+      "scriptCommand": "npm run test:hotfix"
+    },
+    {
+      "filename": "verify-hotfix-maximum-update-depth.ts",
+      "name": "state value equality guards",
+      "category": "Pipeline Stage 5: Translation & Multi-Language",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 20,
+      "scriptCommand": "tsx scripts/verify-hotfix-maximum-update-depth.ts"
+    },
+    {
+      "filename": "verify-hotfix-react-import.ts",
+      "name": "Hotfix react import",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 4,
+      "scriptCommand": "tsx scripts/verify-hotfix-react-import.ts"
+    },
+    {
+      "filename": "verify-hotfix-rows-initialization.ts",
+      "name": "Hotfix rows initialization",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 7,
+      "scriptCommand": "npm run test:hotfix-rows-init"
+    },
+    {
+      "filename": "verify-html-response-guard-and-caching.ts",
+      "name": "Html response guard and caching",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/lib/native-captions.ts",
+        "src/utils/captionParser.ts",
+        "src/routes/index.tsx",
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 22,
+      "scriptCommand": "npm run test:html-guard-caching"
+    },
+    {
+      "filename": "verify-hydration.ts",
+      "name": "SSR vs Client language defaults",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 3,
+      "scriptCommand": "npm run test:hydration"
+    },
+    {
+      "filename": "verify-index-route-decomposition.ts",
+      "name": "Index route decomposition",
+      "category": "Pipeline Stage 6: Multi-Language Alignment Grid",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/AccordionSection.tsx",
+        "src/components/ApkReleasesFooter.tsx",
+        "src/components/HighlightedSubtitle.tsx",
+        "src/components/SubtitleRow.tsx",
+        "src/components/SubtitlesTablePanel.tsx"
+      ],
+      "assertionsCount": 14,
+      "scriptCommand": "npm run test:index-decomposition"
+    },
+    {
+      "filename": "verify-interceptor-readiness-and-cc-alert.ts",
+      "name": "early caption buffer and draining",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/CriticalCaptionsAlert.tsx",
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 22,
+      "scriptCommand": "npm run test:interceptor-readiness-and-cc-alert"
+    },
+    {
+      "filename": "verify-is-language-spoken-hotfix.ts",
+      "name": "Is language spoken hotfix",
+      "category": "Pipeline Stage 5: Translation & Multi-Language",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts"
+      ],
+      "assertionsCount": 42,
+      "scriptCommand": "npm run test:is-language-spoken-hotfix"
+    },
+    {
+      "filename": "verify-language-accordion-ux.ts",
+      "name": "Language accordion ux",
+      "category": "UI Architecture & Mode Parity",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/LanguageBoxesSelector.tsx"
+      ],
+      "assertionsCount": 16,
+      "scriptCommand": "npm run test:language-accordion-ux"
+    },
+    {
+      "filename": "verify-language-boxes-selection.ts",
+      "name": "Language boxes selection",
+      "category": "Pipeline Stage 5: Translation & Multi-Language",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/LanguageBoxesSelector.tsx"
+      ],
+      "assertionsCount": 21,
+      "scriptCommand": "npm run test:language-boxes"
+    },
+    {
+      "filename": "verify-language-button-subtitle-url.ts",
+      "name": "Language button subtitle url",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/LanguageBoxesSelector.tsx",
+        "src/components/LanguageSubtitleUrlModal.tsx"
+      ],
+      "assertionsCount": 19,
+      "scriptCommand": "tsx scripts/verify-language-button-subtitle-url.ts"
+    },
+    {
+      "filename": "verify-language-cleanup-and-android-tts.ts",
+      "name": "Language cleanup and android tts",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/LanguageBoxesSelector.tsx",
+        "src/components/beginner/PerLanguageTtsPreferences.tsx",
+        "src/components/beginner/tabs/BeginnerPreferencesTab.tsx",
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 26,
+      "scriptCommand": "tsx scripts/verify-language-cleanup-and-android-tts.ts"
+    },
+    {
+      "filename": "verify-language-selection-and-tts-flow.ts",
+      "name": "TTS Voice Matching and ISO Aliases",
+      "category": "Pipeline Stage 5: Translation & Multi-Language",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/LanguageBoxesSelector.tsx"
+      ],
+      "assertionsCount": 39,
+      "scriptCommand": "npm run test:language-selection-tts-flow"
+    },
+    {
+      "filename": "verify-language-selection-primary-and-json3-columns.ts",
+      "name": "Language Selection Table 'is-primary' and 'json3' columns",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 10,
+      "scriptCommand": "npm run test:language-selection-primary-and-json3-columns"
+    },
+    {
+      "filename": "verify-language-video-player-accordion.ts",
+      "name": "Language video player accordion",
+      "category": "Pipeline Stage 4: Parser & Sentence Splitting",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 7,
+      "scriptCommand": "npm run test:language-player-accordion"
+    },
+    {
+      "filename": "verify-lean-tokens-economy.ts",
+      "name": "docs/tokens.md is lean, concise, and fast to overview",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 14,
+      "scriptCommand": "npm run test:lean-tokens"
+    },
+    {
+      "filename": "verify-lovable-alternative-tts.ts",
+      "name": "Lovable alternative tts",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 34,
+      "scriptCommand": "npm run test:lovable-alternative-tts"
+    },
+    {
+      "filename": "verify-lovable-tts-service-preference.ts",
+      "name": "Lovable tts service preference",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/beginner/tabs/BeginnerPreferencesTab.tsx"
+      ],
+      "assertionsCount": 39,
+      "scriptCommand": "npm run test:lovable-tts-service-preference"
+    },
+    {
+      "filename": "verify-lovable-tts-speed-and-voices.ts",
+      "name": "Lovable tts speed and voices",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/beginner/tabs/BeginnerPreferencesTab.tsx"
+      ],
+      "assertionsCount": 36,
+      "scriptCommand": "npm run test:lovable-tts-speed-and-voices"
+    },
+    {
+      "filename": "verify-lovable-tts-ui.ts",
+      "name": "Lovable tts ui",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/beginner/tabs/BeginnerPreferencesTab.tsx"
+      ],
+      "assertionsCount": 19,
+      "scriptCommand": "npm run test:lovable-tts-ui"
+    },
+    {
+      "filename": "verify-max-words-per-sentence.ts",
+      "name": "countWords utility",
+      "category": "Pipeline Stage 4: Parser & Sentence Splitting",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/NewSubtitlesParserBar.tsx",
+        "src/components/beginner/tabs/BeginnerParsingTab.tsx",
+        "src/components/shared/MaxWordsPerSentenceInput.tsx"
+      ],
+      "assertionsCount": 36,
+      "scriptCommand": "npm run test:max-words-per-sentence"
+    },
+    {
+      "filename": "verify-md-links.ts",
+      "name": "Md links",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 3,
+      "scriptCommand": "npm run test:md"
+    },
+    {
+      "filename": "verify-memory-defaults-and-clean-views.ts",
+      "name": "Memory defaults and clean views",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/WebDemoUrlsInput.tsx"
+      ],
+      "assertionsCount": 30,
+      "scriptCommand": "npm run test:memory-defaults-and-clean-views"
+    },
+    {
+      "filename": "verify-minimal-share-url.ts",
+      "name": "Minimal share url",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 17,
+      "scriptCommand": "npm run test:minimal-share-url"
+    },
+    {
+      "filename": "verify-mode-switch-player-state.ts",
+      "name": "Mode switch player state",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 5,
+      "scriptCommand": "npm run test:mode-switch-player-state"
+    },
+    {
+      "filename": "verify-mode-switcher-hidden-style.ts",
+      "name": "ModeSwitcherHeader element has 'hidden' class",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/ModeSwitcherHeader.tsx"
+      ],
+      "assertionsCount": 17,
+      "scriptCommand": "npm run test:mode-switcher-hidden-style"
+    },
+    {
+      "filename": "verify-multi-video-audio-sync.ts",
+      "name": "Multi video audio sync",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 24,
+      "scriptCommand": "npm run test:multi-video-audio-sync"
+    },
+    {
+      "filename": "verify-multi-video-player-state.ts",
+      "name": "Multi video player state",
+      "category": "UI Architecture & Mode Parity",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 28,
+      "scriptCommand": "npm run test:multi-video-player"
+    },
+    {
+      "filename": "verify-native-captions.ts",
+      "name": "Native captions",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/utils/appSettings.ts",
+        "src/routes/index.tsx",
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 27,
+      "scriptCommand": "npm run test:native-captions"
+    },
+    {
+      "filename": "verify-native-tts-speed-for-service.ts",
+      "name": "Native tts speed for service",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/lib/alternative-tts.ts",
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/beginner/tabs/BeginnerPreferencesTab.tsx"
+      ],
+      "assertionsCount": 16,
+      "scriptCommand": "npm run test:native-tts-speed-for-service"
+    },
+    {
+      "filename": "verify-network-accordion-tags.ts",
+      "name": "Network accordion tags",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/NetworkRequestsInspector.tsx",
+        "src/components/SubtitleRow.tsx",
+        "src/components/SubtitlesTablePanel.tsx"
+      ],
+      "assertionsCount": 11,
+      "scriptCommand": "npm run test:accordion-tags"
+    },
+    {
+      "filename": "verify-network-clean-records.ts",
+      "name": "Network clean records",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/components/NetworkRequestsInspector.tsx"
+      ],
+      "assertionsCount": 12,
+      "scriptCommand": "npm run test:clean-network"
+    },
+    {
+      "filename": "verify-network-inspector-close.ts",
+      "name": "Network inspector close",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/components/NetworkRequestsInspector.tsx"
+      ],
+      "assertionsCount": 20,
+      "scriptCommand": "npm run test:network-close"
+    },
+    {
+      "filename": "verify-network-inspector.ts",
+      "name": "Network inspector",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/NetworkRequestsInspector.tsx"
+      ],
+      "assertionsCount": 43,
+      "scriptCommand": "npm run test:network-inspector"
+    },
+    {
+      "filename": "verify-no-autoscroll-on-mouse-action.ts",
+      "name": "LanguageBoxesSelector retains focus and blocks auto-scroll on mouse action",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/LanguageBoxesSelector.tsx",
+        "src/components/SubtitlesTablePanel.tsx"
+      ],
+      "assertionsCount": 16,
+      "scriptCommand": "npm run test:no-autoscroll-on-mouse-action"
+    },
+    {
+      "filename": "verify-no-cache-empty-or-non-json.ts",
+      "name": "No cache empty or non json",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 37,
+      "scriptCommand": "npm run test:no-cache-empty-non-json"
+    },
+    {
+      "filename": "verify-no-cron-readme-updates.ts",
+      "name": "No cron readme updates",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts"
+      ],
+      "assertionsCount": 15,
+      "scriptCommand": "npm run test:no-cron-readme"
+    },
+    {
+      "filename": "verify-no-duplicate-md-files.ts",
+      "name": "AGENTS.md instruction and policy",
+      "category": "Pipeline Stage 4: Parser & Sentence Splitting",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 9,
+      "scriptCommand": "npm run test:no-duplicate-md"
+    },
+    {
+      "filename": "verify-no-favorite-languages-duplication.ts",
+      "name": "Stage 2 isolation in Languages accordion",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 11,
+      "scriptCommand": "npm run test:no-favorite-languages-duplication"
+    },
+    {
+      "filename": "verify-no-floating-notifications-tab.ts",
+      "name": "No floating notifications tab",
+      "category": "Pipeline Stage 5: Translation & Multi-Language",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/FloatingSubtitleRetryIndicator.tsx",
+        "src/components/NotificationsStatusTab.tsx",
+        "src/components/SubtitleFetchToast.tsx"
+      ],
+      "assertionsCount": 22,
+      "scriptCommand": "tsx scripts/verify-no-floating-notifications-tab.ts"
+    },
+    {
+      "filename": "verify-no-more-tasks-go-on-rule.ts",
+      "name": "No more tasks go on rule",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 3,
+      "scriptCommand": "tsx scripts/verify-no-more-tasks-go-on-rule.ts"
+    },
+    {
+      "filename": "verify-no-repeated-video-section-after-tts.ts",
+      "name": "No repeated video section after tts",
+      "category": "Pipeline Stage 5: Translation & Multi-Language",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 6,
+      "scriptCommand": "npm run test:no-repeated-video-section-after-tts"
+    },
+    {
+      "filename": "verify-no-static-images-in-repo.ts",
+      "name": "No static images in repo",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 12,
+      "scriptCommand": "npm run test:no-static-images"
+    },
+    {
+      "filename": "verify-numbered-chapters-protocol.ts",
+      "name": "Numbered chapters protocol",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 7,
+      "scriptCommand": "npm run test:numbered-chapters-protocol"
+    },
+    {
+      "filename": "verify-on-demand-translation.ts",
+      "name": "On demand translation",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 41,
+      "scriptCommand": "npm run test:on-demand-translation"
+    },
+    {
+      "filename": "verify-openrouter-key-settings.ts",
+      "name": "Openrouter key settings",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/lib/alternative-tts.ts",
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/beginner/tabs/BeginnerPreferencesTab.tsx"
+      ],
+      "assertionsCount": 29,
+      "scriptCommand": "npm run test:openrouter-key-settings"
+    },
+    {
+      "filename": "verify-ota-updater.ts",
+      "name": "Ota updater",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/ApkReleaseModal.tsx",
+        "src/components/ApkReleasesFooter.tsx"
+      ],
+      "assertionsCount": 34,
+      "scriptCommand": "npm run test:ota"
+    },
+    {
+      "filename": "verify-parser-docs.ts",
+      "name": "Parser docs",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 7,
+      "scriptCommand": "npm run test:parser-docs"
+    },
+    {
+      "filename": "verify-parser-live-updates.ts",
+      "name": "Parser live updates",
+      "category": "Pipeline Stage 4: Parser & Sentence Splitting",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/NewSubtitlesParserBar.tsx",
+        "src/components/SubtitlesTablePanel.tsx",
+        "src/components/beginner/tabs/BeginnerParsingTab.tsx"
+      ],
+      "assertionsCount": 15,
+      "scriptCommand": "npm run test:parser-live-updates"
+    },
+    {
+      "filename": "verify-parser-minimal-text-and-help-icons.ts",
+      "name": "Advanced Mode Parser minimal text and '?' buttons",
+      "category": "Pipeline Stage 4: Parser & Sentence Splitting",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/SpecialCharactersRemovalPanel.tsx",
+        "src/components/beginner/tabs/BeginnerParsingTab.tsx"
+      ],
+      "assertionsCount": 16,
+      "scriptCommand": "npm run test:parser-minimal-text"
+    },
+    {
+      "filename": "verify-parser-timing-lab.ts",
+      "name": "component file existence and modularity",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/ParserTimingLab.tsx"
+      ],
+      "assertionsCount": 13,
+      "scriptCommand": "npm run test:parser-timing-lab"
+    },
+    {
+      "filename": "verify-pause-both-video-and-tts.ts",
+      "name": "Pause both video and tts",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/VideoPlaybackControls.tsx",
+        "src/components/beginner/tabs/BeginnerPlayerTab.tsx",
+        "android-shell/app/src/main/java/com/ytviewer/app/BackgroundAudioService.kt",
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 23,
+      "scriptCommand": "npm run test:pause-both-video-and-tts"
+    },
+    {
+      "filename": "verify-pending-prs-rule.ts",
+      "name": "Pending prs rule",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 3,
+      "scriptCommand": "npm run test:pending-prs-rule"
+    },
+    {
+      "filename": "verify-plan-e2e-test.ts",
+      "name": "Plan e2e test",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 5,
+      "scriptCommand": "npm run test:plan-e2e-test"
+    },
+    {
+      "filename": "verify-platforms-doc.ts",
+      "name": "Platforms doc",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 5,
+      "scriptCommand": "npm run test:platforms-doc"
+    },
+    {
+      "filename": "verify-playback-loop-continuation.ts",
+      "name": "Playback loop continuation",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 11,
+      "scriptCommand": "npm run test:playback-loop-continuation"
+    },
+    {
+      "filename": "verify-playback-preferences.ts",
+      "name": "Playback preferences",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/lib/playback-preferences.ts",
+        "src/routes/index.tsx",
+        "src/components/NetworkRequestsInspector.tsx"
+      ],
+      "assertionsCount": 15,
+      "scriptCommand": "tsx scripts/verify-playback-preferences.ts"
+    },
+    {
+      "filename": "verify-playwright-locators.ts",
+      "name": "Playwright locators",
+      "category": "UI Architecture & Mode Parity",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/AccordionSection.tsx"
+      ],
+      "assertionsCount": 7,
+      "scriptCommand": "npm run test:playwright-locators"
+    },
+    {
+      "filename": "verify-primary-secondary-tts-ratio.ts",
+      "name": "Primary secondary tts ratio",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/SubtitleRow.tsx",
+        "src/components/beginner/PerLanguageTtsPreferences.tsx"
+      ],
+      "assertionsCount": 23,
+      "scriptCommand": "npm run test:primary-secondary-tts-ratio"
+    },
+    {
+      "filename": "verify-progressive-disclosure-and-button-design.ts",
+      "name": "Progressive disclosure and button design",
+      "category": "Pipeline Stage 4: Parser & Sentence Splitting",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/AiSubtitlePunctuationTab.tsx",
+        "src/components/AttemptOrderSettings.tsx",
+        "src/components/ExpandableHelp.tsx",
+        "src/components/LanguageBoxesSelector.tsx",
+        "src/components/beginner/tabs/BeginnerPreferencesTab.tsx"
+      ],
+      "assertionsCount": 21,
+      "scriptCommand": "npm run test:progressive-disclosure-and-button-design"
+    },
+    {
+      "filename": "verify-progressive-subtitles-loading.ts",
+      "name": "Progressive subtitles loading",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 8,
+      "scriptCommand": "npm run test:progressive-subtitles"
+    },
+    {
+      "filename": "verify-punctuation-paired-splitting.ts",
+      "name": "isInsidePairedWrapper helper",
+      "category": "Pipeline Stage 4: Parser & Sentence Splitting",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 14,
+      "scriptCommand": "tsx scripts/verify-punctuation-paired-splitting.ts"
+    },
+    {
+      "filename": "verify-quarantine-and-minimal-share-e2e.ts",
+      "name": "docs/fix-android-e2e-test-and-video-product.md",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 34,
+      "scriptCommand": "npm run test:quarantine-minimal-share"
+    },
+    {
+      "filename": "verify-quarantine-and-new-parser.ts",
+      "name": "quarantined old subtitles parser",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/NewSubtitlesParserBar.tsx",
+        "src/components/SubtitlesTablePanel.tsx"
+      ],
+      "assertionsCount": 47,
+      "scriptCommand": "npm run test:quarantine-and-new-parser"
+    },
+    {
+      "filename": "verify-quarantine-beginner-mode.ts",
+      "name": "Quarantine beginner mode",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/utils/appSettings.ts",
+        "src/routes/index.tsx",
+        "src/components/ModeSwitcherHeader.tsx",
+        "src/components/beginner/BeginnerCharsRemovalAccordion.tsx",
+        "src/components/beginner/BeginnerFlowContainer.tsx",
+        "src/components/beginner/BeginnerTabNav.tsx",
+        "src/components/beginner/BeginnerTtsServiceControl.tsx",
+        "src/components/beginner/PerLanguageTtsPreferences.tsx",
+        "src/components/beginner/tabs/BeginnerParsingTab.tsx",
+        "src/components/beginner/tabs/BeginnerPlayerTab.tsx",
+        "src/components/beginner/tabs/BeginnerPreferencesTab.tsx",
+        "src/components/beginner/tabs/BeginnerVideoTab.tsx"
+      ],
+      "assertionsCount": 9,
+      "scriptCommand": "tsx scripts/verify-quarantine-beginner-mode.ts"
+    },
+    {
+      "filename": "verify-raw-union-merge-fix.ts",
+      "name": "AGENTS.md last raw prompt",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts"
+      ],
+      "assertionsCount": 12,
+      "scriptCommand": "npm run test:raw-union-merge-fix"
+    },
+    {
+      "filename": "verify-readme-error-indicator.ts",
+      "name": "report HTML asset links and fallbacks",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 27,
+      "scriptCommand": "npm run test:readme-error-indicator"
+    },
+    {
+      "filename": "verify-readme-git-sync-rule.ts",
+      "name": "Readme git sync rule",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 14,
+      "scriptCommand": "npm run test:readme-git-sync-rule"
+    },
+    {
+      "filename": "verify-readme-links.ts",
+      "name": "Readme links",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 10,
+      "scriptCommand": "npm run test:readme-links"
+    },
+    {
+      "filename": "verify-refined-language-settings.ts",
+      "name": "rate dropdown (0.5 to 1.0) in unified languages table",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/beginner/PerLanguageTtsPreferences.tsx",
+        "src/components/beginner/tabs/BeginnerPreferencesTab.tsx"
+      ],
+      "assertionsCount": 21,
+      "scriptCommand": "npm run test:refined-language-settings"
+    },
+    {
+      "filename": "verify-reliable-subtitles-fetching.ts",
+      "name": "Attempt Order defaults and normalization",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/AttemptOrderSettings.tsx",
+        "src/components/NetworkRequestsInspector.tsx"
+      ],
+      "assertionsCount": 32,
+      "scriptCommand": "npm run test:reliable-subtitles-fetching"
+    },
+    {
+      "filename": "verify-remote-tts-validation.ts",
+      "name": "Remote tts validation",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/beginner/tabs/BeginnerPreferencesTab.tsx"
+      ],
+      "assertionsCount": 16,
+      "scriptCommand": "tsx scripts/verify-remote-tts-validation.ts"
+    },
+    {
+      "filename": "verify-remove-favorite-visibility-toolbar.ts",
+      "name": "Remove favorite visibility toolbar",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 5,
+      "scriptCommand": "npm run test:remove-favorite-visibility-toolbar"
+    },
+    {
+      "filename": "verify-remove-non-relevant-per-language-panel.ts",
+      "name": "removal of data-testid='per-language-settings-panel'",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 10,
+      "scriptCommand": "npm run test:remove-non-relevant-per-language-panel"
+    },
+    {
+      "filename": "verify-remove-redundant-languages-status-card.ts",
+      "name": "enabled-languages-status-card is removed",
+      "category": "Pipeline Stage 5: Translation & Multi-Language",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/GlobalFavoriteLanguagesPanel.tsx"
+      ],
+      "assertionsCount": 17,
+      "scriptCommand": "npm run test:remove-redundant-languages-status-card"
+    },
+    {
+      "filename": "verify-repo-hygiene.ts",
+      "name": "Repo hygiene",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 5,
+      "scriptCommand": "npm run test:hygiene"
+    },
+    {
+      "filename": "verify-report-video-links-and-readme-sync.ts",
+      "name": "broken report video detection via update-readme.mjs",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 32,
+      "scriptCommand": "npm run test:report-video-links"
+    },
+    {
+      "filename": "verify-route-app-state-sync.ts",
+      "name": "Route app state sync",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 8,
+      "scriptCommand": "npm run test:route-app-state-sync"
+    },
+    {
+      "filename": "verify-screencast-availability.ts",
+      "name": "README.md Links against Repository Identity",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 55,
+      "scriptCommand": "npm run test:screencast-availability"
+    },
+    {
+      "filename": "verify-self-verification.ts",
+      "name": "Self verification",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 18,
+      "scriptCommand": "npm run test:self-verification"
+    },
+    {
+      "filename": "verify-settings-nested-accordions-and-clean-views.ts",
+      "name": "Settings nested accordions and clean views",
+      "category": "Pipeline Stage 3: Special Characters Removal",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 18,
+      "scriptCommand": "npm run test:settings-nested-accordions-and-clean-views"
+    },
+    {
+      "filename": "verify-sharable-state-link.ts",
+      "name": "Sharable state link",
+      "category": "Pipeline Stage 5: Translation & Multi-Language",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/ShareStateModal.tsx"
+      ],
+      "assertionsCount": 28,
+      "scriptCommand": "npm run test:sharable-state-link"
+    },
+    {
+      "filename": "verify-share-state-reproduction.ts",
+      "name": "handleWebDemoLoadVideoAndSubtitles sets baseLanguage",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/ShareStateModal.tsx"
+      ],
+      "assertionsCount": 24,
+      "scriptCommand": "npm run test:share-state-reproduction"
+    },
+    {
+      "filename": "verify-shared-language-tagging.ts",
+      "name": "Shared language tagging",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 12,
+      "scriptCommand": "npm run test:shared-language-tagging"
+    },
+    {
+      "filename": "verify-simplified-design-and-reduced-text.ts",
+      "name": "Version synchronization across all 5 files",
+      "category": "Pipeline Stage 4: Parser & Sentence Splitting",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/ModeSwitcherHeader.tsx",
+        "src/components/NewSubtitlesParserBar.tsx",
+        "src/components/SpecialCharactersRemovalPanel.tsx",
+        "src/components/beginner/tabs/BeginnerPreferencesTab.tsx",
+        "src/components/beginner/tabs/BeginnerVideoTab.tsx"
+      ],
+      "assertionsCount": 27,
+      "scriptCommand": "npm run test:simplified-design-and-reduced-text"
+    },
+    {
+      "filename": "verify-slider-import-hotfix.ts",
+      "name": "Slider UI component file",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/ui/slider.tsx"
+      ],
+      "assertionsCount": 6,
+      "scriptCommand": "npm run test:slider-import-hotfix"
+    },
+    {
+      "filename": "verify-stable-video-player-lifecycle.ts",
+      "name": "Stable video player lifecycle",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 4,
+      "scriptCommand": "npm run test:stable-video-player"
+    },
+    {
+      "filename": "verify-state-machine-action-logs.ts",
+      "name": "State machine action logs",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/components/StateMachineActionLogsInspector.tsx"
+      ],
+      "assertionsCount": 9,
+      "scriptCommand": "npm run test:state-machine-action-logs"
+    },
+    {
+      "filename": "verify-strict-json3-only-validation.ts",
+      "name": "Strict json3 only validation",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/lib/native-captions.ts",
+        "src/utils/captionParser.ts",
+        "src/routes/index.tsx",
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 24,
+      "scriptCommand": "npm run test:strict-json3-validation"
+    },
+    {
+      "filename": "verify-subtitle-api-fallback.ts",
+      "name": "Subtitle api fallback",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 27,
+      "scriptCommand": "npm run test:subtitle-api-fallback"
+    },
+    {
+      "filename": "verify-subtitle-language-columns.ts",
+      "name": "Subtitle language columns",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 13,
+      "scriptCommand": "npm run test:subtitle-language-columns"
+    },
+    {
+      "filename": "verify-subtitle-toast.ts",
+      "name": "Subtitle toast",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/components/SubtitleFetchToast.tsx"
+      ],
+      "assertionsCount": 14,
+      "scriptCommand": "npm run test:subtitle-toast"
+    },
+    {
+      "filename": "verify-subtitles-fixtures-restriction.ts",
+      "name": "Subtitles fixtures restriction",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/config/fixtures.ts"
+      ],
+      "assertionsCount": 21,
+      "scriptCommand": "npm run test:subtitles-fixtures-restriction"
+    },
+    {
+      "filename": "verify-subtitles-table-legitimate-json3-only.ts",
+      "name": "Subtitles table legitimate json3 only",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 11,
+      "scriptCommand": "npm run test:subtitles-table-legitimate-only"
+    },
+    {
+      "filename": "verify-subtitles-table-visibility-on-fetch.ts",
+      "name": "Subtitles table visibility on fetch",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 29,
+      "scriptCommand": "npm run test:subtitles-table-visibility"
+    },
+    {
+      "filename": "verify-subtitles-table-width-toggle.ts",
+      "name": "Subtitles table width toggle",
+      "category": "Pipeline Stage 6: Multi-Language Alignment Grid",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/AccordionSection.tsx"
+      ],
+      "assertionsCount": 4,
+      "scriptCommand": "npm run test:subtitles-table-width-toggle"
+    },
+    {
+      "filename": "verify-subtitles-url-encoding-in-share-link.ts",
+      "name": "Subtitles url encoding in share link",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/ShareStateModal.tsx"
+      ],
+      "assertionsCount": 23,
+      "scriptCommand": "npm run test:subtitles-url-encoding"
+    },
+    {
+      "filename": "verify-subtitles-viewer-population.ts",
+      "name": "fallback to raw cues when sentence splitting produces 0 segments",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 16,
+      "scriptCommand": "npm run test:subtitles-viewer-population"
+    },
+    {
+      "filename": "verify-suggestions-doc-and-link.ts",
+      "name": "Suggestions doc and link",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/utils/appSettings.ts"
+      ],
+      "assertionsCount": 19,
+      "scriptCommand": "npm run test:suggestions-doc-and-link"
+    },
+    {
+      "filename": "verify-supabase-quarantine-tts-and-sequence.ts",
+      "name": "Supabase quarantine and prompt history",
+      "category": "Pipeline Stage 5: Translation & Multi-Language",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/VideoLanguageSequenceControl.tsx"
+      ],
+      "assertionsCount": 30,
+      "scriptCommand": "npm run test:supabase-quarantine-tts-and-sequence"
+    },
+    {
+      "filename": "verify-task-management-workflow.ts",
+      "name": "AGENTS.md task migration protocol",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 13,
+      "scriptCommand": "npm run test:task-management-workflow"
+    },
+    {
+      "filename": "verify-test-coverage-report.ts",
+      "name": "Test Coverage Generation & GitHub Pages Report Integration",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts"
+      ],
+      "assertionsCount": 49,
+      "scriptCommand": "npm run test:test-coverage-report"
+    },
+    {
+      "filename": "verify-testing-tts-button.ts",
+      "name": "Testing tts button",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/lib/alternative-tts.ts",
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/beginner/tabs/BeginnerPreferencesTab.tsx"
+      ],
+      "assertionsCount": 18,
+      "scriptCommand": "npm run test:testing-tts-button"
+    },
+    {
+      "filename": "verify-theme-colors-consistency.ts",
+      "name": "Theme colors consistency",
+      "category": "UI Architecture & Mode Parity",
+      "targetFiles": [
+        "src/config/accordionThemes.ts",
+        "src/components/ModeSwitcherHeader.tsx",
+        "src/components/beginner/BeginnerTabNav.tsx",
+        "src/components/beginner/tabs/BeginnerParsingTab.tsx",
+        "src/components/beginner/tabs/BeginnerPlayerTab.tsx",
+        "src/components/beginner/tabs/BeginnerVideoTab.tsx"
+      ],
+      "assertionsCount": 25,
+      "scriptCommand": "npm run test:theme-colors-consistency"
+    },
+    {
+      "filename": "verify-tokens-economy.ts",
+      "name": "docs/tokens.md existence and no duplicate in root",
+      "category": "Pipeline Stage 4: Parser & Sentence Splitting",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 9,
+      "scriptCommand": "npm run test:tokens-economy"
+    },
+    {
+      "filename": "verify-top-menu-debug-toggle.ts",
+      "name": "Top menu debug toggle",
+      "category": "Pipeline Stage 4: Parser & Sentence Splitting",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 15,
+      "scriptCommand": "tsx scripts/verify-top-menu-debug-toggle.ts"
+    },
+    {
+      "filename": "verify-top-screen-video-metadata.ts",
+      "name": "Top screen video metadata",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 10,
+      "scriptCommand": "npm run test:top-screen-video-metadata"
+    },
+    {
+      "filename": "verify-tts-language-playback-order.ts",
+      "name": "preference persistence and validation",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/beginner/PerLanguageTtsPreferences.tsx"
+      ],
+      "assertionsCount": 17,
+      "scriptCommand": "npm run test:tts-language-playback-order"
+    },
+    {
+      "filename": "verify-tts-parser-and-fork-apk-release.ts",
+      "name": "Tts parser and fork apk release",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/lib/alternative-tts.ts",
+        "src/routes/index.tsx",
+        "src/components/beginner/BeginnerFlowContainer.tsx",
+        "src/components/beginner/tabs/BeginnerPreferencesTab.tsx"
+      ],
+      "assertionsCount": 22,
+      "scriptCommand": "npm run test:tts-parser-fork-apk"
+    },
+    {
+      "filename": "verify-tts-play-and-mode-switching.ts",
+      "name": "ModeSwitcherHeader controls",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/ModeSwitcherHeader.tsx",
+        "src/components/SubtitleRow.tsx",
+        "src/components/SubtitlesTablePanel.tsx",
+        "src/components/beginner/BeginnerFlowContainer.tsx",
+        "src/components/beginner/BeginnerTabNav.tsx",
+        "src/components/beginner/tabs/BeginnerPlayerTab.tsx"
+      ],
+      "assertionsCount": 36,
+      "scriptCommand": "tsx scripts/verify-tts-play-and-mode-switching.ts"
+    },
+    {
+      "filename": "verify-tts-play-and-table-page-flipping.ts",
+      "name": "verification for TTS Play and Subtitles Table Page Flipping (v1.0.41)",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 31,
+      "scriptCommand": "npm run test:tts-play-and-table-page-flipping"
+    },
+    {
+      "filename": "verify-tts-provider-styling-and-parity.ts",
+      "name": "Advanced Mode Selectors Styling in src/routes/index.tsx",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/beginner/tabs/BeginnerPreferencesTab.tsx"
+      ],
+      "assertionsCount": 15,
+      "scriptCommand": "npm run test:tts-provider-styling-and-parity"
+    },
+    {
+      "filename": "verify-tts-ratio-enforcement.ts",
+      "name": "getLanguageTtsRatio with aliases and dialects",
+      "category": "Pipeline Stage 5: Translation & Multi-Language",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/SubtitleRow.tsx",
+        "src/components/beginner/PerLanguageTtsPreferences.tsx"
+      ],
+      "assertionsCount": 31,
+      "scriptCommand": "npm run test:tts-ratio-enforcement"
+    },
+    {
+      "filename": "verify-tts-service-url-and-direct-google-tts.ts",
+      "name": "Tts service url and direct google tts",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/beginner/BeginnerTtsServiceControl.tsx",
+        "src/components/beginner/tabs/BeginnerPreferencesTab.tsx"
+      ],
+      "assertionsCount": 25,
+      "scriptCommand": "npm run test:tts-service-url-and-direct-google-tts"
+    },
+    {
+      "filename": "verify-tts-subtitles-ratio.ts",
+      "name": "Tts subtitles ratio",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/lib/playback-preferences.ts",
+        "src/utils/appSettings.ts",
+        "src/routes/index.tsx",
+        "src/components/SubtitleRow.tsx",
+        "src/components/SubtitlesTablePanel.tsx"
+      ],
+      "assertionsCount": 103,
+      "scriptCommand": "npm run test:tts-ratio"
+    },
+    {
+      "filename": "verify-tts3-and-short-sentences-parser.ts",
+      "name": "TTS3 endpoint, short complete sentence parsing, on-demand translation guard, and version sync",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts"
+      ],
+      "assertionsCount": 22,
+      "scriptCommand": "npm run test:tts3-and-short-sentences-parser"
+    },
+    {
+      "filename": "verify-type-safety-and-dev-modules.ts",
+      "name": "dev server module loading on port 3000",
+      "category": "Pipeline Stage 4: Parser & Sentence Splitting",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/AiSubtitlePunctuationTab.tsx",
+        "src/components/ApkReleaseModal.tsx",
+        "src/components/LanguageBoxesSelector.tsx",
+        "src/components/NetworkRequestsInspector.tsx",
+        "src/components/VideoLibraryPanel.tsx",
+        "src/components/beginner/BeginnerFlowContainer.tsx",
+        "src/components/beginner/tabs/BeginnerPlayerTab.tsx",
+        "src/components/beginner/tabs/BeginnerPreferencesTab.tsx"
+      ],
+      "assertionsCount": 3,
+      "scriptCommand": "npm run test:type-safety"
+    },
+    {
+      "filename": "verify-ui-languages-and-subtitles-table.ts",
+      "name": "Version >= 2.0.38 across all 5 version targets",
+      "category": "Pipeline Stage 5: Translation & Multi-Language",
+      "targetFiles": [
+        "src/lib/subtitle-fetch-plan.ts",
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/AttemptOrderSettings.tsx",
+        "src/components/FloatingDraggablePauseButton.tsx",
+        "src/components/LanguageBoxesSelector.tsx",
+        "src/components/SubtitleRow.tsx",
+        "src/components/SubtitlesTablePanel.tsx"
+      ],
+      "assertionsCount": 28,
+      "scriptCommand": "npm run test:ui-languages-and-subtitles-table"
+    },
+    {
+      "filename": "verify-undo-three-paths-split.ts",
+      "name": "removal of 3-path portal and preview components",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/ModeSwitcherHeader.tsx"
+      ],
+      "assertionsCount": 3,
+      "scriptCommand": "npm run test:undo-three-paths-split"
+    },
+    {
+      "filename": "verify-unified-languages-table.ts",
+      "name": "presence of single unified languages table element",
+      "category": "Pipeline Stage 6: Multi-Language Alignment Grid",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 20,
+      "scriptCommand": "npm run test:unified-languages-table"
+    },
+    {
+      "filename": "verify-unique-voice-keys.ts",
+      "name": "Unique voice keys",
+      "category": "Pipeline Stage 5: Translation & Multi-Language",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 12,
+      "scriptCommand": "tsx scripts/verify-unique-voice-keys.ts"
+    },
+    {
+      "filename": "verify-v2-version-bump.ts",
+      "name": "V2 version bump",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts"
+      ],
+      "assertionsCount": 10,
+      "scriptCommand": "npm run test:v2-version-bump"
+    },
+    {
+      "filename": "verify-valid-json-cache-guard.ts",
+      "name": "Valid json cache guard",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 14,
+      "scriptCommand": "npm run test:valid-json-cache"
+    },
+    {
+      "filename": "verify-versioning-discrepancy-doc.ts",
+      "name": "Section 5 and Dual-Layer Hybrid Architecture",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 3,
+      "scriptCommand": "npm run test:versioning-discrepancy-doc"
+    },
+    {
+      "filename": "verify-versioning-discrepancy-implementation.ts",
+      "name": "MainActivity.kt Native Android Safeguards",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/components/ApkReleaseModal.tsx",
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 3,
+      "scriptCommand": "npm run test:versioning-discrepancy-implementation"
+    },
+    {
+      "filename": "verify-video-display-control-placement.ts",
+      "name": "Video display control placement",
+      "category": "Pipeline Stage 5: Translation & Multi-Language",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/beginner/BeginnerFlowContainer.tsx",
+        "src/components/beginner/tabs/BeginnerPreferencesTab.tsx",
+        "src/components/beginner/tabs/BeginnerVideoTab.tsx"
+      ],
+      "assertionsCount": 6,
+      "scriptCommand": "npm run test:video-display-controls"
+    },
+    {
+      "filename": "verify-video-id-extraction.ts",
+      "name": "Video id extraction",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 10,
+      "scriptCommand": "npm run test:video-id-extraction"
+    },
+    {
+      "filename": "verify-video-instances-swiper.ts",
+      "name": "Video instances swiper",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/VideoInstancesSwiper.tsx"
+      ],
+      "assertionsCount": 33,
+      "scriptCommand": "npm run test:video-instances-swiper"
+    },
+    {
+      "filename": "verify-video-library.ts",
+      "name": "Video library",
+      "category": "UI Architecture & Mode Parity",
+      "targetFiles": [
+        "src/config/accordionThemes.ts",
+        "src/routes/index.tsx",
+        "src/components/VideoLibraryPanel.tsx"
+      ],
+      "assertionsCount": 25,
+      "scriptCommand": "npm run test:video-library"
+    },
+    {
+      "filename": "verify-video-pause-explanations.ts",
+      "name": "Video pause explanations",
+      "category": "Pipeline Stage 5: Translation & Multi-Language",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/VideoPlaybackControls.tsx"
+      ],
+      "assertionsCount": 18,
+      "scriptCommand": "npm run test:video-pause-explanations"
+    },
+    {
+      "filename": "verify-video-play-fix.ts",
+      "name": "Video play fix",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 18,
+      "scriptCommand": "npm run test:video-play-fix"
+    },
+    {
+      "filename": "verify-video-playback-controls.ts",
+      "name": "Video playback controls",
+      "category": "Pipeline Stage 7: Audio Playback & TTS Synthesis",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/VideoPlaybackControls.tsx"
+      ],
+      "assertionsCount": 21,
+      "scriptCommand": "npm run test:video-controls"
+    },
+    {
+      "filename": "verify-video-playground-enhancements.ts",
+      "name": "Video playground enhancements",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/VideoPlayground.tsx"
+      ],
+      "assertionsCount": 23,
+      "scriptCommand": "npm run test:playground-enhancements"
+    },
+    {
+      "filename": "verify-video-playground-tab.ts",
+      "name": "Video playground tab",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/VideoPlayground.tsx"
+      ],
+      "assertionsCount": 25,
+      "scriptCommand": "npm run test:playground-tab"
+    },
+    {
+      "filename": "verify-video-sharing-favorite-rules.ts",
+      "name": "Video sharing favorite rules",
+      "category": "Pipeline Stage 5: Translation & Multi-Language",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/LanguageBoxesSelector.tsx"
+      ],
+      "assertionsCount": 33,
+      "scriptCommand": "tsx scripts/verify-video-sharing-favorite-rules.ts"
+    },
+    {
+      "filename": "verify-video-switch-table-reset-and-ai-cache.ts",
+      "name": "Video switch table reset and ai cache",
+      "category": "Pipeline Stage 2: Validation & Schema Conformance",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/AiSubtitlePunctuationTab.tsx",
+        "src/components/SubtitlesTablePanel.tsx"
+      ],
+      "assertionsCount": 37,
+      "scriptCommand": "npm run test:video-switch-table-reset-and-ai-cache"
+    },
+    {
+      "filename": "verify-web-demo-design-preservation.ts",
+      "name": "Web demo design preservation",
+      "category": "Pipeline Stage 5: Translation & Multi-Language",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/WebDemoUrlsInput.tsx"
+      ],
+      "assertionsCount": 18,
+      "scriptCommand": "npm run test:design-preservation"
+    },
+    {
+      "filename": "verify-web-demo-subtitles-drawer-hidden-by-default.ts",
+      "name": "Web demo subtitles drawer hidden by default",
+      "category": "System Architecture & Hygiene",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "src/components/LanguageBoxesSelector.tsx",
+        "src/components/WebDemoUrlsInput.tsx"
+      ],
+      "assertionsCount": 10,
+      "scriptCommand": "tsx scripts/verify-web-demo-subtitles-drawer-hidden-by-default.ts"
+    },
+    {
+      "filename": "verify-web-demo-subtitles-urls-input.ts",
+      "name": "Web demo subtitles urls input",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/utils/apkUpdater.ts",
+        "src/utils/appSettings.ts",
+        "src/config/appConfig.ts",
+        "src/routes/index.tsx",
+        "src/components/WebDemoUrlsInput.tsx"
+      ],
+      "assertionsCount": 25,
+      "scriptCommand": "npm run test:web-demo-subtitles-urls"
+    },
+    {
+      "filename": "verify-workflows-alignment.ts",
+      "name": "Workflows alignment",
+      "category": "Pipeline Stage 5: Translation & Multi-Language",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 10,
+      "scriptCommand": "npm run test:workflows"
+    },
+    {
+      "filename": "verify-youtube-docs-and-floating-retry.ts",
+      "name": "server option deprecation annotations and badges",
+      "category": "Pipeline Stage 5: Translation & Multi-Language",
+      "targetFiles": [
+        "src/lib/subtitle-fetch-plan.ts",
+        "src/routes/index.tsx",
+        "src/components/AttemptOrderSettings.tsx",
+        "src/components/FloatingSubtitleRetryIndicator.tsx"
+      ],
+      "assertionsCount": 29,
+      "scriptCommand": "npm run test:youtube-docs-and-floating-retry"
+    },
+    {
+      "filename": "verify-youtube-share-intent.ts",
+      "name": "Youtube share intent",
+      "category": "Android Native Shell & Bridge",
+      "targetFiles": [
+        "src/routes/index.tsx",
+        "android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt"
+      ],
+      "assertionsCount": 15,
+      "scriptCommand": "npm run test:youtube-share-intent"
+    },
+    {
+      "filename": "verify-youtube-translation-indicator.ts",
+      "name": "Youtube translation indicator",
+      "category": "Pipeline Stage 1: Acquisition & Interception",
+      "targetFiles": [
+        "src/routes/index.tsx"
+      ],
+      "assertionsCount": 4,
+      "scriptCommand": "npm run test:youtube-translation-indicator"
+    }
+  ]
+}
