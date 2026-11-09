@@ -6,10 +6,12 @@ This document establishes the lightweight, high-efficiency operational protocol 
 
 ### Current Prompt Routing
 
+- Prompt 135 (Hotfix: Fix React Duplicate Key Error for `pt-BR` & Dev Server Pre-warming TypeScript Failures) [COMPLETED]:
+  - Subtask Hotfix.1: Resolved React duplicate key error (`pt-BR`) in `orderedLangs`, `favoriteLanguages`, `targetLanguages`, `GlobalFavoriteLanguagesPanel`, and `LanguageBoxesSelector`; resolved TypeScript type mismatches for `YTPlayerLike.loadModule`, `panelOrder` typing, and dead code comparisons in `src/routes/index.tsx`; verified with dedicated automated test `scripts/verify-hotfix-duplicate-keys-and-prewarming.ts` and `verify-dev-server-prewarming-hotfix.ts`. Migrated to `docs/done.md`.
 - Prompt 134 (Auto-enable captions before fallback notification & document automation) [COMPLETED]:
   - Task 364: Implemented programmatic caption track triggering via `player.loadModule("captions")` and `setOption("captions", "track", ...)` with a 3.5s quiet grace window before displaying fallback "Captions Required" notification to eliminate noise; authored comprehensive architectural guide in `docs/automation_enable_captions.md`. Verified with `npm run test:auto-enable-captions`.
-- Completed & Migrated to `docs/done.md`. Version synchronized to `v2.1.62` (code `20162`).
-- Active Backlog: Task 359 in [`docs/tasks.md`](tasks.md).
+- Completed & Migrated to `docs/done.md`.
+- Active Backlog: Task 359 in [`docs/tasks.md`](tasks.md) and [`current-sub-task.md`](../current-sub-task.md).
 
 ---
 

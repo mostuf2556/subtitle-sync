@@ -1,6 +1,6 @@
 {
   "name": "subtitle-sync",
-  "version": "2.1.62",
+  "version": "2.1.63",
   "private": true,
   "sideEffects": false,
   "type": "module",
@@ -18,6 +18,7 @@
     "coverage": "npm run test:coverage",
     "sync-version": "tsx scripts/sync-version.ts",
     "check-version": "tsx scripts/sync-version.ts --check",
+    "test:hotfix-duplicate-keys-and-prewarming": "tsx scripts/verify-hotfix-duplicate-keys-and-prewarming.ts",
     "test:speech-interrupted-graceful-handling": "tsx scripts/verify-speech-interrupted-graceful-handling.ts",
     "test:custom-volume-per-translation": "tsx scripts/verify-custom-volume-per-translation.ts",
     "test:subtitles-table-running-index": "tsx scripts/verify-subtitles-table-running-index-first-column.ts",

@@ -1,5 +1,37 @@
 # Done tasks
 
+### Hotfix (Prompt 135): Fix React Duplicate Key Error for pt-BR & Dev Server Pre-warming
+
+- **Prompt**:
+  ```
+  Fix the errors in the app
+  error 0: Pre-warming failed: dev server process died. > subtitle-sync@2.1.62 dev > vite --port 3000 --host 0.0.0.0 VITE v8.1.5 ready in 2275 ms
+  error 1: Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. pt-BR
+  ```
+- **Context & Root Cause**:
+  - **Duplicate Key Error (`pt-BR`)**:
+    - In `orderedLangs` and language selector arrays, case variations (e.g. `pt-br` from URL parameters or lowercased input vs `pt-BR` from catalog) caused multiple entries to resolve to the same normalized `code: "pt-BR"`. When iterating over `orderedLangs` or favorite languages using `key={lang.code}` or `key={code}`, duplicate React keys were produced.
+    - Also in `GlobalFavoriteLanguagesPanel`, `LanguageBoxesSelector`, `BeginnerFavoriteLanguageSelector`, `PerLanguageTtsPreferences`, and `src/routes/index.tsx` (Stage 2 learning languages mapping and Settings favorites), arrays lacked strict deduplication before rendering list children.
+  - **Dev Server Pre-warming Failure**:
+    - Module compilation errors in `src/routes/index.tsx`:
+      1. Missing `loadModule` and `unloadModule` declarations on `YTPlayerLike` and `YTPlayer` types (TS2339).
+      2. Incompatible `panelOrder` state typing (`string[]` instead of `PanelId[]`) causing TS2769 and TS2345.
+      3. Narrowing dead-code comparisons on `currentAccordionStage === 4` and `panelId === "playback" | "library"` causing TS2367.
+      4. Single-line notification mismatch in ratio composition selection.
+- **Implementation**:
+  - Added optional `loadModule?(module: string): void;` and `unloadModule?(module: string): void;` to `YTPlayerLike` in `src/utils/multiVideoPlayerManager.ts` and `YTPlayer` in `src/routes/index.tsx`.
+  - Typed `panelOrder` strictly as `PanelId[]` in `src/routes/index.tsx` and removed conflicting dead-code branch checks.
+  - Fixed `orderedLangs` calculation in `src/routes/index.tsx` using dual deduplication: tracking seen lowercase codes (`meta.code.toLowerCase()`) and filtering final output (`finalSeen.has(item.code)`) guaranteeing 100% unique items and keys.
+  - Enforced `Array.from(new Set(...))` deduplication across `getUserLearningLanguages`, `setUserLearningLanguages`, `getFavoriteLanguages`, and `setFavoriteLanguages` in `src/utils/appSettings.ts`.
+  - Enforced deduplication in `GlobalFavoriteLanguagesPanel.tsx`, `LanguageBoxesSelector.tsx`, `BeginnerFavoriteLanguageSelector.tsx`, and `PerLanguageTtsPreferences.tsx`.
+  - Deduplicated `favoriteLanguages` array in Stage 2 Approved Learning Languages mapping and Settings mapping in `src/routes/index.tsx`.
+  - Synchronized application single source of truth version to `v2.1.63` (`code: 20163`) via `npm run sync-version`.
+- **Testing & Verification**:
+  - Authored dedicated automated test suite `scripts/verify-hotfix-duplicate-keys-and-prewarming.ts` (`npm run test:hotfix-duplicate-keys-and-prewarming`) passing 100%.
+  - Verified `npm run test:dev-server-prewarming-hotfix` passing 100%.
+  - Verified `npm run test:type-safety` (`npx tsc --noEmit` + HTTP 200 module loading on port 3000) passing with 0 errors.
+  - Verified `compile_applet` and `lint_applet` co-executed together with 0 errors.
+
 ### Task 364 (Prompt 134): Programmatic Caption Triggering Before Fallback Notification & Automation Guide
 
 - **Prompt**:

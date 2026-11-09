@@ -19,6 +19,8 @@ export interface YTPlayerLike {
   mute?(): void;
   unMute?(): void;
   isMuted?(): boolean;
+  loadModule?(module: string): void;
+  unloadModule?(module: string): void;
   setOption?(module: string, option: string, value: unknown): void;
   getOption?(module: string, option: string): unknown;
   getIframe?(): HTMLIFrameElement;

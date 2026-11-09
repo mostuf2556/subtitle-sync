@@ -67,9 +67,18 @@ export const PerLanguageTtsPreferences: React.FC<PerLanguageTtsPreferencesProps>
   onVoiceChange,
   onMoveLanguage,
 }) => {
-  const effectivePrimary = primaryLang || languages[0]?.code || "";
-  const primaryLangObj = languages.find((l) => l.code === effectivePrimary);
-  const orderedCodes = languages.map((l) => l.code);
+  const uniqueLanguages = React.useMemo(() => {
+    const seen = new Set<string>();
+    return languages.filter((l) => {
+      if (!l?.code || seen.has(l.code)) return false;
+      seen.add(l.code);
+      return true;
+    });
+  }, [languages]);
+
+  const effectivePrimary = primaryLang || uniqueLanguages[0]?.code || "";
+  const primaryLangObj = uniqueLanguages.find((l) => l.code === effectivePrimary);
+  const orderedCodes = uniqueLanguages.map((l) => l.code);
   const activeVideoBarIndex = getVideoBarIndex(orderedCodes, languageOrders, defaultOrder);
   const handleSetVideoBarPosition = (newIndex: number) => {
     const { sectionOrder: nextSectionOrder, languageOrders: nextLanguageOrders } =
@@ -101,12 +110,12 @@ export const PerLanguageTtsPreferences: React.FC<PerLanguageTtsPreferencesProps>
           <Gauge className="w-4 h-4 text-primary" />
           <h3 className="text-xs font-semibold text-foreground">Per-language TTS settings</h3>
         </div>
-        {languages.length > 1 && onPrimaryLangChange && (
+        {uniqueLanguages.length > 1 && onPrimaryLangChange && (
           <button
             type="button"
             data-testid="tts-switch-roles-button"
             onClick={() => {
-              const other = languages.find((l) => l.code !== effectivePrimary);
+              const other = uniqueLanguages.find((l) => l.code !== effectivePrimary);
               if (other) onPrimaryLangChange(other.code);
             }}
             className="inline-flex items-center gap-1 rounded border border-border bg-background hover:bg-muted px-2 py-0.5 text-[11px] font-medium text-primary transition-colors"
@@ -121,7 +130,7 @@ export const PerLanguageTtsPreferences: React.FC<PerLanguageTtsPreferencesProps>
         relative to the primary language.
       </p>
 
-      {languages.length === 0 ? (
+      {uniqueLanguages.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border p-3 text-xs text-muted-foreground">
           Add a favorite language below to configure its TTS settings.
         </p>
@@ -130,14 +139,14 @@ export const PerLanguageTtsPreferences: React.FC<PerLanguageTtsPreferencesProps>
           {activeVideoBarIndex === 0 && (
             <VideoPlaybackPrecedenceBar
               currentPosition={0}
-              totalRecords={languages.length}
+              totalRecords={uniqueLanguages.length}
               onMoveUp={() => handleSetVideoBarPosition(0)}
               onMoveDown={() => handleSetVideoBarPosition(1)}
               onPlaceAtTop={() => handleSetVideoBarPosition(0)}
-              onPlaceAtBottom={() => handleSetVideoBarPosition(languages.length)}
+              onPlaceAtBottom={() => handleSetVideoBarPosition(uniqueLanguages.length)}
             />
           )}
-          {languages.map((language, index) => {
+          {uniqueLanguages.map((language, index) => {
             const languageVoices = getLanguageVoices(voices, language.tts, true);
             const ratio = getLanguageTtsRatio(ratios, language.code);
             const rate = rates[language.code] ?? 0.5;

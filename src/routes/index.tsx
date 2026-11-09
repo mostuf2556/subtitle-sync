@@ -488,6 +488,8 @@ type YTPlayer = {
   getPlaybackRate?(): number;
   loadVideoById?(videoId: string | { videoId: string; startSeconds?: number }): void;
   cueVideoById?(videoId: string | { videoId: string; startSeconds?: number }): void;
+  loadModule?(module: string): void;
+  unloadModule?(module: string): void;
   setOption?(module: string, option: string, value: unknown): void;
   getOption?(module: string, option: string): unknown;
   getIframe?(): HTMLIFrameElement;
@@ -1127,22 +1129,34 @@ function Index() {
       const urlParams = new URLSearchParams(window.location.search);
       const urlTarget = urlParams.get("target_lang") || urlParams.get("lang");
       if (urlTarget) {
-        const clean = urlTarget.toLowerCase().trim();
-        if (clean && !favs.includes(clean)) {
-          favs = [clean, ...favs];
-          setFavoriteLanguages(favs);
+        const rawTarget = urlTarget.trim();
+        const matched =
+          LANGS.find(
+            (l) =>
+              l.code.toLowerCase() === rawTarget.toLowerCase() ||
+              l.name.toLowerCase() === rawTarget.toLowerCase(),
+          )?.code ||
+          SUPPORTED_LANGUAGES_CATALOG.find(
+            (l) =>
+              l.code.toLowerCase() === rawTarget.toLowerCase() ||
+              l.name.toLowerCase() === rawTarget.toLowerCase(),
+          )?.code ||
+          rawTarget.toLowerCase();
+        if (matched && !favs.some((c) => c.toLowerCase() === matched.toLowerCase())) {
+          favs = [matched, ...favs];
+          setFavoriteLanguages(Array.from(new Set(favs)));
         }
       }
-      if (favs.length > 0) return favs;
+      if (favs.length > 0) return Array.from(new Set(favs));
       const isAndroidEnv =
         Boolean(nativeShell()) ||
         new URLSearchParams(window.location.search).get("android") === "true";
       if (isAndroidEnv) return ["he", "it"];
       const baseDefaults = ["he", "it", "es", "fr", "ru", "ar"];
-      return [...baseDefaults, "pt-BR"];
+      return Array.from(new Set([...baseDefaults, "pt-BR"]));
     }
     const baseDefaults = ["he", "it", "es", "fr", "ru", "ar"];
-    return [...baseDefaults, "pt-BR"];
+    return Array.from(new Set([...baseDefaults, "pt-BR"]));
   };
 
   const getInitialTargetLanguages = (): string[] => {
@@ -1192,13 +1206,25 @@ function Index() {
         }
       }
       if (urlTarget) {
-        const clean = urlTarget.toLowerCase().trim();
-        recordSharedLanguageForVideo(urlVideo, clean);
-        if (clean && !list.includes(clean)) {
-          list.unshift(clean);
+        const rawTarget = urlTarget.trim();
+        const matched =
+          LANGS.find(
+            (l) =>
+              l.code.toLowerCase() === rawTarget.toLowerCase() ||
+              l.name.toLowerCase() === rawTarget.toLowerCase(),
+          )?.code ||
+          SUPPORTED_LANGUAGES_CATALOG.find(
+            (l) =>
+              l.code.toLowerCase() === rawTarget.toLowerCase() ||
+              l.name.toLowerCase() === rawTarget.toLowerCase(),
+          )?.code ||
+          rawTarget.toLowerCase();
+        recordSharedLanguageForVideo(urlVideo, matched);
+        if (matched && !list.some((c) => c.toLowerCase() === matched.toLowerCase())) {
+          list.unshift(matched);
         }
       }
-      return list;
+      return Array.from(new Set(list));
     }
     return [];
   };
@@ -2355,7 +2381,7 @@ function Index() {
           ttsLanguageOrders: comp.ttsLanguageOrders,
         });
       }
-      notifySubtitleFetch("completed", `Applied profile "${comp.name}"`, comp.id);
+      notifySubtitleFetch("completed", `Applied "${comp.name}" ratio composition`, comp.id);
     },
     [baseLanguage, primaryTtsLangState, targetLanguages, videoId],
   );
@@ -3020,7 +3046,7 @@ function Index() {
     }
   };
 
-  const [panelOrder, setPanelOrder] = useState<string[]>(() => PANELS.map((panel) => panel.id));
+  const [panelOrder, setPanelOrder] = useState<PanelId[]>(() => PANELS.map((panel) => panel.id));
   const [subtitlesPanelWide, setSubtitlesPanelWide] = useState(true);
   const [openPanels, setOpenPanels] = useState<Record<PanelId, boolean>>({
     fetchedSubtitles: false,
@@ -4657,9 +4683,9 @@ function Index() {
 
   useEffect(() => {
     setLanguageOrder((prev) => {
-      const targetSet = new Set([...targetLanguages, ...favoriteLanguages]);
+      const targetSet = new Set([...targetLanguages, ...favoriteLanguages].filter(Boolean));
       const remaining = prev.filter((c) => !targetSet.has(c));
-      const next = [...Array.from(targetSet), ...remaining];
+      const next = Array.from(new Set([...Array.from(targetSet), ...remaining]));
       if (prev.length === next.length && prev.every((c, i) => c === next[i])) return prev;
       return next;
     });
@@ -4679,21 +4705,44 @@ function Index() {
       ...(isAndroid ? [] : LANGS.map((l) => l.code)),
     ]);
 
-    const list = languageOrder
-      .filter((code) => activeLanguageCodes.has(code))
-      .map((code) => getLanguageMeta(code));
+    const seenMetaCodes = new Set<string>();
+    const list: Array<{ code: string; name: string; tts: string }> = [];
+
+    // First, map languageOrder preserving its established order
+    languageOrder.forEach((code) => {
+      if (activeLanguageCodes.has(code)) {
+        const meta = getLanguageMeta(code);
+        if (!seenMetaCodes.has(meta.code.toLowerCase())) {
+          seenMetaCodes.add(meta.code.toLowerCase());
+          list.push(meta);
+        }
+      }
+    });
 
     // Append any active languages not yet present in languageOrder
     activeLanguageCodes.forEach((code) => {
-      if (!list.some((l) => l.code === code)) {
-        list.push(getLanguageMeta(code));
+      const meta = getLanguageMeta(code);
+      if (!seenMetaCodes.has(meta.code.toLowerCase())) {
+        seenMetaCodes.add(meta.code.toLowerCase());
+        list.push(meta);
       }
     });
 
     // Keep clicked / selected favorite languages strictly on top
-    const selected = list.filter((l) => targetLanguages.includes(l.code));
-    const unselected = list.filter((l) => !targetLanguages.includes(l.code));
-    return [...selected, ...unselected];
+    const targetSet = new Set(targetLanguages.map((c) => c.toLowerCase()));
+    const selected = list.filter((l) => targetSet.has(l.code.toLowerCase()));
+    const unselected = list.filter((l) => !targetSet.has(l.code.toLowerCase()));
+
+    // Ensure 100% strict deduplication of keys before returning
+    const finalSeen = new Set<string>();
+    const finalResult: typeof list = [];
+    for (const item of [...selected, ...unselected]) {
+      if (!finalSeen.has(item.code)) {
+        finalSeen.add(item.code);
+        finalResult.push(item);
+      }
+    }
+    return finalResult;
   }, [
     isAndroid,
     languageOrder,
@@ -7915,29 +7964,13 @@ function Index() {
 
               <div className="grid items-start gap-4 p-4 md:p-6 lg:grid-cols-2">
                 {panelOrder
-                  .filter((panelId: PanelId) => {
+                  .filter((panelId) => {
                     // Special Characters Removal and Parser are now nested directly under Settings (playback)
-                    if (panelId === "chars" + "Removal" || panelId === "par" + "ser") return false;
+                    if (panelId === "charsRemoval" || panelId === "parser") return false;
 
-                    // Video player panel must be strictly restricted to Stage 3 (video stage)
-                    if (panelId === "player") {
-                      return currentAccordionStage === 3;
-                    }
-
-                    // Stage 4: Settings should appear ONLY on its own stage
-                    if (currentAccordionStage === 4) {
-                      return panelId === "playback" || panelId === "library";
-                    }
-
-                    // On Stages 0, 1, 2, 3: Settings never appears
+                    // Stage 4: Settings & Library appear on Stage 4, or if showOtherSettingsAccordions is true
                     if (panelId === "playback" || panelId === "library") {
-                      return false;
-                    }
-
-                    if (showOtherSettingsAccordions) {
-                      if (currentAccordionStage === 4) {
-                        return panelId === "playback" || panelId === "library";
-                      }
+                      return currentAccordionStage === 4 || showOtherSettingsAccordions;
                     }
 
                     // Strict stage isolation: each main stage's component appears ONLY on its stage
@@ -7955,7 +7988,7 @@ function Index() {
                     }
                     return false;
                   })
-                  .map((panelId: PanelId, panelIndex) => {
+                  .map((panelId, panelIndex) => {
                     const panel = PANELS.find((candidate) => candidate.id === panelId);
                     if (!panel) return null;
                     const panelTitle =
@@ -9445,7 +9478,7 @@ function Index() {
                                           No favorites selected yet
                                         </span>
                                       ) : (
-                                        favoriteLanguages.map((code) => {
+                                        Array.from(new Set(favoriteLanguages)).map((code) => {
                                           const langMeta = SUPPORTED_LANGUAGES_CATALOG.find(
                                             (c) => c.code === code,
                                           ) || { code, name: code };
@@ -10520,7 +10553,7 @@ function Index() {
                                   </div>
                                   <div className="flex flex-col space-y-1 max-h-48 overflow-y-auto divide-y divide-border/40 border border-border/50 rounded-md bg-background/60 p-1">
                                     {(favoriteLanguages.length > 0
-                                      ? favoriteLanguages
+                                      ? Array.from(new Set(favoriteLanguages))
                                       : ["en", "es", "he", "ar", "fr", "de", "it", "ru", "pt"]
                                     ).map((code) => {
                                       const isSelected = targetLanguages.includes(code);

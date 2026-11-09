@@ -21,19 +21,28 @@ export function GlobalFavoriteLanguagesPanel({
   onSaveCurrentSelectionAsFavorites,
 }: GlobalFavoriteLanguagesPanelProps) {
   const [filter, setFilter] = useState("");
-  const availableLanguages = catalog.filter((language) => {
-    if (favoriteLanguages.includes(language.code)) return false;
-    const query = filter.trim().toLowerCase();
-    return (
-      !query ||
-      language.name.toLowerCase().includes(query) ||
-      language.code.toLowerCase().includes(query)
-    );
-  });
+  const uniqueFavorites = React.useMemo(() => {
+    return Array.from(new Set((favoriteLanguages || []).filter(Boolean)));
+  }, [favoriteLanguages]);
+
+  const availableLanguages = React.useMemo(() => {
+    const seen = new Set<string>();
+    const favSet = new Set(uniqueFavorites);
+    return catalog.filter((language) => {
+      if (!language?.code || favSet.has(language.code) || seen.has(language.code)) return false;
+      seen.add(language.code);
+      const query = filter.trim().toLowerCase();
+      return (
+        !query ||
+        language.name.toLowerCase().includes(query) ||
+        language.code.toLowerCase().includes(query)
+      );
+    });
+  }, [catalog, uniqueFavorites, filter]);
 
   const handleAddLanguage = (code: string) => {
-    if (code && !favoriteLanguages.includes(code)) {
-      onFavoriteLanguagesChange([...favoriteLanguages, code]);
+    if (code && !uniqueFavorites.includes(code)) {
+      onFavoriteLanguagesChange([...uniqueFavorites, code]);
       setFilter("");
     }
   };
@@ -71,10 +80,10 @@ export function GlobalFavoriteLanguagesPanel({
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5" aria-label="Global favorite languages">
-        {favoriteLanguages.length === 0 ? (
+        {uniqueFavorites.length === 0 ? (
           <span className="text-[11px] text-muted-foreground italic">No favorites selected</span>
         ) : (
-          favoriteLanguages.map((code) => {
+          uniqueFavorites.map((code) => {
             const language = catalog.find((item) => item.code === code) ?? {
               code,
               name: code.toUpperCase(),
@@ -89,7 +98,7 @@ export function GlobalFavoriteLanguagesPanel({
                 <button
                   type="button"
                   onClick={() =>
-                    onFavoriteLanguagesChange(favoriteLanguages.filter((item) => item !== code))
+                    onFavoriteLanguagesChange(uniqueFavorites.filter((item) => item !== code))
                   }
                   title={`Remove ${language.name} from favorites`}
                   aria-label={`Remove ${language.name} from favorites`}

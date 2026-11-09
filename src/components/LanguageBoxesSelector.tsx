@@ -100,13 +100,24 @@ export const LanguageBoxesSelector: React.FC<LanguageBoxesSelectorProps> = ({
 
     const selected = filtered.filter((l) => selectedLanguages.includes(l.code));
     const unselected = filtered.filter((l) => !selectedLanguages.includes(l.code));
-    return [...selected, ...unselected];
+    const combined = [...selected, ...unselected];
+    const seen = new Set<string>();
+    return combined.filter((l) => {
+      if (!l?.code || seen.has(l.code)) return false;
+      seen.add(l.code);
+      return true;
+    });
   }, [catalog, effectiveCatalog, selectedLanguages, searchFilter]);
 
   // List of catalog languages without the saved/favorite languages
   const catalogWithoutFavorites = useMemo(() => {
-    if (!favoriteLanguages || favoriteLanguages.length === 0) return catalog;
-    return catalog.filter((l) => !favoriteLanguages.includes(l.code));
+    const seen = new Set<string>();
+    const favSet = new Set(favoriteLanguages || []);
+    return catalog.filter((l) => {
+      if (!l?.code || favSet.has(l.code) || seen.has(l.code)) return false;
+      seen.add(l.code);
+      return true;
+    });
   }, [catalog, favoriteLanguages]);
 
   const toggleLanguage = (code: string) => {

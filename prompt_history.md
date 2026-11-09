@@ -1687,7 +1687,14 @@ error 1: 11:36:05 PM [vite] (client) hmr update /src/styles.css, /src/components
  describe how triggering caption is achived without using the native youtube caption icon  on automation_enable_captions.md
 ```
 
+---
 
-
-
-
+### Prompt 135: Fix the errors in the app (Dev server pre-warming & duplicate pt-BR key)
+```
+Fix the errors in the app
+[AIS_METADATA_SECTION_START]
+fix_it_trigger: manual
+error 0: Pre-warming failed: dev server process died. > subtitle-sync@2.1.62 dev > vite --port 3000 --host 0.0.0.0 VITE v8.1.5  ready in 2275 ms ➜  Local:   http://localhost:3000/ ➜  Network: http://169.254.8.1:3000/ ➜  Network: http://169.254.9.1:3000/ ➜  Network: http://169.254.169.1:3000/
+error 1: Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. pt-BR
+[AIS_METADATA_SECTION_END]
+```

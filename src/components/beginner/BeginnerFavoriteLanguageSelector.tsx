@@ -55,8 +55,10 @@ export const BeginnerFavoriteLanguageSelector: React.FC<BeginnerFavoriteLanguage
   catalog = SUPPORTED_LANGUAGES_CATALOG,
   className = "",
 }) => {
-  const languages =
-    favoriteLanguages.length > 0 ? favoriteLanguages : catalog.slice(0, 8).map((l) => l.code);
+  const languages = React.useMemo(() => {
+    const raw = favoriteLanguages.length > 0 ? favoriteLanguages : catalog.slice(0, 8).map((l) => l.code);
+    return Array.from(new Set(raw.filter(Boolean)));
+  }, [favoriteLanguages, catalog]);
 
   const toggleLanguage = (langCode: string) => {
     if (!onSelectionChange) return;
