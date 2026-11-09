@@ -4,11 +4,17 @@ This file is strictly the active backlog containing pending, active, and upcomin
 
 ## Active Tasks
 
-- [ ] **Task 359 (Prompt 126): Dedicated Learning Stage with Punchable Word Balloons Exposing Translation**
-  - [ ] Subtask 359.1: Create dedicated component `src/components/WordBalloonLearningView.tsx` with floating balloon styling, punch/pop animations, Web Audio pop sound effect, word translation exposure, score tracking, TTS pronunciation, and sentence navigation.
+- [ ] **Task 359 (Prompt 135 - Chapter 1): Dedicated Learning Stage with Punchable Word Balloons Exposing Translation**
+  - [x] Subtask 359.1: Create dedicated component `src/components/WordBalloonLearningView.tsx` with floating balloon styling, punch/pop animations, Web Audio pop sound effect, word translation exposure, score tracking, TTS pronunciation, and sentence navigation.
   - [ ] Subtask 359.2: Integrate the dedicated learning stage (Stage 5 "Word Balloons Learning" / `#stage-step-learning`) in `src/routes/index.tsx` stage stepper, and add a toggle button in `video-display-controls` to switch between Video player and Word Balloon Learning view instead of the video player.
   - [ ] Subtask 359.3: Ensure 100% parity in Beginner Mode (`BeginnerVideoTab.tsx` / `BeginnerFlowContainer.tsx`) with toggle in `video-display-controls` to view Word Balloons Learning instead of the video player.
   - [ ] Subtask 359.4: Add dedicated automated test `scripts/verify-word-balloon-learning-stage.ts` (`npm run test:word-balloon-learning`), bump version, compile, lint, commit, and migrate Task 359 to `docs/done.md`.
+
+- [ ] **Task 365 (Prompt 135 - Chapter 2): Allow Switching Between Subtitle Table Display/Update Using 1 Table or Multiple Tables**
+  - [ ] Subtask 365.1: Add `tableDisplayMode` state (`"single"` | `"multiple"`) with persistent storage in playback preferences and settings.
+  - [ ] Subtask 365.2: Enhance `SubtitlesTablePanel.tsx` with toggle control (`1 Table` vs `Multiple Tables`), and implement the multi-table view rendering separate distinct `<table>` elements for each language track, synchronizing rows, time display, index, seeking on click, and speech highlights across all tables.
+  - [ ] Subtask 365.3: Ensure 100% parity across Advanced Mode (`src/routes/index.tsx`) and Beginner Mode (`BeginnerVideoTab.tsx`).
+  - [ ] Subtask 365.4: Add dedicated automated test `scripts/verify-single-vs-multiple-subtitles-tables.ts` (`npm run test:single-vs-multiple-tables`), bump version, compile, lint, commit, and migrate Task 365 to `docs/done.md`.
 
 ## Later Tasks
 

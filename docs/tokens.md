@@ -13,6 +13,10 @@ This document establishes the lightweight, high-efficiency operational protocol 
   - Subtask Hotfix.1: Resolved React duplicate key error (`pt-BR`) in `orderedLangs`, `favoriteLanguages`, `targetLanguages`, `GlobalFavoriteLanguagesPanel`, and `LanguageBoxesSelector`; resolved TypeScript type mismatches for `YTPlayerLike.loadModule`, `panelOrder` typing, and dead code comparisons in `src/routes/index.tsx`; verified with dedicated automated test `scripts/verify-hotfix-duplicate-keys-and-prewarming.ts` and `verify-dev-server-prewarming-hotfix.ts`. Migrated to `docs/done.md`.
 - Completed & Migrated to `docs/done.md`.
 - Active Backlog: Task 359 in [`docs/tasks.md`](tasks.md) and [`current-sub-task.md`](../current-sub-task.md).
+- Prompt 135 (Serial Execution: Chapter 1 "go on" -> Complete Task 359, then Chapter 2 -> Task 365 Switch between 1 table or multiple tables) [ACTIVE]:
+  - Task 359 (Chapter 1): Complete dedicated learning stage with punchable word balloons exposing translation in `src/routes/index.tsx`, `BeginnerVideoTab.tsx`, and test verification.
+  - Task 365 (Chapter 2): Allow switching between updating/rendering 1 table vs multiple tables.
+- Active Backlog: Task 359 and Task 365 in [`docs/tasks.md`](tasks.md).
 
 ---
 

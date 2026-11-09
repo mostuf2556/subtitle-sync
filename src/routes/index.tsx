@@ -3133,7 +3133,8 @@ function Index() {
   // Stage 2: Subtitles table view accordion (reactive to default subtitle / translation source).
   // Stage 3: Video & playback synchronized view.
   // Stage 4: Toggle via settings icon to present all other accordion elements.
-  const [currentAccordionStage, setCurrentAccordionStage] = useState<0 | 1 | 2 | 3 | 4>(() => {
+  // Stage 5: Dedicated Word Balloons Learning stage.
+  const [currentAccordionStage, setCurrentAccordionStage] = useState<0 | 1 | 2 | 3 | 4 | 5>(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const stageParam = params.get("stage");
@@ -3142,6 +3143,7 @@ function Index() {
       if (stageParam === "2") return 2;
       if (stageParam === "3") return 3;
       if (stageParam === "4" || stageParam === "settings") return 4;
+      if (stageParam === "5" || stageParam === "learning") return 5;
       if (params.get("all_stages") === "true") return 4;
     }
     return 1;
@@ -3177,6 +3179,10 @@ function Index() {
     } else if (currentAccordionStage === 4) {
       setOpenPanels((prev) => ({ ...prev, playback: true, library: true }));
       setShowOtherSettingsAccordions(true);
+    } else if (currentAccordionStage === 5) {
+      setOpenPanels((prev) => ({ ...prev, player: true }));
+      setShowOtherSettingsAccordions(false);
+      setShowWordBalloonLearningView(true);
     }
   }, [currentAccordionStage]);
 
@@ -4816,6 +4822,7 @@ function Index() {
   }, []);
 
   const [useWordBalloonLearningView, setUseWordBalloonLearningView] = useState<boolean>(() => {
+  const [showWordBalloonLearningView, setShowWordBalloonLearningView] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
       try {
         return localStorage.getItem("subtitle_sync_word_balloon_learning_view") === "true";
@@ -4828,6 +4835,7 @@ function Index() {
 
   const handleToggleWordBalloonLearningView = useCallback(() => {
     setUseWordBalloonLearningView((prev) => {
+    setShowWordBalloonLearningView((prev) => {
       const next = !prev;
       if (typeof window !== "undefined") {
         try {
@@ -7254,6 +7262,7 @@ function Index() {
             useAlternativePlayerView={useAlternativePlayerView}
             onToggleAlternativePlayerView={handleToggleAlternativePlayerView}
             useWordBalloonLearningView={useWordBalloonLearningView}
+            showWordBalloonLearningView={showWordBalloonLearningView}
             onToggleWordBalloonLearningView={handleToggleWordBalloonLearningView}
             isVideoFullscreen={isVideoFullscreen}
             onToggleFullscreen={handleToggleFullscreen}
@@ -7267,11 +7276,13 @@ function Index() {
                   ref={handlePlayerRef}
                   className={
                     useWordBalloonLearningView || useAlternativePlayerView
+                    useAlternativePlayerView || showWordBalloonLearningView
                       ? "absolute inset-0 opacity-0 pointer-events-none -z-10"
                       : "h-full w-full"
                   }
                 />
                 {useWordBalloonLearningView ? (
+                {showWordBalloonLearningView ? (
                   <WordBalloonLearningView
                     currentSentence={currentAlternativeSentence}
                     baseLanguage={baseLanguage}
@@ -7282,11 +7293,18 @@ function Index() {
                     availableTargetLanguages={availableAlternativeTtsLanguages}
                     onSelectTargetLanguage={setSelectedAlternativeTtsLang}
                     activeRowIndex={active}
+                    targetLanguage={currentTtsPlayLang || targetLanguages[0] || "he"}
+                    targetLanguageName={currentTtsPlayLangName || "Target"}
+                    targetTranslation={currentAlternativeTranslation}
+                    availableTargetLanguages={availableAlternativeTtsLanguages}
+                    onSelectTargetLanguage={setSelectedAlternativeTtsLang}
+                    activeRowIndex={active >= 0 ? active : 0}
                     totalRows={rows.length}
                     onPrevSentence={handlePrevSection}
                     onNextSentence={handleNextSection}
                     onReplaySentence={handleReplaySection}
                     onCloseLearningView={() => setUseWordBalloonLearningView(false)}
+                    onCloseLearningView={() => setShowWordBalloonLearningView(false)}
                     onSpeakText={handleSpeakTextFromAlternativeView}
                   />
                 ) : useAlternativePlayerView ? (
@@ -8021,6 +8039,20 @@ function Index() {
                     >
                       <Sparkles className="h-3.5 w-3.5 text-amber-400" />
                       <span>5. Balloons Learning</span>
+                        setCurrentAccordionStage(5);
+                        setShowWordBalloonLearningView(true);
+                        setOpenPanels((prev) => ({ ...prev, player: true }));
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                        currentAccordionStage === 5
+                          ? "bg-primary text-primary-foreground shadow"
+                          : "bg-muted/70 hover:bg-muted text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <span className="h-4 w-4 rounded-full bg-background/20 flex items-center justify-center text-[10px] font-bold">
+                        5
+                      </span>
+                      <span>Word Balloons</span>
                     </button>
                   </div>
 
@@ -8039,6 +8071,17 @@ function Index() {
                     }
 
                     // Stage 4: Settings & Library appear on Stage 4, or if showOtherSettingsAccordions is true
+                    // Video player panel must be strictly restricted to Stage 3 (video stage) or Stage 5 (learning stage)
+                    if (panelId === "player") {
+                      return currentAccordionStage === 3 || currentAccordionStage === 5;
+                    }
+
+                    // Stage 4: Settings should appear ONLY on its own stage
+                    if (currentAccordionStage === 4) {
+                      return panelId === "playback" || panelId === "library";
+                    }
+
+                    // On Stages 0, 1, 2, 3, 5: Settings never appears
                     if (panelId === "playback" || panelId === "library") {
                       return currentAccordionStage === 4;
                     }
@@ -8053,7 +8096,7 @@ function Index() {
                     if (currentAccordionStage === 2) {
                       return panelId === "subtitles";
                     }
-                    if (currentAccordionStage === 3) {
+                    if (currentAccordionStage === 3 || currentAccordionStage === 5) {
                       return panelId === "player";
                     }
                     return false;

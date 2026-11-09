@@ -45,6 +45,7 @@ export interface BeginnerFlowContainerProps {
   useAlternativePlayerView?: boolean;
   onToggleAlternativePlayerView?: () => void;
   useWordBalloonLearningView?: boolean;
+  showWordBalloonLearningView?: boolean;
   onToggleWordBalloonLearningView?: () => void;
   onTtsSpeedChange?: (speed: number) => void;
   onTtsVoiceChange?: (voiceURI: string) => void;
@@ -95,6 +96,7 @@ export const BeginnerFlowContainer: React.FC<BeginnerFlowContainerProps> = ({
   useAlternativePlayerView,
   onToggleAlternativePlayerView,
   useWordBalloonLearningView,
+  showWordBalloonLearningView,
   onToggleWordBalloonLearningView,
   onTtsSpeedChange,
   onTtsVoiceChange,
@@ -224,6 +226,7 @@ export const BeginnerFlowContainer: React.FC<BeginnerFlowContainerProps> = ({
             useAlternativePlayerView={useAlternativePlayerView}
             onToggleAlternativePlayerView={onToggleAlternativePlayerView}
             useWordBalloonLearningView={useWordBalloonLearningView}
+            showWordBalloonLearningView={showWordBalloonLearningView}
             onToggleWordBalloonLearningView={onToggleWordBalloonLearningView}
             isVideoFullscreen={isVideoFullscreen}
             onToggleFullscreen={onToggleFullscreen}

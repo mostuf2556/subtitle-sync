@@ -1689,6 +1689,13 @@ error 1: 11:36:05 PM [vite] (client) hmr update /src/styles.css, /src/components
 
 ---
 
+### Prompt 135: Continue Task and Allow Switch Between 1 Table or Multiple Tables
+```
+1. go on.
+2. allow to switch between update using 1 table or multipe tables
+```
+
+
 ### Prompt 135: Fix the errors in the app (Dev server pre-warming & duplicate pt-BR key)
 ```
 Fix the errors in the app
