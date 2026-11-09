@@ -150,6 +150,7 @@ import {
 import { SpecialCharactersRemovalPanel } from "@/components/SpecialCharactersRemovalPanel";
 import { BeginnerCharsRemovalAccordion } from "@/components/beginner/BeginnerCharsRemovalAccordion";
 import { AlternativeVideoPlayerView } from "@/components/AlternativeVideoPlayerView";
+import { WordBalloonLearningView } from "@/components/WordBalloonLearningView";
 import {
   getAppStateFromUrl,
   syncAppStateToUrl,
@@ -4814,6 +4815,31 @@ function Index() {
     });
   }, []);
 
+  const [useWordBalloonLearningView, setUseWordBalloonLearningView] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return localStorage.getItem("subtitle_sync_word_balloon_learning_view") === "true";
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  });
+
+  const handleToggleWordBalloonLearningView = useCallback(() => {
+    setUseWordBalloonLearningView((prev) => {
+      const next = !prev;
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("subtitle_sync_word_balloon_learning_view", String(next));
+        } catch {
+          // ignore storage error
+        }
+      }
+      return next;
+    });
+  }, []);
+
   const [isVideoFullscreen, setIsVideoFullscreen] = useState<boolean>(false);
 
   useEffect(() => {
@@ -7227,6 +7253,8 @@ function Index() {
             onToggleVideoSubtitles={handleToggleVideoSubtitles}
             useAlternativePlayerView={useAlternativePlayerView}
             onToggleAlternativePlayerView={handleToggleAlternativePlayerView}
+            useWordBalloonLearningView={useWordBalloonLearningView}
+            onToggleWordBalloonLearningView={handleToggleWordBalloonLearningView}
             isVideoFullscreen={isVideoFullscreen}
             onToggleFullscreen={handleToggleFullscreen}
             playerSlot={
@@ -7238,12 +7266,30 @@ function Index() {
                 <div
                   ref={handlePlayerRef}
                   className={
-                    useAlternativePlayerView
+                    useWordBalloonLearningView || useAlternativePlayerView
                       ? "absolute inset-0 opacity-0 pointer-events-none -z-10"
                       : "h-full w-full"
                   }
                 />
-                {useAlternativePlayerView ? (
+                {useWordBalloonLearningView ? (
+                  <WordBalloonLearningView
+                    currentSentence={currentAlternativeSentence}
+                    baseLanguage={baseLanguage}
+                    baseLanguageName={baseLanguageName}
+                    targetLanguage={currentTtsPlayLang}
+                    targetLanguageName={currentTtsPlayLangName}
+                    targetTranslation={currentAlternativeTranslation}
+                    availableTargetLanguages={availableAlternativeTtsLanguages}
+                    onSelectTargetLanguage={setSelectedAlternativeTtsLang}
+                    activeRowIndex={active}
+                    totalRows={rows.length}
+                    onPrevSentence={handlePrevSection}
+                    onNextSentence={handleNextSection}
+                    onReplaySentence={handleReplaySection}
+                    onCloseLearningView={() => setUseWordBalloonLearningView(false)}
+                    onSpeakText={handleSpeakTextFromAlternativeView}
+                  />
+                ) : useAlternativePlayerView ? (
                   <AlternativeVideoPlayerView
                     currentSentence={currentAlternativeSentence}
                     baseLanguage={baseLanguage}
@@ -7956,6 +8002,26 @@ function Index() {
                       </span>
                       <span>Settings</span>
                     </button>
+                    <button
+                      type="button"
+                      id="stage-step-learning"
+                      data-testid="stage-step-learning"
+                      onClick={() => {
+                        setShowOtherSettingsAccordions(false);
+                        setCurrentAccordionStage(3);
+                        setUseWordBalloonLearningView(true);
+                        setOpenPanels((prev) => ({ ...prev, player: true }));
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                        currentAccordionStage === 3 && useWordBalloonLearningView
+                          ? "bg-indigo-600 text-white shadow"
+                          : "bg-muted/70 hover:bg-muted text-muted-foreground hover:text-foreground"
+                      }`}
+                      title="Open dedicated Word Balloons Learning stage"
+                    >
+                      <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                      <span>5. Balloons Learning</span>
+                    </button>
                   </div>
 
                   <div className="flex items-center gap-2" />
@@ -7968,9 +8034,13 @@ function Index() {
                     // Special Characters Removal and Parser are now nested directly under Settings (playback)
                     if (panelId === "charsRemoval" || panelId === "parser") return false;
 
+                    if (showOtherSettingsAccordions) {
+                      if (panelId === "playback" || panelId === "library") return true;
+                    }
+
                     // Stage 4: Settings & Library appear on Stage 4, or if showOtherSettingsAccordions is true
                     if (panelId === "playback" || panelId === "library") {
-                      return currentAccordionStage === 4 || showOtherSettingsAccordions;
+                      return currentAccordionStage === 4;
                     }
 
                     // Strict stage isolation: each main stage's component appears ONLY on its stage
@@ -8145,12 +8215,30 @@ function Index() {
                                         <div
                                           ref={handlePlayerRef}
                                           className={
-                                            useAlternativePlayerView
+                                            useWordBalloonLearningView || useAlternativePlayerView
                                               ? "absolute inset-0 opacity-0 pointer-events-none -z-10"
                                               : "h-full w-full"
                                           }
                                         />
-                                        {useAlternativePlayerView ? (
+                                        {useWordBalloonLearningView ? (
+                                          <WordBalloonLearningView
+                                            currentSentence={currentAlternativeSentence}
+                                            baseLanguage={baseLanguage}
+                                            baseLanguageName={baseLanguageName}
+                                            targetLanguage={currentTtsPlayLang}
+                                            targetLanguageName={currentTtsPlayLangName}
+                                            targetTranslation={currentAlternativeTranslation}
+                                            availableTargetLanguages={availableAlternativeTtsLanguages}
+                                            onSelectTargetLanguage={setSelectedAlternativeTtsLang}
+                                            activeRowIndex={active}
+                                            totalRows={rows.length}
+                                            onPrevSentence={handlePrevSection}
+                                            onNextSentence={handleNextSection}
+                                            onReplaySentence={handleReplaySection}
+                                            onCloseLearningView={() => setUseWordBalloonLearningView(false)}
+                                            onSpeakText={handleSpeakTextFromAlternativeView}
+                                          />
+                                        ) : useAlternativePlayerView ? (
                                           <AlternativeVideoPlayerView
                                             currentSentence={currentAlternativeSentence}
                                             baseLanguage={baseLanguage}
@@ -8373,6 +8461,19 @@ function Index() {
                               >
                                 <Subtitles className="h-3.5 w-3.5" />
                                 {useAlternativePlayerView ? "Video view" : "Alternative view"}
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant={useWordBalloonLearningView ? "default" : "outline"}
+                                aria-pressed={useWordBalloonLearningView}
+                                data-testid="toggle-word-balloon-learning-view-btn"
+                                onClick={handleToggleWordBalloonLearningView}
+                                className="h-7 gap-1.5 px-2.5 text-xs border-amber-500/40 text-amber-600 dark:text-amber-400"
+                                title="Switch between video player and interactive word balloon learning view"
+                              >
+                                <Sparkles className="h-3.5 w-3.5" />
+                                {useWordBalloonLearningView ? "Video view" : "Balloons Learning"}
                               </Button>
                               <Button
                                 type="button"
