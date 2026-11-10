@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Download, Upload, Copy, Check, AlertCircle, X, Settings2 } from "lucide-react";
 import { Button } from "./ui/button";
 import {
@@ -26,7 +26,7 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
   const [copied, setCopied] = useState<boolean>(false);
   const [importStatus, setImportStatus] = useState<ImportSettingsResult | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isOpen) {
       setActiveTab(initialTab);
       if (initialTab === "export") {

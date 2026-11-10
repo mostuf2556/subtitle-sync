@@ -1733,3 +1733,49 @@ fix github pages deployment and README.md links
 4. subtitles-table - add toggle which allow to highlight the part-sentence vs the current state where it filters out based on sentence-part&char-length.
 ```
 
+---
+
+### Prompt 141: Fix Errors in the App (Vite Reload, Module Exports & React Hook Dispatcher Synchronization)
+```
+Fix the errors in the app
+[AIS_METADATA_SECTION_START]
+fix_it_trigger: manual
+error 0: [vite] SyntaxError: The requested module '/src/lib/playback-preferences.ts' does not provide an export named 'getTableDisplayModePreference'
+error 1: [vite] Failed to reload /src/components/SubtitlesTablePanel.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above)
+error 2: [vite] SyntaxError: The requested module '/src/lib/playback-preferences.ts' does not provide an export named 'getLanguageTtsVolume'
+error 3: [vite] Failed to reload /src/routes/index.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above)
+error 4: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://react.dev/link/invalid-hook-call for tips about how to debug and fix this problem.
+error 5: [APP_BOOT_ERROR] Router rendered ErrorComponent: This page didn't load Cannot read properties of null (reading 'useState')
+error 6: [APP_PAGE_ERROR] This page didn't load: Cannot read properties of null (reading 'useState')
+error 7: TypeError: Cannot read properties of null (reading 'useState')
+    at exports.useState (https://ais-dev-a3mdfqx4p5mgzs5uev4uj6-82169901332.europe-west3.run.app/node_modules/.vite/deps/react.js?v=0367ac0b:769:30)
+    at SettingsBackupModal (https://ais-dev-a3mdfqx4p5mgzs5uev4uj6-82169901332.europe-west3.run.app/src/components/SettingsBackupModal.tsx?t=1794273442735:10:36)
+    at Object.react_stack_bottom_frame (https://ais-dev-a3mdfqx4p5mgzs5uev4uj6-82169901332.europe-west3.run.app/node_modules/.vite/deps/react-dom_client.js?v=996814eb:14140:12)
+    at renderWithHooks (https://ais-dev-a3mdfqx4p5mgzs5uev4uj6-82169901332.europe-west3.run.app/node_modules/.vite/deps/react-dom_client.js?v=996814eb:4398:19)
+    at updateFunctionComponent (https://ais-dev-a3mdfqx4p5mgzs5uev4uj6-82169901332.europe-west3.run.app/node_modules/.vite/deps/react-dom_client.js?v=996814eb:5773:16)
+    at beginWork (https://ais-dev-a3mdfqx4p5mgzs5uev4uj6-82169901332.europe-west3.run.app/node_modules/.vite/deps/react-dom_client.js?v=996814eb:6389:20)
+    at runWithFiberInDEV (https://ais-dev-a3mdfqx4p5mgzs5uev4uj6-82169901332.europe-west3.run.app/node_modules/.vite/deps/react-dom_client.js?v=996814eb:943:66)
+    at performUnitOfWork (https://ais-dev-a3mdfqx4p5mgzs5uev4uj6-82169901332.europe-west3.run.app/node_modules/.vite/deps/react-dom_client.js?v=996814eb:9146:92)
+    at workLoopSync (https://ais-dev-a3mdfqx4p5mgzs5uev4uj6-82169901332.europe-west3.run.app/node_modules/.vite/deps/react-dom_client.js?v=99681
+    ... [stack truncated]
+error 8: %o
+
+%s
+
+%s TypeError: Cannot read properties of null (reading 'useState')
+    at exports.useState (https://ais-dev-a3mdfqx4p5mgzs5uev4uj6-82169901332.europe-west3.run.app/node_modules/.vite/deps/react.js?v=0367ac0b:769:30)
+    at SettingsBackupModal (https://ais-dev-a3mdfqx4p5mgzs5uev4uj6-82169901332.europe-west3.run.app/src/components/SettingsBackupModal.tsx?t=1794273442735:10:36)
+    at Object.react_stack_bottom_frame (https://ais-dev-a3mdfqx4p5mgzs5uev4uj6-82169901332.europe-west3.run.app/node_modules/.vite/deps/react-dom_client.js?v=996814eb:14140:12)
+    at renderWithHooks (https://ais-dev-a3mdfqx4p5mgzs5uev4uj6-82169901332.europe-west3.run.app/node_modules/.vite/deps/react-dom_client.js?v=996814eb:4398:19)
+    at updateFunctionComponent (https://ais-dev-a3mdfqx4p5mgzs5uev4uj6-82169901332.europe-west3.run.app/node_modules/.vite/deps/react-dom_client.js?v=996814eb:5773:16)
+    at beginWork (https://ais-dev-a3mdfqx4p5mgzs5uev4uj6-82169901332.europe-west3.run.app/node_modules/.vite/deps/react-dom_client.js?v=996814eb:6389:20)
+    at runWithFiberInDEV (https://ais-dev-a3mdfqx4p5mgzs5uev4uj6-82169901332.europe-west3.run.app/node_modules/.vite/deps/react-dom_client.js?v=996814eb:943:66)
+    ... [3 frames omitted]
+error 9: [vite] SyntaxError: The requested module '/src/utils/speechVoiceUtils.ts' does not provide an export named 'getSampleTextForLanguage'
+[AIS_METADATA_SECTION_END]
+```
+

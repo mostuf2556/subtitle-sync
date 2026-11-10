@@ -1,5 +1,37 @@
 # Done tasks
 
+### Hotfix: Fix Vite Reload, Module Exports, and React Hook Dispatcher Synchronization
+
+- **Prompt**:
+  ```
+  Fix the errors in the app
+  [AIS_METADATA_SECTION_START]
+  fix_it_trigger: manual
+  error 0: [vite] SyntaxError: The requested module '/src/lib/playback-preferences.ts' does not provide an export named 'getTableDisplayModePreference'
+  ...
+  error 4: Invalid hook call. Hooks can only be called inside of the body of a function component...
+  error 7: TypeError: Cannot read properties of null (reading 'useState')
+  ...
+  error 9: [vite] SyntaxError: The requested module '/src/utils/speechVoiceUtils.ts' does not provide an export named 'getSampleTextForLanguage'
+  [AIS_METADATA_SECTION_END]
+  ```
+- **Root Cause & Diagnosis**:
+  - Vite dev server dynamic dependency pre-bundling had created split `react` dependency chunks (`browserHash` mismatch between cached `react-dom_client` and `react`), leaving React's hook dispatcher `null` when `SettingsBackupModal` was rendered.
+  - Previous background HMR failures left stale in-memory transforms on the dev server, throwing browser-side SyntaxErrors on newly exported utilities (`getTableDisplayModePreference`, `getLanguageTtsVolume`, `getSampleTextForLanguage`).
+- **Implementation & Hotfix**:
+  - **1. Explicit `optimizeDeps.include` in `vite.config.ts`**:
+    - Pre-bundled all core client libraries (`react`, `react-dom`, `react-dom/client`, `react/jsx-runtime`, `react/jsx-dev-runtime`, `@tanstack/react-router`, `@tanstack/react-query`, `lucide-react`, `clsx`, `tailwind-merge`, `class-variance-authority`, `@radix-ui/*`), locking dependencies together and preventing dynamic re-optimization and split React hook dispatchers.
+  - **2. SettingsBackupModal Hook Uniformity**:
+    - Updated `src/components/SettingsBackupModal.tsx` to explicitly import `useEffect` directly from `react` alongside `useState`.
+  - **3. Cache Purge & Dev Server Freshness**:
+    - Purged stale `.vite` cache directory and restarted Vite dev server.
+  - **4. Single Source Versioning**:
+    - Bumped application version to `v2.1.70` (code `20170`) across `package.json` and `android-shell/app/build.gradle.kts`.
+- **Testing & Verification**:
+  - Verified with updated `scripts/verify-hotfix-reload-and-compiler-errors.ts` (`npm run test:hotfix-reload-compiler`), confirming 200 OK across all target modules including `SettingsBackupModal.tsx`, `playback-preferences.ts`, and `speechVoiceUtils.ts`.
+  - Executed `compile_applet` (TypeScript build passed).
+  - Executed `lint_applet` (ESLint passed with zero errors).
+
 ### Task 370 (Prompt 140 - Chapter 2): TTS Playback Coordination & Overlap Prevention
 
 - **Prompt**:

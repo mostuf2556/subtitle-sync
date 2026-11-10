@@ -56,6 +56,33 @@ async function run() {
   );
   console.log("✓ Check 1 passed: appSettings exports verified.");
 
+  // 1b. Verify playback-preferences.ts and speechVoiceUtils.ts exports
+  console.log("Check 1b: Verifying playback-preferences.ts and speechVoiceUtils.ts exports...");
+  const playbackPrefs = await import("../src/lib/playback-preferences");
+  assert.strictEqual(
+    typeof playbackPrefs.getTableDisplayModePreference,
+    "function",
+    "playbackPrefs must export getTableDisplayModePreference",
+  );
+  assert.strictEqual(
+    typeof playbackPrefs.getLanguageTtsVolume,
+    "function",
+    "playbackPrefs must export getLanguageTtsVolume",
+  );
+  assert.strictEqual(
+    typeof playbackPrefs.setTableDisplayModePreference,
+    "function",
+    "playbackPrefs must export setTableDisplayModePreference",
+  );
+
+  const speechVoiceUtils = await import("../src/utils/speechVoiceUtils");
+  assert.strictEqual(
+    typeof speechVoiceUtils.getSampleTextForLanguage,
+    "function",
+    "speechVoiceUtils must export getSampleTextForLanguage",
+  );
+  console.log("✓ Check 1b passed: playback-preferences and speechVoiceUtils exports verified.");
+
   // 2. Verify subtitleCache.ts exports
   console.log("Check 2: Verifying subtitleCache.ts exports...");
   const subtitleCache = await import("../src/utils/subtitleCache");
@@ -76,6 +103,10 @@ async function run() {
     "/src/routes/index.tsx",
     "/src/storybook/StorybookWorkbench.tsx",
     "/src/client.tsx",
+    "/src/lib/playback-preferences.ts",
+    "/src/utils/speechVoiceUtils.ts",
+    "/src/components/SettingsBackupModal.tsx",
+    "/src/components/SubtitlesTablePanel.tsx",
   ];
 
   console.log("Check 3: Verifying all target files exist on disk without merge markers...");
