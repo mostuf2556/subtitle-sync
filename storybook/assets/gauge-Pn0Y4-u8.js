@@ -1,0 +1,1 @@
+import{n as e,r as t}from"./jsx-runtime-CXEDku2J.js";import{n}from"./rolldown-runtime-DkW27tQK.js";var r,i;function a(){return(a=n((()=>{t(),r=[[`path`,{d:`m12 14 4-4`,key:`9kzdfg`}],[`path`,{d:`M3.34 19a10 10 0 1 1 17.32 0`,key:`19p75a`}]],i=e(`gauge`,r)})))()}export{a as n,i as t};

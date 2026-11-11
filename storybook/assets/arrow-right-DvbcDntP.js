@@ -1,0 +1,1 @@
+import{n as e,r as t}from"./jsx-runtime-CXEDku2J.js";import{n}from"./rolldown-runtime-DkW27tQK.js";var r,i;function a(){return(a=n((()=>{t(),r=[[`path`,{d:`M5 12h14`,key:`1ays0h`}],[`path`,{d:`m12 5 7 7-7 7`,key:`xquz4c`}]],i=e(`arrow-right`,r)})))()}export{a as n,i as t};
