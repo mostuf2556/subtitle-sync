@@ -1,0 +1,1 @@
+import{n as e,r as t}from"./jsx-dev-runtime-DBIUIVPA.js";import{n}from"./rolldown-runtime-DkW27tQK.js";var r,i;function a(){return(a=n((()=>{t(),r=[[`circle`,{cx:`12`,cy:`12`,r:`10`,key:`1mglay`}],[`path`,{d:`m9 12 2 2 4-4`,key:`dzmm74`}]],i=e(`circle-check`,r)})))()}export{a as n,i as t};
