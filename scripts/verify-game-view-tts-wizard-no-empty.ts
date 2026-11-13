@@ -136,4 +136,65 @@ assert.ok(
   "StorybookWorkbench listening_game preview must return async Promise and provide onStopSpeaking",
 );
 console.log("✔ Storybook stories and StorybookWorkbench verified.");
-console.log("=== Task 403 Verification PASSED ===");
+
+// 5. Verify Task 404: Fallback chain never short-circuits on failed TTS3 and ListeningGamePanel preserves gesture
+import {
+  executeTtsFallbackSequence,
+  playAlternativeTtsAudio,
+} from "../src/lib/alternative-tts";
+
+const altTtsSrc = fs.readFileSync(path.resolve("src/lib/alternative-tts.ts"), "utf-8");
+assert.ok(
+  altTtsSrc.includes("skipNativeFallback?: boolean") &&
+    altTtsSrc.includes("if (played) return \"tts3\""),
+  "executeTtsFallbackSequence must inspect playAlternativeTtsAudio boolean outcome before returning 'tts3'",
+);
+
+assert.ok(
+  indexSrc.includes("activeSpeechAbortResolver") &&
+    indexSrc.includes("lastWebSpeechCancelTime") &&
+    indexSrc.includes("fallbackOrder !== \"native_only\"") &&
+    indexSrc.includes("const played = await playAlternativeTtsAudio("),
+  "src/routes/index.tsx must wire abort resolver, cancel debounce, and accurate TTS fallback checks",
+);
+
+assert.ok(
+  !listeningPanelSrc.includes("await new Promise((resolve) => setTimeout(resolve, 60));") &&
+    listeningPanelSrc.includes("withTranslationsRef.current") &&
+    listeningPanelSrc.includes("clearActiveOnFinish"),
+  "ListeningGamePanel must not break user-gesture before first word and must use fresh refs + single-item cleanup",
+);
+
+async function verifyFallbackRuntime() {
+  const directOutcome = await playAlternativeTtsAudio("Word", "en", 1.0);
+  assert.strictEqual(
+    directOutcome,
+    false,
+    "playAlternativeTtsAudio must resolve false (not true/undefined) when synthesis fails in non-browser runtime",
+  );
+
+  // Even when running tts3_native without window/fetch audio, executeTtsFallbackSequence must still attempt native
+  let nativeCalled = false;
+  const origWindow = (globalThis as { window?: unknown }).window;
+  const origFetch = globalThis.fetch;
+  try {
+    (globalThis as { window?: unknown }).window = {};
+    globalThis.fetch = (async () =>
+      new Response("Bad Gateway", { status: 502 })) as typeof fetch;
+    const seqOutcome = await executeTtsFallbackSequence("Привет", "ru", 1.0, "tts3_native", undefined, {
+      onNativeSpeak: async () => {
+        nativeCalled = true;
+        return true;
+      },
+    });
+    assert.strictEqual(nativeCalled, true, "Failed TTS3 MUST fall through to native speaker");
+    assert.strictEqual(seqOutcome, "native", "Outcome must report 'native' after TTS3 failure");
+  } finally {
+    (globalThis as { window?: unknown }).window = origWindow;
+    globalThis.fetch = origFetch;
+  }
+}
+
+await verifyFallbackRuntime();
+console.log("✔ Task 404 TTS fallback chain, user-gesture retention & runtime regression tests passed.");
+console.log("=== Task 403 & Task 404 Verification PASSED ===");

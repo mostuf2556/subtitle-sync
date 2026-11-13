@@ -1,10 +1,10 @@
 # Active Subtask Mirror (`docs/todo.md`)
 
-- **Status**: [ACTIVE]
-- **Active Task**: Task 404 (Prompt 194 — Fix Game View Words List TTS-Play Trigger & Fallback Chain)
-- **Active Step**: Subtask 404.1 — Diagnose & reproduce real-browser failure on `listening-play-all-words-btn`
-- **Upcoming**: Subtask 404.2 (Fix TTS list playback & fallback chain), Subtask 404.3 (Verification + archive)
+- **Status**: [IDLE]
+- **Active Task**: None (Active backlog clear; next items in `docs/later.md`)
+- **Active Step**: Completed Task 404 (`v2.1.112`)
 - **Completed**:
+  - Task 404 (Prompt 194): Fix Game View Words List `Listen All` TTS-Play Execution & Fallback Chain (`v2.1.112`)
   - Task 403 (Prompt 193): Game View List TTS-Play Fix, Guided Wizard Menu & Empty-Content Guard (`v2.1.111`)
   - Task 402 (Prompt 192 Chapter 3): History Stage — TTS-Play History Viewer (`v2.1.110`)
   - Task 401 (Prompt 192 Chapter 2): Game Mode Listening Game (`v2.1.109`)

@@ -4,10 +4,7 @@ This file is strictly the active backlog containing pending, active, and upcomin
 
 ## Active Tasks
 
-- [ ] **Task 404: Fix Game View Words List `Listen All` TTS-Play Execution & Fallback Chain (Prompt 194)**
-  - Subtask 404.1: Reproduce and diagnose why clicking `listening-play-all-words-btn` (`section:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > button:nth-of-type(1)`) fails to play TTS across the words list in real browser runtime (including silent TTS3 fallback return, stuck `activeSpeechQueue`/`speechSynthesis`, user-gesture preservation, and word+translation sequence).
-  - Subtask 404.2: Fix `ListeningGamePanel.tsx`, `src/lib/alternative-tts.ts`, and `src/routes/index.tsx` so `Listen All` (words & sentences) and single-word Listen reliably trigger TTS playback with proper fallback and progress updates across Beginner and Advanced modes.
-  - Subtask 404.3: Verify in Playwright browser test + dedicated verification script, bump version, compile, lint, and archive to `docs/done.md`.
+- None (all active prompt tasks completed; see `docs/done.md`).
 
 ## Later Tasks
 

@@ -534,10 +534,21 @@ import { type PanelId, PANELS, ACCORDION_THEMES } from "@/config/accordionThemes
 let activeSpeechJobId = 0;
 let speechQueueGeneration = 0;
 let activeSpeechQueue: Promise<void> = Promise.resolve();
+let lastWebSpeechCancelTime = 0;
+let activeSpeechAbortResolver: (() => void) | null = null;
 
 function cancelSpeech() {
   speechQueueGeneration++;
   cancelAlternativeTtsAudio();
+  if (activeSpeechAbortResolver) {
+    const abort = activeSpeechAbortResolver;
+    activeSpeechAbortResolver = null;
+    try {
+      abort();
+    } catch {
+      // Ignore abort error
+    }
+  }
   activeSpeechQueue = Promise.resolve();
   if (typeof window !== "undefined") {
     (window as Window & { _activeUtterance?: SpeechSynthesisUtterance | null })._activeUtterance =
@@ -556,7 +567,11 @@ function cancelSpeech() {
     window.speechSynthesis?.cancel
   ) {
     try {
+      const wasActive = Boolean(window.speechSynthesis.speaking || window.speechSynthesis.pending);
       window.speechSynthesis.cancel();
+      if (wasActive) {
+        lastWebSpeechCancelTime = Date.now();
+      }
     } catch (_e) {
       // Ignore speech cancellation error
     }
@@ -830,20 +845,21 @@ function executeSingleSpeech(
       }
 
       const fallbackToAlternative = async () => {
-        if (useAltTts) {
+        const fallbackOrder = typeof window !== "undefined" ? getTtsFallbackOrder() : "tts3_native";
+        if (useAltTts || fallbackOrder !== "native_only") {
           try {
-            onProgress({
+            safeProgress({
               lang: lang.slice(0, 2),
               row,
               start: 0,
               end: text.length,
             });
-            await playAlternativeTtsAudio(
+            const played = await playAlternativeTtsAudio(
               text,
               lang,
               altSpeed,
               (pct) => {
-                onProgress({
+                safeProgress({
                   lang: lang.slice(0, 2),
                   row,
                   start: 0,
@@ -855,11 +871,16 @@ function executeSingleSpeech(
                 provider: altProvider,
                 speed: altSpeed,
                 volume: normalizedVolume,
+                isAnonymous:
+                  typeof window !== "undefined" ? getAlternativeTtsAnonymousMode() : false,
+                skipNativeFallback: true,
               },
             );
-            onProgress(null);
-            res();
-            return true;
+            safeProgress(null);
+            if (played) {
+              res();
+              return true;
+            }
           } catch (altErr) {
             console.warn("Alternative TTS fallback error:", altErr);
           }
@@ -873,6 +894,7 @@ function executeSingleSpeech(
         !window.speechSynthesis
       ) {
         if (await fallbackToAlternative()) return;
+        safeProgress(null);
         return res();
       }
 
@@ -880,6 +902,14 @@ function executeSingleSpeech(
         if (window.speechSynthesis.paused) {
           window.speechSynthesis.resume();
         }
+        const elapsedSinceCancel = Date.now() - lastWebSpeechCancelTime;
+        if (elapsedSinceCancel >= 0 && elapsedSinceCancel < 60) {
+          await new Promise<void>((r) => setTimeout(r, 60 - elapsedSinceCancel));
+          if (currentGeneration !== undefined && currentGeneration !== speechQueueGeneration) {
+            return res();
+          }
+        }
+
         const u = new SpeechSynthesisUtterance(text);
         u.rate = normalizedRate;
         u.volume = normalizedVolume;
@@ -903,7 +933,7 @@ function executeSingleSpeech(
           if (event.name !== "word") return;
           const remainder = text.slice(event.charIndex);
           const wordLength = event.charLength || remainder.match(/^\S+/)?.[0].length || 1;
-          onProgress({
+          safeProgress({
             lang: lang.slice(0, 2),
             row,
             start: event.charIndex,
@@ -911,13 +941,20 @@ function executeSingleSpeech(
           });
         };
         let resolved = false;
+        let hasStarted = false;
         let safetyTimer: ReturnType<typeof setTimeout> | null = null;
+        let stallTimer: ReturnType<typeof setTimeout> | null = null;
         const done = async (isError?: boolean) => {
           if (resolved) return;
           resolved = true;
+          activeSpeechAbortResolver = null;
           if (safetyTimer) {
             clearTimeout(safetyTimer);
             safetyTimer = null;
+          }
+          if (stallTimer) {
+            clearTimeout(stallTimer);
+            stallTimer = null;
           }
           if (typeof window !== "undefined") {
             (
@@ -926,6 +963,7 @@ function executeSingleSpeech(
             if (isError && "speechSynthesis" in window) {
               try {
                 window.speechSynthesis.cancel();
+                lastWebSpeechCancelTime = Date.now();
               } catch {
                 // ignore cancel error
               }
@@ -938,6 +976,17 @@ function executeSingleSpeech(
           res();
         };
 
+        activeSpeechAbortResolver = () => {
+          void done(false);
+        };
+
+        u.onstart = () => {
+          hasStarted = true;
+          if (stallTimer) {
+            clearTimeout(stallTimer);
+            stallTimer = null;
+          }
+        };
         u.onend = () => done(false);
         u.onerror = (event) => {
           // When playback is paused or speech is cancelled intentionally (e.g. window.speechSynthesis.cancel()),
@@ -958,6 +1007,18 @@ function executeSingleSpeech(
           });
           void done(true);
         };
+        stallTimer = setTimeout(() => {
+          if (
+            !hasStarted &&
+            !resolved &&
+            typeof window !== "undefined" &&
+            "speechSynthesis" in window &&
+            !window.speechSynthesis.speaking &&
+            !window.speechSynthesis.pending
+          ) {
+            void done(true);
+          }
+        }, 2500);
         const timeoutMs = Math.max(
           16000,
           (text.length / 3) * (1000 / (normalizedRate || 0.5)) + 8000,

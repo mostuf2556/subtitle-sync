@@ -69,6 +69,14 @@ export const ListeningGamePanel: React.FC<ListeningGamePanelProps> = ({
   const autoAdjustedRef = useRef<boolean>(false);
   const onStopSpeakingRef = useRef(onStopSpeaking);
   onStopSpeakingRef.current = onStopSpeaking;
+  const onSpeakTextRef = useRef(onSpeakText);
+  onSpeakTextRef.current = onSpeakText;
+  const withTranslationsRef = useRef(withTranslations);
+  withTranslationsRef.current = withTranslations;
+  const baseLanguageRef = useRef(baseLanguage);
+  baseLanguageRef.current = baseLanguage;
+  const targetLanguageRef = useRef(targetLanguage);
+  targetLanguageRef.current = targetLanguage;
 
   const isBaseRtl = RTL.has(baseLanguage);
   const isTargetRtl = RTL.has(targetLanguage);
@@ -76,6 +84,7 @@ export const ListeningGamePanel: React.FC<ListeningGamePanelProps> = ({
   const handleToggleWithTranslations = useCallback(
     (next: boolean) => {
       setWithTranslations(next);
+      withTranslationsRef.current = next;
       onWithTranslationsChange?.(next);
     },
     [onWithTranslationsChange],
@@ -187,16 +196,31 @@ export const ListeningGamePanel: React.FC<ListeningGamePanelProps> = ({
   }, []);
 
   const speakSingleEntry = useCallback(
-    async (baseText: string, translationText: string, itemId: string, runId?: number) => {
+    async (
+      baseText: string,
+      translationText: string,
+      itemId: string,
+      runId?: number,
+      clearActiveOnFinish: boolean = false,
+    ) => {
+      if (runId !== undefined && playbackRunIdRef.current !== runId) {
+        return;
+      }
       setActiveItemId(itemId);
-      if (!onSpeakText) return;
+      const speakFn = onSpeakTextRef.current;
+      if (!speakFn) {
+        if (clearActiveOnFinish && (runId === undefined || playbackRunIdRef.current === runId)) {
+          setActiveItemId((curr) => (curr === itemId ? null : curr));
+        }
+        return;
+      }
 
       const trimmedBase = baseText.trim();
       const trimmedTrans = translationText.trim();
 
       if (trimmedBase) {
         try {
-          await Promise.resolve(onSpeakText(trimmedBase, baseLanguage));
+          await Promise.resolve(speakFn(trimmedBase, baseLanguageRef.current));
         } catch (err) {
           console.warn("ListeningGamePanel base speech error:", err);
         }
@@ -206,25 +230,32 @@ export const ListeningGamePanel: React.FC<ListeningGamePanelProps> = ({
         return;
       }
 
+      const speakTransFn = onSpeakTextRef.current;
       if (
-        withTranslations &&
+        speakTransFn &&
+        withTranslationsRef.current &&
         trimmedTrans &&
         trimmedTrans.toLowerCase() !== trimmedBase.toLowerCase()
       ) {
         try {
-          await Promise.resolve(onSpeakText(trimmedTrans, targetLanguage));
+          await Promise.resolve(speakTransFn(trimmedTrans, targetLanguageRef.current));
         } catch (err) {
           console.warn("ListeningGamePanel translation speech error:", err);
         }
       }
+
+      if (clearActiveOnFinish && (runId === undefined || playbackRunIdRef.current === runId)) {
+        setActiveItemId((curr) => (curr === itemId ? null : curr));
+      }
     },
-    [onSpeakText, baseLanguage, targetLanguage, withTranslations],
+    [],
   );
 
   const handlePlayWord = useCallback(
     (item: ListeningGameWordItem) => {
       stopSequentialPlayback(true);
-      void speakSingleEntry(item.word, item.sourceTranslation, item.id);
+      const runId = playbackRunIdRef.current;
+      void speakSingleEntry(item.word, item.sourceTranslation, item.id, runId, true);
     },
     [speakSingleEntry, stopSequentialPlayback],
   );
@@ -232,7 +263,8 @@ export const ListeningGamePanel: React.FC<ListeningGamePanelProps> = ({
   const handlePlaySentence = useCallback(
     (item: ListeningGameSentenceItem) => {
       stopSequentialPlayback(true);
-      void speakSingleEntry(item.sentence, item.translation, item.id);
+      const runId = playbackRunIdRef.current;
+      void speakSingleEntry(item.sentence, item.translation, item.id, runId, true);
     },
     [speakSingleEntry, stopSequentialPlayback],
   );
@@ -242,30 +274,28 @@ export const ListeningGamePanel: React.FC<ListeningGamePanelProps> = ({
       stopSequentialPlayback(true);
       return;
     }
-    if (filteredWords.length === 0) return;
+    const itemsToPlay = filteredWords;
+    if (itemsToPlay.length === 0) return;
 
     const wasAlreadySpeaking = isPlayingAll !== null || activeItemId !== null;
     if (wasAlreadySpeaking) {
-      onStopSpeaking?.();
+      onStopSpeakingRef.current?.();
     }
 
     const runId = playbackRunIdRef.current + 1;
     playbackRunIdRef.current = runId;
     setIsPlayingAll("words");
-    setPlayingProgress({ list: "words", current: 1, total: filteredWords.length });
+    setPlayingProgress({ list: "words", current: 1, total: itemsToPlay.length });
 
-    if (wasAlreadySpeaking) {
-      await new Promise((resolve) => setTimeout(resolve, 60));
-      if (playbackRunIdRef.current !== runId) return;
-    }
-
-    for (let idx = 0; idx < filteredWords.length; idx++) {
+    for (let idx = 0; idx < itemsToPlay.length; idx++) {
       if (playbackRunIdRef.current !== runId) break;
-      const item = filteredWords[idx];
-      setPlayingProgress({ list: "words", current: idx + 1, total: filteredWords.length });
+      const item = itemsToPlay[idx];
+      setPlayingProgress({ list: "words", current: idx + 1, total: itemsToPlay.length });
       await speakSingleEntry(item.word, item.sourceTranslation, item.id, runId);
       if (playbackRunIdRef.current !== runId) break;
-      await new Promise((resolve) => setTimeout(resolve, withTranslations ? 550 : 350));
+      await new Promise((resolve) =>
+        setTimeout(resolve, withTranslationsRef.current ? 550 : 350),
+      );
     }
 
     if (playbackRunIdRef.current === runId) {
@@ -277,10 +307,8 @@ export const ListeningGamePanel: React.FC<ListeningGamePanelProps> = ({
     filteredWords,
     isPlayingAll,
     activeItemId,
-    onStopSpeaking,
     speakSingleEntry,
     stopSequentialPlayback,
-    withTranslations,
   ]);
 
   const handlePlayAllSentences = useCallback(async () => {
@@ -288,30 +316,28 @@ export const ListeningGamePanel: React.FC<ListeningGamePanelProps> = ({
       stopSequentialPlayback(true);
       return;
     }
-    if (filteredSentences.length === 0) return;
+    const itemsToPlay = filteredSentences;
+    if (itemsToPlay.length === 0) return;
 
     const wasAlreadySpeaking = isPlayingAll !== null || activeItemId !== null;
     if (wasAlreadySpeaking) {
-      onStopSpeaking?.();
+      onStopSpeakingRef.current?.();
     }
 
     const runId = playbackRunIdRef.current + 1;
     playbackRunIdRef.current = runId;
     setIsPlayingAll("sentences");
-    setPlayingProgress({ list: "sentences", current: 1, total: filteredSentences.length });
+    setPlayingProgress({ list: "sentences", current: 1, total: itemsToPlay.length });
 
-    if (wasAlreadySpeaking) {
-      await new Promise((resolve) => setTimeout(resolve, 60));
-      if (playbackRunIdRef.current !== runId) return;
-    }
-
-    for (let idx = 0; idx < filteredSentences.length; idx++) {
+    for (let idx = 0; idx < itemsToPlay.length; idx++) {
       if (playbackRunIdRef.current !== runId) break;
-      const item = filteredSentences[idx];
-      setPlayingProgress({ list: "sentences", current: idx + 1, total: filteredSentences.length });
+      const item = itemsToPlay[idx];
+      setPlayingProgress({ list: "sentences", current: idx + 1, total: itemsToPlay.length });
       await speakSingleEntry(item.sentence, item.translation, item.id, runId);
       if (playbackRunIdRef.current !== runId) break;
-      await new Promise((resolve) => setTimeout(resolve, withTranslations ? 650 : 400));
+      await new Promise((resolve) =>
+        setTimeout(resolve, withTranslationsRef.current ? 650 : 400),
+      );
     }
 
     if (playbackRunIdRef.current === runId) {
@@ -323,10 +349,8 @@ export const ListeningGamePanel: React.FC<ListeningGamePanelProps> = ({
     filteredSentences,
     isPlayingAll,
     activeItemId,
-    onStopSpeaking,
     speakSingleEntry,
     stopSequentialPlayback,
-    withTranslations,
   ]);
 
   return (

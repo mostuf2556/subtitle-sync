@@ -1,5 +1,22 @@
 # Done tasks
 
+### Task 404 (Prompt 194): Fix Game View Words List `Listen All` TTS-Play Execution & Fallback Chain (`v2.1.112`)
+
+- **Prompt**:
+  ```
+  it doesnt tts-play the list of words of the game
+  ```
+- **Changes**:
+  - **Root cause #1 — Silent false-positive TTS3 fallback (`src/lib/alternative-tts.ts`)**: `playAlternativeTtsAudio` and `playSingleAlternativeTtsAudio` previously resolved `void` unconditionally even when `fetch` failed (e.g., HTTP 502), returned empty/HTML responses, hit timeout watchdogs, or lacked audio output. As a result, `executeTtsFallbackSequence` prematurely returned `"tts3"` without falling through to native/Web Speech synthesis. Updated both helpers to return `Promise<boolean>` (resolving `false` on any failure/cancellation while still never throwing), added empty-blob and `text/html` guards in `fetchLovableTtsBinaryBlob`, extracted `speakWithNativeOrWebSpeech`, added `skipNativeFallback` to prevent circular recursion, and updated `executeTtsFallbackSequence` to fall through to `"native"` unless playback truly succeeded.
+  - **Root cause #2 — Native synthesis failure & queue deadlock (`src/routes/index.tsx`)**: Under default settings (`useAltTts = false`, `fallbackOrder = "tts3_native"`), Web Speech `synthesis-failed` errors (or silent headless Chromium stalls) skipped `fallbackToAlternative()` because `if (useAltTts)` blocked automatic fallback, and `cancelSpeech()` left prior `executeSingleSpeech()` promises hanging until their 16s safety ceiling. Added `activeSpeechAbortResolver` for instant cancellation settlement, gated the 60ms post-cancel delay via `lastWebSpeechCancelTime` only when an active utterance was cancelled, added a 2500ms silent-stall watchdog triggering fallback, and enabled `fallbackToAlternative()` whenever `useAltTts || fallbackOrder !== "native_only"` while verifying `const played = await playAlternativeTtsAudio(...)`.
+  - **Root cause #3 — User gesture & stale refs (`src/components/ListeningGamePanel.tsx`)**: Removed the pre-first-word `await setTimeout(60)` delay in `handlePlayAllWords` and `handlePlayAllSentences` so the first utterance starts inside the browser click gesture, synced live refs (`onSpeakTextRef`, `withTranslationsRef`, `baseLanguageRef`, `targetLanguageRef`), and passed `runId` + `clearActiveOnFinish` in single-item triggers.
+  - **Verification & Versioning**: Extended `scripts/verify-game-view-tts-wizard-no-empty.ts` (Section 5: static + runtime `playAlternativeTtsAudio` & 502 TTS3->native fallback tests), updated `docs/files.md`, and bumped version to `v2.1.112` (`versionCode = 20212`) via `npm run sync-version`.
+- **Verification**:
+  - Real-browser Playwright Chromium E2E across Advanced Mode (`app_workflow_mode="expert"`: working `speechSynthesis` + Stop toggle `Stop (1/541)` -> `Listen All`, failing `speechSynthesis` falling back to `tts3.lovable.app`, and `tts3` HTTP 502 falling back to `speechSynthesis`) and Beginner Mode: **PASSED**.
+  - `npm run test:game-view-tts-wizard`, `npm run test:listening-game-mode`, `npm run test:tts-playback-coordination`, `npm run test:tts-fallback-order-switch`, `npm run test:direct-google-tts-no-lovable-error`, `npm run test:same-components-parity-policy`: **PASSED**.
+  - `npm run test:agents-all` (22/22), `npm run test:no-duplicate-md` (68 files, 0 duplicates), `npm run check-version` (`2.1.112`, code `20212`), `npx tsc --noEmit`: **PASSED**.
+  - `compile_applet` & `lint_applet`: **PASSED**.
+
 ### Task 403 (Prompt 193): Game View — List TTS-Play Trigger Fix, Guided Wizard Menu & Empty-Content Guard (`v2.1.111`)
 
 - **Prompt**:

@@ -5,7 +5,7 @@ This document establishes the lightweight, high-efficiency operational protocol 
 ---
 
 - Prompt 194 (Task 404 — Fix Game View Words List TTS-Play Execution & Fallback Chain):
-  - Task 404 [ACTIVE]: Fix clicking `listening-play-all-words-btn` (`button:nth-of-type(1)` in Words header) so it reliably TTS-plays every word in the list, eliminate silent-success fallback bugs in `executeTtsFallbackSequence`/`playAlternativeTtsAudio`, clear stale speechSynthesis/queue deadlocks, and add Playwright + dedicated verification coverage.
+  - Task 404 [COMPLETED & VERIFIED]: Fixed clicking `listening-play-all-words-btn` (`button:nth-of-type(1)` in Words header) so it reliably TTS-plays every word in the list (`v2.1.112`), fixed `playAlternativeTtsAudio` boolean return and empty/HTML payload guards, prevented silent-success short-circuits in `executeTtsFallbackSequence`, cleared stale `speechSynthesis`/queue deadlocks via `activeSpeechAbortResolver` + stall detection, preserved click user-gesture in `ListeningGamePanel.tsx`, and verified in Playwright Chromium + `test:game-view-tts-wizard`.
 - Prompt 193 (Task 403 — Game View List TTS-Play Fix, Guided Wizard Menu & Empty-Content Guard):
   - Task 403 [COMPLETED & VERIFIED]: Fixed `listening-play-all-words-btn` / `listening-play-all-sentences-btn` sequential TTS-play `Promise` return & stop cancellation (`v2.1.111`), added `rows[0]` fallback + `game-empty-content-wizard` with explicit `[Fixture]` loader, and added step-by-step `game-wizard-menu` across Beginner & Advanced modes + Storybook, verified by `test:game-view-tts-wizard`.
 - Prompt 192 (Tasks 400, 401, 402 — Log Error Copy Modes, Listening Game Mode, & TTS-Play History Stage):

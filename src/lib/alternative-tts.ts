@@ -450,6 +450,7 @@ export interface LovableTtsOptions {
   isAnonymous?: boolean;
   debug?: boolean;
   interrupt?: boolean;
+  skipNativeFallback?: boolean;
 }
 
 export interface LovableTtsRequestBody {
@@ -1254,6 +1255,35 @@ export async function fetchLovableTtsBinaryBlob(
     }
 
     const blob = await res.blob();
+    if (!blob || blob.size === 0 || contentType.toLowerCase().includes("text/html")) {
+      const errMsg =
+        blob?.size === 0
+          ? "Empty audio stream (0 bytes)"
+          : `Unexpected HTML response (${contentType})`;
+      addExternalTtsAuditRecord({
+        id: auditId,
+        timestamp: Date.now(),
+        method: "GET",
+        url,
+        endpoint: LOVABLE_TTS_ENDPOINT,
+        requestHeaders: headers,
+        queryParams,
+        provider: options?.provider || getLovableTtsProvider(),
+        voice: options?.voice,
+        lang,
+        text,
+        status: res.status,
+        statusText: "Invalid Audio Payload",
+        latencyMs,
+        responseHeaders: resHeaders,
+        responseBody: errMsg,
+        responseType: "error",
+        error: errMsg,
+        source,
+      });
+      tracker.fail(errMsg, res.status, errMsg);
+      return null;
+    }
     const objectUrl = URL.createObjectURL(blob);
     const record: ExternalTtsAuditRecord = {
       id: auditId,
@@ -2226,9 +2256,10 @@ export function setLovableTtsApiKey(apiKey: string): void {
 
 let activeAlternativeAudio: HTMLAudioElement | null = null;
 let activeAudioReject: ((reason?: unknown) => void) | null = null;
-let activePlaybackQueue: Promise<void> = Promise.resolve();
+let activePlaybackQueue: Promise<unknown> = Promise.resolve();
 let isAudioPlaying = false;
 let audioQueueGeneration = 0;
+let lastAltWebSpeechCancelTime = 0;
 
 /**
  * Returns true if an alternative TTS audio stream is actively synthesizing, queued, or playing.
@@ -2241,7 +2272,7 @@ export function isAlternativeTtsPlaying(): boolean {
  * Awaits completion of all currently queued alternative TTS audio streams.
  */
 export function waitForAllAlternativeTtsAudio(): Promise<void> {
-  return activePlaybackQueue.catch(() => {});
+  return activePlaybackQueue.then(() => undefined).catch(() => undefined);
 }
 
 /**
@@ -2261,16 +2292,166 @@ export function cancelAlternativeTtsAudio(): void {
     activeAlternativeAudio = null;
   }
   if (activeAudioReject) {
-    activeAudioReject(new Error("Alternative TTS cancelled"));
+    try {
+      activeAudioReject(new Error("Alternative TTS cancelled"));
+    } catch {
+      // ignore abort handler error
+    }
     activeAudioReject = null;
   }
   activePlaybackQueue = Promise.resolve();
 }
 
 /**
+ * Speaks via AndroidNativeShell or browser Web Speech API, resolving true only if speech completed cleanly.
+ */
+async function speakWithNativeOrWebSpeech(
+  text: string,
+  lang: string,
+  rate: number = 1.0,
+  volume: number = 1.0,
+  generation?: number,
+): Promise<boolean> {
+  if (!text || typeof window === "undefined") return false;
+  if (generation !== undefined && generation !== audioQueueGeneration) return false;
+
+  const normalizedRate = Math.max(0.3, Math.min(2.5, rate || 1.0));
+  const effectiveVolume =
+    typeof volume === "number" && Number.isFinite(volume) ? Math.max(0, Math.min(1, volume)) : 1.0;
+
+  const win = window as Window & {
+    AndroidNativeShell?: {
+      speak?: (text: string, lang: string, rate: number, utteranceId: string) => boolean;
+    };
+    onNativeTTSDone?: (uid: string) => void;
+    onNativeTTSError?: (uid: string, err?: string) => void;
+  };
+
+  if (win.AndroidNativeShell?.speak) {
+    try {
+      const utteranceId = `alt-native-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      const handled = win.AndroidNativeShell.speak(text, lang, normalizedRate, utteranceId);
+      if (handled) {
+        return await new Promise<boolean>((resolve) => {
+          let settled = false;
+          let timer: ReturnType<typeof setTimeout> | null = null;
+          const finish = (ok: boolean) => {
+            if (settled) return;
+            settled = true;
+            if (timer) clearTimeout(timer);
+            resolve(ok);
+          };
+          const prevDone = win.onNativeTTSDone;
+          win.onNativeTTSDone = (uid: string) => {
+            if (uid === utteranceId) {
+              win.onNativeTTSDone = prevDone;
+              finish(true);
+            } else if (prevDone) {
+              prevDone(uid);
+            }
+          };
+          const prevErr = win.onNativeTTSError;
+          win.onNativeTTSError = (uid: string, err?: string) => {
+            if (uid === utteranceId) {
+              win.onNativeTTSError = prevErr;
+              finish(false);
+            } else if (prevErr) {
+              prevErr(uid, err);
+            }
+          };
+          const estMs = Math.max(
+            16000,
+            (text.length / 3) * (1000 / (normalizedRate || 0.5)) + 8000,
+          );
+          timer = setTimeout(() => finish(false), estMs);
+        });
+      }
+    } catch {
+      // fall through to Web Speech API
+    }
+  }
+
+  if (!("speechSynthesis" in window) || !window.speechSynthesis) {
+    return false;
+  }
+
+  try {
+    if (window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+    }
+    if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+      window.speechSynthesis.cancel();
+      lastAltWebSpeechCancelTime = Date.now();
+    }
+    const elapsedSinceCancel = Date.now() - lastAltWebSpeechCancelTime;
+    if (elapsedSinceCancel < 50) {
+      await new Promise((r) => setTimeout(r, 50 - elapsedSinceCancel));
+      if (generation !== undefined && generation !== audioQueueGeneration) return false;
+    }
+
+    return await new Promise<boolean>((resolve) => {
+      let settled = false;
+      let started = false;
+      let stallTimer: ReturnType<typeof setTimeout> | null = null;
+      let maxTimer: ReturnType<typeof setTimeout> | null = null;
+
+      const finish = (ok: boolean) => {
+        if (settled) return;
+        settled = true;
+        if (stallTimer) clearTimeout(stallTimer);
+        if (maxTimer) clearTimeout(maxTimer);
+        resolve(ok);
+      };
+
+      const u = new SpeechSynthesisUtterance(text);
+      const targetCode = normalizeLanguageCode(lang);
+      const sysVoices = window.speechSynthesis.getVoices?.() || [];
+      const matchingVoice = sysVoices.find((v) => normalizeLanguageCode(v.lang) === targetCode);
+      if (matchingVoice) {
+        u.voice = matchingVoice;
+        u.lang = matchingVoice.lang || lang;
+      } else {
+        u.lang = targetCode;
+      }
+      u.rate = Math.max(0.3, Math.min(1.5, rate || 0.5));
+      u.volume = effectiveVolume;
+
+      u.onstart = () => {
+        started = true;
+        if (stallTimer) {
+          clearTimeout(stallTimer);
+          stallTimer = null;
+        }
+      };
+      u.onend = () => finish(true);
+      u.onerror = () => finish(false);
+
+      stallTimer = setTimeout(() => {
+        if (
+          !started &&
+          !settled &&
+          !window.speechSynthesis.speaking &&
+          !window.speechSynthesis.pending
+        ) {
+          finish(false);
+        }
+      }, 2500);
+
+      const estMs = Math.max(16000, (text.length / 3) * (1000 / (normalizedRate || 0.5)) + 8000);
+      maxTimer = setTimeout(() => finish(false), estMs);
+
+      window.speechSynthesis.speak(u);
+    });
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Plays an audio stream from the configured alternative TTS service (Lovable Speak API or Google Translate).
  * Respects playing duration: subsequent calls wait for active audio to complete before beginning playback,
  * preventing overlapping speech or premature cutoffs unless interrupt: true is explicitly requested.
+ * Resolves `true` if audio or fallback speech played cleanly, or `false` if unavailable/cancelled/failed (never rejects).
  */
 export async function playAlternativeTtsAudio(
   text: string,
@@ -2279,9 +2460,9 @@ export async function playAlternativeTtsAudio(
   onProgress?: (percent: number) => void,
   engineOverride?: AlternativeTtsEngine,
   optionsOverride?: LovableTtsOptions,
-): Promise<void> {
+): Promise<boolean> {
   if (!text || typeof window === "undefined") {
-    return;
+    return false;
   }
 
   if (optionsOverride?.interrupt) {
@@ -2292,10 +2473,10 @@ export async function playAlternativeTtsAudio(
 
   // Queue this playback so that preceding audio finishes its full playing duration
   const queuedPlayback = activePlaybackQueue
-    .catch(() => {})
+    .catch(() => false)
     .then(async () => {
       if (myGeneration !== audioQueueGeneration) {
-        return; // Cancelled while waiting in queue
+        return false; // Cancelled while waiting in queue
       }
       return playSingleAlternativeTtsAudio(
         text,
@@ -2306,15 +2487,16 @@ export async function playAlternativeTtsAudio(
         optionsOverride,
         myGeneration,
       );
-    });
+    })
+    .catch(() => false);
 
-  activePlaybackQueue = queuedPlayback.catch(() => {});
+  activePlaybackQueue = queuedPlayback.catch(() => false);
   return queuedPlayback;
 }
 
 /**
  * Internal single audio playback execution. Synthesizes and plays a single audio element
- * to its complete finish (ended event).
+ * to its complete finish (ended event), returning `true` when playback succeeded or `false` otherwise.
  */
 async function playSingleAlternativeTtsAudio(
   text: string,
@@ -2324,9 +2506,9 @@ async function playSingleAlternativeTtsAudio(
   engineOverride?: AlternativeTtsEngine,
   optionsOverride?: LovableTtsOptions,
   generation?: number,
-): Promise<void> {
+): Promise<boolean> {
   if (generation !== undefined && generation !== audioQueueGeneration) {
-    return;
+    return false;
   }
 
   const engine = engineOverride || getAlternativeTtsEngine();
@@ -2355,7 +2537,7 @@ async function playSingleAlternativeTtsAudio(
           // ignore
         }
       }
-      return;
+      return false;
     }
     if (synthesized?.url) {
       audioUrl = synthesized.url;
@@ -2365,11 +2547,13 @@ async function playSingleAlternativeTtsAudio(
     console.warn("[LovableTTS] Synthesis error, will attempt fallback:", err);
   }
 
-  if (!audioUrl || (generation !== undefined && generation !== audioQueueGeneration)) return;
+  if (!audioUrl || (generation !== undefined && generation !== audioQueueGeneration)) {
+    return false;
+  }
 
   const isAnonymous = optionsOverride?.isAnonymous ?? getAlternativeTtsAnonymousMode();
 
-  return new Promise<void>((resolve) => {
+  return new Promise<boolean>((resolve) => {
     isAudioPlaying = true;
     const audio = new Audio();
     if (isAnonymous) {
@@ -2387,8 +2571,9 @@ async function playSingleAlternativeTtsAudio(
     activeAlternativeAudio = audio;
 
     let hasEnded = false;
+    let fallbackStarted = false;
     let watchdogTimer: ReturnType<typeof setTimeout> | null = null;
-    const cleanup = () => {
+    const cleanup = (played: boolean) => {
       if (hasEnded) return;
       hasEnded = true;
       isAudioPlaying = false;
@@ -2410,7 +2595,13 @@ async function playSingleAlternativeTtsAudio(
       audio.removeEventListener("ended", onEnd);
       audio.removeEventListener("error", onError);
       audio.removeEventListener("timeupdate", onTimeUpdate);
-      resolve();
+      audio.removeEventListener("loadedmetadata", applyPlaybackRate);
+      audio.removeEventListener("canplay", applyPlaybackRate);
+      resolve(played);
+    };
+
+    activeAudioReject = () => {
+      cleanup(false);
     };
 
     const effectiveRate = Math.max(0.25, typeof rate === "number" && rate > 0 ? rate : 1.0);
@@ -2419,31 +2610,24 @@ async function playSingleAlternativeTtsAudio(
       console.warn(
         `[AlternativeTTS] Audio playback watchdog timer expired after ${maxTimeoutMs}ms`,
       );
-      cleanup();
+      cleanup(false);
     }, maxTimeoutMs);
 
     const onEnd = () => {
       onProgress?.(100);
-      cleanup();
+      cleanup(true);
     };
 
     function fallbackToWebSpeech() {
-      if (typeof window !== "undefined" && "speechSynthesis" in window) {
-        try {
-          window.speechSynthesis.cancel();
-          const u = new SpeechSynthesisUtterance(text);
-          u.lang = normalizeLanguageCode(lang);
-          u.rate = Math.max(0.3, Math.min(1.5, rate || 0.5));
-          u.volume = effectiveVolume;
-          u.onend = () => cleanup();
-          u.onerror = () => cleanup();
-          window.speechSynthesis.speak(u);
-          return;
-        } catch {
-          // ignore
-        }
+      if (fallbackStarted || hasEnded) return;
+      fallbackStarted = true;
+      if (optionsOverride?.skipNativeFallback) {
+        cleanup(false);
+        return;
       }
-      cleanup();
+      void speakWithNativeOrWebSpeech(text, lang, rate, effectiveVolume, generation)
+        .then((ok) => cleanup(ok))
+        .catch(() => cleanup(false));
     }
 
     // Determine effective playback rate based on tts rate settings (clamped between 0.25 and 4.0)
@@ -2499,10 +2683,9 @@ async function playSingleAlternativeTtsAudio(
 
 /**
  * Executes subtitle speech synthesis following the configured fallback order:
- * e.g., google_tts3_native:
- *  1. Google Translate TTS directly
- *  2. Lovable TTS3 Speak API (tts3.lovable.app, defaults to provider: "auto")
- *  3. Local device voice (Web Speech API or Android Native Shell)
+ * e.g., tts3_native:
+ *  1. Lovable TTS3 Speak API (tts3.lovable.app, defaults to provider: "auto")
+ *  2. Local device voice (Web Speech API or Android Native Shell)
  */
 export async function executeTtsFallbackSequence(
   text: string,
@@ -2541,14 +2724,15 @@ export async function executeTtsFallbackSequence(
   for (const step of steps) {
     if (step === "tts3") {
       try {
-        await playAlternativeTtsAudio(text, lang, rate, onProgress, "lovable", {
+        const played = await playAlternativeTtsAudio(text, lang, rate, onProgress, "lovable", {
           provider,
           voice,
           speed: rate,
           isAnonymous,
           volume,
+          skipNativeFallback: true,
         });
-        return "tts3";
+        if (played) return "tts3";
       } catch (err) {
         console.warn("[TtsFallbackSequence] TTS3 Speak API step failed, continuing:", err);
       }
@@ -2560,21 +2744,9 @@ export async function executeTtsFallbackSequence(
         } catch (err) {
           console.warn("[TtsFallbackSequence] Native speak step failed:", err);
         }
-      } else if (typeof window !== "undefined" && "speechSynthesis" in window) {
-        try {
-          await new Promise<void>((resolve) => {
-            window.speechSynthesis.cancel();
-            const u = new SpeechSynthesisUtterance(text);
-            u.lang = normalizeLanguageCode(lang);
-            u.rate = Math.max(0.3, Math.min(1.5, rate || 0.5));
-            u.onend = () => resolve();
-            u.onerror = () => resolve();
-            window.speechSynthesis.speak(u);
-          });
-          return "native";
-        } catch {
-          // ignore
-        }
+      } else {
+        const ok = await speakWithNativeOrWebSpeech(text, lang, rate, volume);
+        if (ok) return "native";
       }
     }
   }
