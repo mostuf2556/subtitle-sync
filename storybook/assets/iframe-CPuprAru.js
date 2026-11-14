@@ -1,0 +1,1 @@
+import{t as e}from"./iframe-BiVW_VHb.js";e();
