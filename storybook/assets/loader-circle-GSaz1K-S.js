@@ -1,0 +1,1 @@
+import{n as e,r as t}from"./jsx-runtime-bRVTc5cM.js";import{n}from"./rolldown-runtime-DkW27tQK.js";var r,i;function a(){return(a=n((()=>{t(),r=[[`path`,{d:`M21 12a9 9 0 1 1-6.219-8.56`,key:`13zald`}]],i=e(`loader-circle`,r)})))()}export{a as n,i as t};
