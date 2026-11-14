@@ -1,0 +1,1 @@
+import{n as e,r as t}from"./jsx-runtime-DGqqjBlk.js";import{n}from"./rolldown-runtime-DkW27tQK.js";var r,i;function a(){return(a=n((()=>{t(),r=[[`rect`,{width:`18`,height:`18`,x:`3`,y:`3`,rx:`2`,key:`afitv7`}]],i=e(`square`,r)})))()}export{a as n,i as t};
