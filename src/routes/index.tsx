@@ -861,8 +861,10 @@ function executeSingleSpeech(
         }
       }
 
+      let altFallbackAttempted = false;
       const fallbackToAlternative = async (): Promise<boolean> => {
-        if (isCancelled()) return false;
+        if (isCancelled() || altFallbackAttempted) return false;
+        altFallbackAttempted = true;
         if (canFallbackToTts3) {
           try {
             safeProgress({
@@ -923,10 +925,47 @@ function executeSingleSpeech(
         }
       }
 
+      // When the browser has voices for other languages (e.g. only en-US) but none matching the target language,
+      // prefer TTS3 directly under tts3_native rather than stalling silently in Web Speech.
+      const hasMatchedLanguageVoice = Boolean(
+        chosenVoice || voices.find((x) => matchesLanguageCode(x.lang, lang)),
+      );
+      if (!hasMatchedLanguageVoice && canFallbackToTts3 && fallbackOrder === "tts3_native") {
+        if (await fallbackToAlternative()) return;
+        if (isCancelled()) {
+          safeProgress(null);
+          return res();
+        }
+      }
+
       try {
         if (window.speechSynthesis.paused) {
           window.speechSynthesis.resume();
         }
+        let hasStarted = false;
+        let cancelRaceRetried = false;
+        let resolved = false;
+        let safetyTimer: ReturnType<typeof setTimeout> | null = null;
+        let startWatchdogTimer: ReturnType<typeof setTimeout> | null = null;
+        let activeUtteranceRef: SpeechSynthesisUtterance | null = null;
+
+        const clearStartWatchdog = () => {
+          if (startWatchdogTimer) {
+            clearTimeout(startWatchdogTimer);
+            startWatchdogTimer = null;
+          }
+        };
+
+        const armStartWatchdog = () => {
+          clearStartWatchdog();
+          if (!canFallbackToTts3) return;
+          startWatchdogTimer = setTimeout(() => {
+            if (!hasStarted && !resolved && !isCancelled()) {
+              void done(true, "native-start-timeout");
+            }
+          }, 2200);
+        };
+
         const createSpeechUtterance = () => {
           const utterance = new SpeechSynthesisUtterance(text);
           utterance.rate = normalizedRate;
@@ -950,9 +989,11 @@ function executeSingleSpeech(
 
           utterance.onstart = () => {
             hasStarted = true;
+            clearStartWatchdog();
           };
           utterance.onboundary = (event) => {
             hasStarted = true;
+            clearStartWatchdog();
             if (event.name !== "word") return;
             const remainder = text.slice(event.charIndex);
             const wordLength = event.charLength || remainder.match(/^\S+/)?.[0].length || 1;
@@ -991,6 +1032,7 @@ function executeSingleSpeech(
                     (
                       window as Window & { _activeUtterance?: SpeechSynthesisUtterance | null }
                     )._activeUtterance = retryUtterance;
+                    armStartWatchdog();
                     window.speechSynthesis.speak(retryUtterance);
                   } catch {
                     void done(true, event.error);
@@ -1011,14 +1053,10 @@ function executeSingleSpeech(
           return utterance;
         };
 
-        let hasStarted = false;
-        let cancelRaceRetried = false;
-        let resolved = false;
-        let safetyTimer: ReturnType<typeof setTimeout> | null = null;
-        let activeUtteranceRef: SpeechSynthesisUtterance | null = null;
         const done = async (isError?: boolean, errorDetail?: string) => {
           if (resolved) return;
           resolved = true;
+          clearStartWatchdog();
           if (safetyTimer) {
             clearTimeout(safetyTimer);
             safetyTimer = null;
@@ -1067,7 +1105,10 @@ function executeSingleSpeech(
           16000,
           (text.length / 3) * (1000 / (normalizedRate || 0.5)) + 8000,
         );
-        safetyTimer = setTimeout(() => done(false), timeoutMs);
+        safetyTimer = setTimeout(
+          () => done(!hasStarted && canFallbackToTts3, !hasStarted ? "native-timeout" : undefined),
+          timeoutMs,
+        );
         const elapsedSinceCancel = Date.now() - lastSpeechSynthesisCancelAt;
         if (elapsedSinceCancel < 160) {
           await new Promise<void>((waitResolve) =>
@@ -1085,6 +1126,7 @@ function executeSingleSpeech(
             window as Window & { _activeUtterance?: SpeechSynthesisUtterance | null }
           )._activeUtterance = u;
         }
+        armStartWatchdog();
         window.speechSynthesis.speak(u);
       } catch (e) {
         console.warn("Speech synthesis error:", e);
@@ -3274,6 +3316,19 @@ function Index() {
       if (st.current) {
         st.current.isTtsPlayEnabled = enabled;
       }
+      if (enabled) {
+        unlockTtsAudioPlayback();
+        setPauseMode(true);
+        if (st.current) {
+          st.current.pauseMode = true;
+        }
+        const playerState = player.current?.getPlayerState?.();
+        if ((playerState === 1 || isVideoPlayingRef.current) && st.current?.isSetupPaused) {
+          setIsSetupPaused(false);
+          st.current.isSetupPaused = false;
+          setPauseReason(null);
+        }
+      }
       const currentSettings = loadAppSettings();
       saveAppSettings({
         ...currentSettings,
@@ -3404,11 +3459,16 @@ function Index() {
     setVideoLibraryTimeoutSetting(enabled);
   };
   const [isSetupPaused, setIsSetupPaused] = useState(false);
+  const setupPauseActivatedAtRef = useRef<number>(0);
   const [pauseReason, setPauseReason] = useState<string | null>(null);
   const toggleSetupPause = useCallback(() => {
     setIsSetupPaused((prev) => {
       const next = !prev;
+      if (st.current) {
+        st.current.isSetupPaused = next;
+      }
       if (next) {
+        setupPauseActivatedAtRef.current = Date.now();
         try {
           multiVideoPlayerRegistry.pauseAllExcept();
           player.current?.pauseVideo?.();
@@ -4298,6 +4358,7 @@ function Index() {
   }, [videoId]);
 
   const handlePlayVideo = useCallback(() => {
+    unlockTtsAudioPlayback();
     setIsSetupPaused(false);
     if (st.current) {
       st.current.isSetupPaused = false;
@@ -4427,6 +4488,7 @@ function Index() {
 
   const handleSeek = useCallback(
     (seconds: number) => {
+      unlockTtsAudioPlayback();
       const p = player.current || multiVideoPlayerRegistry.get("primary");
       if (!p) return;
       try {
@@ -5239,6 +5301,12 @@ function Index() {
   useEffect(() => {
     const cleanupMedia = initBackgroundMediaManager({
       onPlay: () => {
+        unlockTtsAudioPlayback();
+        setIsSetupPaused(false);
+        if (st.current) {
+          st.current.isSetupPaused = false;
+        }
+        userExplicitlyPausedRef.current = false;
         try {
           player.current?.playVideo?.();
           setIsVideoPlaying(true);
@@ -6433,6 +6501,10 @@ function Index() {
             if (event.data === 1) {
               userExplicitlyPausedRef.current = false;
               isPausedForTtsRef.current = false;
+              if (st.current.isSetupPaused && Date.now() - setupPauseActivatedAtRef.current > 400) {
+                setIsSetupPaused(false);
+                st.current.isSetupPaused = false;
+              }
               setIsVideoPlaying(true);
               setPauseReason(null);
             } else if (event.data === 2) {
@@ -10587,7 +10659,11 @@ function Index() {
                                     <input
                                       type="checkbox"
                                       checked={pauseMode}
-                                      onChange={(e) => setPauseMode(e.target.checked)}
+                                      onChange={(e) => {
+                                        const checked = e.target.checked;
+                                        setPauseMode(checked);
+                                        onTtsPlayEnabledChange(checked);
+                                      }}
                                     />{" "}
                                     Pause &amp; speak after each section
                                   </label>

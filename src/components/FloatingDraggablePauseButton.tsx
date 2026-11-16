@@ -29,6 +29,7 @@ import {
   verifyOpenRouterCredential,
   verifyTtsServiceTokenCredential,
 } from "@/utils/credentialStatus";
+import { unlockTtsAudioPlayback } from "@/lib/alternative-tts";
 
 export interface FloatingDraggablePauseButtonProps {
   isSetupPaused: boolean;
@@ -343,6 +344,7 @@ export const FloatingDraggablePauseButton: React.FC<FloatingDraggablePauseButton
           onToggleSetupPause();
         }
       } else {
+        unlockTtsAudioPlayback();
         if (onPlay) {
           onPlay();
         } else if (onTogglePlay) {
@@ -372,6 +374,9 @@ export const FloatingDraggablePauseButton: React.FC<FloatingDraggablePauseButton
 
     const handleToggleTtsPlayOption = (e: React.MouseEvent) => {
       e.stopPropagation();
+      if (!isTtsPlayEnabled) {
+        unlockTtsAudioPlayback();
+      }
       if (onToggleTtsPlay) {
         onToggleTtsPlay();
       }
