@@ -1,10 +1,12 @@
 # Active Subtask Mirror (`docs/todo.md`)
 
-- **Status**: [IN PROGRESS]
-- **Active Task**: Task 415 (Prompt 204 Chapter 2 — Fix enabling "Auto-Scroll Subtitles" (`menu-option-auto-scroll`) not triggering auto-scroll on Subtitles Table stage)
-- **Active Step**: Fix `getAutoScrollSetting()` persistence, `onAutoFocusChange(true)` immediate cooldown clearance + scroll trigger, `mousemove` / button focus blocking in `src/routes/index.tsx`, and visible `#subtitles-table-panel` / `[data-row]` resolution across Advanced Stage 3 and Beginner Video tab; add unit + live Chromium E2E test (`scripts/verify-autoscroll-subtitles-stage.ts`).
-- **Upcoming**: None (final active task in backlog)
+- **Status**: [IDLE]
+- **Active Task**: None (active backlog empty — see `docs/tasks.md`)
+- **Active Step**: None
+- **Upcoming**: None
 - **Completed**:
+  - Task 415 (Prompt 204 Ch. 2, `v2.1.130`) & Hotfix (Prompt 218 post-recovery): Fixed `getAutoScrollSetting()` persistence, `onAutoFocusChange(true)` cooldown clear + visible `#subtitles-table-panel` `useLayoutEffect` scroll, `SubtitleRow` `data-active`, and debounced post-cooldown `autoScrollCooldownEpoch` resume (`test:autoscroll-subtitles-stage` 100% PASSED, `bun install` exit 0, `tsc --noEmit`, `check-version`, `test:learning-goals-no-autoscroll`, `test:auto-focus-disabled`, `test:floating-tts-play-active-during-video`, `test:agents-all` 23/23, `compile_applet`, `lint_applet`, logged in `docs/git.md`)
+  - Hotfix (Prompt 216): Fixed `ReferenceError: Cannot access 'isTtsPlayEnabled' before initialization` in `src/routes/index.tsx` by moving `handleFloatingToggleTtsPlay` after `isTtsPlayEnabled` & `onTtsPlayEnabledChange` declarations (`verify-hotfix-tts-play-enabled-init.ts`, `test:floating-menu-third-option-tts-play`, `test:floating-tts-play-active-during-video`, `tsc --noEmit`, `test:agents-all` 23/23, `compile_applet`, `lint_applet`, logged in `docs/git.md`)
   - Task 414 (Prompt 204 Ch. 1, `v2.1.129`): Eliminated unintended auto-scroll when interacting with Learning Goals controls (`test:learning-goals-no-autoscroll`, `test:auto-focus-disabled`, `compile_applet`, `lint_applet`, logged in `docs/git.md`)
   - Task 427 (Prompt 214 Ch. 2, `v2.1.128`): Fixed floating menu `tts-play` inactive during video playback (`test:floating-tts-play-active-during-video`, `test:floating-menu-third-option-tts-play`, `test:tts-playback-coordination`, `compile_applet`, `lint_applet`, logged in `docs/git.md`)
   - Task 425 (Prompt 214 Ch. 1, `v2.1.127`): Kept persistent YouTube player mounted offscreen across Advanced stages/top tabs & Beginner `Preferences` <-> `Video` tabs (`test:tab-change-keeps-video-playing`, `compile_applet`, `lint_applet`, logged in `docs/git.md`)

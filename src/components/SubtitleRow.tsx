@@ -65,6 +65,7 @@ export const SubtitleRow = memo(function SubtitleRow({
       id={`subtitle-cue-row-${actualIndex}`}
       data-testid={`subtitle-cue-row-${actualIndex}`}
       data-row={actualIndex}
+      data-active={isActive ? "true" : undefined}
       data-criteria-highlighted={isHighlighted ? "true" : undefined}
       onClick={() => onSeek(r, actualIndex)}
       className={`cursor-pointer border-t border-border/70 align-top transition-colors duration-150 ${

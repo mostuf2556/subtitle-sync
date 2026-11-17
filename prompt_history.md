@@ -2749,4 +2749,36 @@ go on
 go on
 ```
 
+---
+
+### Prompt 216: Hotfix — Fix ReferenceError: Cannot access 'isTtsPlayEnabled' before initialization
+```
+Fix the errors in the app
+[AIS_METADATA_SECTION_START]
+fix_it_trigger: manual
+error 0: [APP_BOOT_ERROR] Router rendered ErrorComponent: This page didn't load Cannot access 'isTtsPlayEnabled' before initialization
+error 1: [APP_PAGE_ERROR] This page didn't load: Cannot access 'isTtsPlayEnabled' before initialization
+error 2: ReferenceError: Cannot access 'isTtsPlayEnabled' before initialization
+    at Index (src/routes/index.tsx:1835:6)
+[AIS_METADATA_SECTION_END]
+```
+
+---
+
+### Prompt 217: Go On — Complete & Verify Task 415 (`menu-option-auto-scroll` Subtitles Stage Auto-Scroll)
+```
+go on
+```
+
+---
+
+### Prompt 218: Hotfix — Post-Recovery `bun install` & Full Verification
+```
+Fix the errors in the app
+[AIS_METADATA_SECTION_START]
+fix_it_trigger: manual
+error 0: bun install failed: exit status 1
+[AIS_METADATA_SECTION_END]
+```
+
 

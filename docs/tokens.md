@@ -4,6 +4,9 @@ This document establishes the lightweight, high-efficiency operational protocol 
 
 ---
 
+- Prompt 218 (Hotfix [COMPLETED & VERIFIED] — Post-Recovery `bun install` & Build/E2E Verification, `v2.1.130`): Verified `bun install` exits cleanly (`701 installs across 833 packages`, 0 errors), restarted Vite dev server, and passed `test:autoscroll-subtitles-stage`, `npx tsc --noEmit`, `compile_applet`, `lint_applet`, and `test:agents-all` (23/23).
+- Prompt 217 (Go On [COMPLETED & VERIFIED] — Task 415 `v2.1.130`): Added `data-active` on `SubtitleRow`, `useLayoutEffect` visible-panel scroll + debounced post-cooldown `autoScrollCooldownEpoch` resume in `src/routes/index.tsx`, synced `v2.1.130`, passed `test:autoscroll-subtitles-stage` (100%), and migrated to `docs/done.md`.
+- Prompt 216 (Hotfix [COMPLETED & VERIFIED] — Fix `ReferenceError: Cannot access 'isTtsPlayEnabled' before initialization` in `src/routes/index.tsx`): Relocated `handleFloatingToggleTtsPlay` after `isTtsPlayEnabled` and `onTtsPlayEnabledChange` declarations, fixed Prettier formatting, added `verify-hotfix-tts-play-enabled-init.ts`, verified `tsc --noEmit`, live Chromium (`test:floating-tts-play-active-during-video`), `test:floating-menu-third-option-tts-play`, `test:agents-all` (23/23), `compile_applet`, and `lint_applet`, and resumed `Task 415`.
 - Prompt 215 (Go On — Resume Active Backlog): Verified `Task 427` & `Task 414` [COMPLETED & VERIFIED]; executing `Task 415` [ACTIVE] strictly serially and migrating to `docs/done.md` upon verification.
 - Prompt 214 (Tasks 426, 425, 427 — AGENTS.md Sub-Task Git Commit & `docs/git.md` Logging, Demo Tab Switch Keeps Video Playing, & Floating Menu TTS-Play Active During Video Playback):
   - Task 426 [COMPLETED & VERIFIED]: Chapter 0 — Documented sub-task `git commit` + `docs/git.md` logging rule in `AGENTS.md`, created `docs/git.md` & verified `test:agents-git-log-rule` + `test:agents-all` (23/23).

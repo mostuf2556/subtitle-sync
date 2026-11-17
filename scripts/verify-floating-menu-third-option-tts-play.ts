@@ -98,7 +98,8 @@ assert.ok(
 );
 assert.ok(
   indexCode.includes("isTtsPlayEnabled={isTtsPlayEnabled}") &&
-    indexCode.includes("onToggleTtsPlay={() => onTtsPlayEnabledChange(!isTtsPlayEnabled)}"),
+    (indexCode.includes("onToggleTtsPlay={handleFloatingToggleTtsPlay}") ||
+      indexCode.includes("onToggleTtsPlay={() => onTtsPlayEnabledChange(!isTtsPlayEnabled)}")),
   "index.tsx must pass isTtsPlayEnabled and onToggleTtsPlay props to FloatingDraggablePauseButton",
 );
 console.log("✅ PASS: Route wiring, persistence, and TTS playback gating verified");

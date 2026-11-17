@@ -129,6 +129,6 @@ The application processes and presents subtitles through a strict sequential pip
 
 ## Last raw prompt
 ```
-go on
+Fix the errors in the app
 ```
 
