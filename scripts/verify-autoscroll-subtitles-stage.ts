@@ -305,16 +305,24 @@ try {
 
     // Close menu and check auto-scroll
     await page.getByTestId("floating-menu-toggle-btn").click();
-    await page.waitForTimeout(350);
+    await page.waitForFunction(
+      () => (document.getElementById("subtitles-table-panel")?.scrollTop ?? 0) > 100,
+      undefined,
+      { timeout: 2500 },
+    );
 
     const afterEnableState = await page.evaluate(() => {
       const panel = document.getElementById("subtitles-table-panel")!;
-      const row18 = panel.querySelector('[data-row="18"]') as HTMLElement | null;
+      const activeRow =
+        (panel.querySelector('[data-row][data-active="true"]') as HTMLElement | null) ||
+        (panel.querySelector('[data-row="18"]') as HTMLElement | null);
+      const activeRowIndex = activeRow ? Number(activeRow.getAttribute("data-row")) : -1;
       const panelRect = panel.getBoundingClientRect();
-      const rowRect = row18?.getBoundingClientRect();
+      const rowRect = activeRow?.getBoundingClientRect();
       return {
         scrollTop: panel.scrollTop,
         autoScrollStorage: window.localStorage.getItem("yt_auto_scroll"),
+        activeRowIndex,
         rowCentered: Boolean(
           rowRect && rowRect.top >= panelRect.top - 40 && rowRect.bottom <= panelRect.bottom + 40,
         ),
@@ -326,10 +334,14 @@ try {
       `Enabling Auto-Scroll Subtitles must scroll #subtitles-table-panel to active row (scrollTop=${afterEnableState.scrollTop})`,
     );
     assert.ok(
-      afterEnableState.rowCentered,
-      "Row 18 must be scrolled into visible bounds of #subtitles-table-panel",
+      afterEnableState.activeRowIndex >= 18,
+      `Expected active row >= 18, got ${afterEnableState.activeRowIndex}`,
     );
-    console.log(`✅ Step 3A.1 PASS: Enabling menu-option-auto-scroll scrolled Advanced table to row 18 (scrollTop=${Math.round(afterEnableState.scrollTop)}).`);
+    assert.ok(
+      afterEnableState.rowCentered,
+      `Active row ${afterEnableState.activeRowIndex} must be scrolled into visible bounds of #subtitles-table-panel`,
+    );
+    console.log(`✅ Step 3A.1 PASS: Enabling menu-option-auto-scroll scrolled Advanced table to active row ${afterEnableState.activeRowIndex} (scrollTop=${Math.round(afterEnableState.scrollTop)}).`);
 
     // Move mouse over the table (previously mousemove blocked auto-scroll!) and seek to row 32
     const row32Sec = await getRowTiming(page, 32);
@@ -339,15 +351,29 @@ try {
       const p = (window as unknown as { __mockYtPlayer: { seekTo: (s: number) => void } }).__mockYtPlayer;
       p.seekTo(sec);
     }, row32Sec);
-    await page.waitForTimeout(450);
+    await page.waitForFunction(
+      (prevScrollTop) => {
+        const panel = document.getElementById("subtitles-table-panel");
+        if (!panel) return false;
+        const activeRow = panel.querySelector('[data-row][data-active="true"]');
+        const idx = activeRow ? Number(activeRow.getAttribute("data-row")) : -1;
+        return panel.scrollTop > prevScrollTop && idx >= 32;
+      },
+      afterEnableState.scrollTop,
+      { timeout: 2500 },
+    );
 
     const row32State = await page.evaluate(() => {
       const panel = document.getElementById("subtitles-table-panel")!;
-      const row32 = panel.querySelector('[data-row="32"]') as HTMLElement | null;
+      const activeRow =
+        (panel.querySelector('[data-row][data-active="true"]') as HTMLElement | null) ||
+        (panel.querySelector('[data-row="32"]') as HTMLElement | null);
+      const activeRowIndex = activeRow ? Number(activeRow.getAttribute("data-row")) : -1;
       const panelRect = panel.getBoundingClientRect();
-      const rowRect = row32?.getBoundingClientRect();
+      const rowRect = activeRow?.getBoundingClientRect();
       return {
         scrollTop: panel.scrollTop,
+        activeRowIndex,
         rowVisible: Boolean(
           rowRect && rowRect.top >= panelRect.top - 40 && rowRect.bottom <= panelRect.bottom + 40,
         ),
@@ -355,10 +381,17 @@ try {
     });
     assert.ok(
       row32State.scrollTop > afterEnableState.scrollTop,
-      `Auto-scroll must advance further when active row moves to 32 even after mousemove (prev=${afterEnableState.scrollTop}, now=${row32State.scrollTop})`,
+      `Auto-scroll must advance further when active row moves to >=32 even after mousemove (prev=${afterEnableState.scrollTop}, now=${row32State.scrollTop})`,
     );
-    assert.ok(row32State.rowVisible, "Row 32 must be scrolled into view inside #subtitles-table-panel");
-    console.log(`✅ Step 3A.2 PASS: Auto-scroll tracked playback to row 32 despite mouse movement (scrollTop=${Math.round(row32State.scrollTop)}).`);
+    assert.ok(
+      row32State.activeRowIndex >= 32,
+      `Expected active row >= 32, got ${row32State.activeRowIndex}`,
+    );
+    assert.ok(
+      row32State.rowVisible,
+      `Active row ${row32State.activeRowIndex} must be scrolled into view inside #subtitles-table-panel`,
+    );
+    console.log(`✅ Step 3A.2 PASS: Auto-scroll tracked playback to active row ${row32State.activeRowIndex} despite mouse movement (scrollTop=${Math.round(row32State.scrollTop)}).`);
 
     // Reload persistence check: yt_auto_scroll="true" must survive page reload
     await page.reload({ waitUntil: "domcontentloaded" });
@@ -380,7 +413,11 @@ try {
       p.seekTo(sec);
       p.playVideo();
     }, row24Sec);
-    await page.waitForTimeout(450);
+    await page.waitForFunction(
+      () => (document.getElementById("subtitles-table-panel")?.scrollTop ?? 0) > 150,
+      undefined,
+      { timeout: 2500 },
+    );
 
     const scrollAfterReload = await page.evaluate(
       () => document.getElementById("subtitles-table-panel")!.scrollTop,
@@ -483,7 +520,11 @@ try {
     const begEnabledLabel = (await page.getByTestId("menu-option-auto-scroll").textContent()) || "";
     assert.ok(begEnabledLabel.includes("Enabled"), "Beginner menu-option-auto-scroll must show Enabled");
     await page.getByTestId("floating-menu-toggle-btn").click();
-    await page.waitForTimeout(400);
+    await page.waitForFunction(
+      () => (document.getElementById("subtitles-table-panel")?.scrollTop ?? 0) > 100,
+      undefined,
+      { timeout: 2500 },
+    );
 
     const begScrollAfterEnable = await page.evaluate(
       () => document.getElementById("subtitles-table-panel")!.scrollTop,
@@ -499,7 +540,11 @@ try {
       const p = (window as unknown as { __mockYtPlayer: { seekTo: (s: number) => void } }).__mockYtPlayer;
       p.seekTo(sec);
     }, begRow30Sec);
-    await page.waitForTimeout(400);
+    await page.waitForFunction(
+      (prevScroll) => (document.getElementById("subtitles-table-panel")?.scrollTop ?? 0) > prevScroll,
+      begScrollAfterEnable,
+      { timeout: 2500 },
+    );
 
     const begScrollRow30 = await page.evaluate(
       () => document.getElementById("subtitles-table-panel")!.scrollTop,

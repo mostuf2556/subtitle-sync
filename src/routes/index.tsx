@@ -4,6 +4,7 @@ import React, {
   memo,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -2710,9 +2711,6 @@ function Index() {
     },
     [videoId],
   );
-  const handleFloatingToggleTtsPlay = useCallback(() => {
-    onTtsPlayEnabledChange(!isTtsPlayEnabled);
-  }, [isTtsPlayEnabled, onTtsPlayEnabledChange]);
 
   const handleFetchAgainViaServer = useCallback(
     (url: string) => {
@@ -3301,6 +3299,8 @@ function Index() {
     }
   };
   const autoScrollToggleBypassUntilRef = useRef<number>(0);
+  const userInteractionResumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [autoScrollCooldownEpoch, setAutoScrollCooldownEpoch] = useState(0);
   const [autoFocus, setAutoFocusState] = useState(() =>
     typeof window !== "undefined" ? getAutoScrollSetting() : false,
   );
@@ -3308,6 +3308,10 @@ function Index() {
     if (enabled) {
       autoScrollToggleBypassUntilRef.current = Date.now() + 800;
       resetUserInteractionTimestamp();
+      if (userInteractionResumeTimerRef.current) {
+        clearTimeout(userInteractionResumeTimerRef.current);
+        userInteractionResumeTimerRef.current = null;
+      }
     }
     setAutoFocusState(enabled);
     setAutoScrollSetting(enabled);
@@ -3373,6 +3377,9 @@ function Index() {
     },
     [videoId],
   );
+  const handleFloatingToggleTtsPlay = useCallback(() => {
+    onTtsPlayEnabledChange(!isTtsPlayEnabled);
+  }, [isTtsPlayEnabled, onTtsPlayEnabledChange]);
   const onDebugModeChange = (enabled: boolean) => {
     setDebugModeState(enabled);
     setDeveloperModeEnabled(enabled);
@@ -6657,13 +6664,13 @@ function Index() {
           handledVideoFirstSections.current.clear();
           lastMs.current = ms;
           const nextTimeSec = ms / 1000;
-      setPlaybackCurrentTime((prev) =>
-        useAlternativePlayerViewRef.current
-          ? nextTimeSec
-          : Math.floor(prev) === Math.floor(nextTimeSec)
-            ? prev
-            : Math.floor(nextTimeSec),
-      );
+          setPlaybackCurrentTime((prev) =>
+            useAlternativePlayerViewRef.current
+              ? nextTimeSec
+              : Math.floor(prev) === Math.floor(nextTimeSec)
+                ? prev
+                : Math.floor(nextTimeSec),
+          );
           const soughtIdx = findRowIndexAtTimeMs(st.current.rows, ms);
           lastRow.current = soughtIdx;
           setActive(soughtIdx);
@@ -7370,6 +7377,13 @@ function Index() {
         return;
       }
       recordUserInteraction(Date.now());
+      if (userInteractionResumeTimerRef.current) {
+        clearTimeout(userInteractionResumeTimerRef.current);
+      }
+      userInteractionResumeTimerRef.current = setTimeout(() => {
+        userInteractionResumeTimerRef.current = null;
+        setAutoScrollCooldownEpoch((prev) => prev + 1);
+      }, AUTO_SCROLL_COOLDOWN_MS + 50);
     };
 
     const events = [
@@ -7391,6 +7405,10 @@ function Index() {
       events.forEach((evt) => {
         window.removeEventListener(evt, onUserInteraction);
       });
+      if (userInteractionResumeTimerRef.current) {
+        clearTimeout(userInteractionResumeTimerRef.current);
+        userInteractionResumeTimerRef.current = null;
+      }
     };
   }, []);
 
@@ -7410,7 +7428,7 @@ function Index() {
     }
   }, [active]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (disableScrolling || !autoFocus || isSetupPaused) return;
     const targetRowIdx = active >= 0 ? active : speakingRow;
     if (targetRowIdx < 0) return;
@@ -7421,10 +7439,10 @@ function Index() {
         typeof document !== "undefined" ? (document.activeElement as HTMLElement | null) : null;
       const isFormInputFocused = Boolean(
         activeEl &&
-          (activeEl.tagName === "INPUT" ||
-            activeEl.tagName === "TEXTAREA" ||
-            activeEl.tagName === "SELECT" ||
-            activeEl.isContentEditable),
+        (activeEl.tagName === "INPUT" ||
+          activeEl.tagName === "TEXTAREA" ||
+          activeEl.tagName === "SELECT" ||
+          activeEl.isContentEditable),
       );
       const isInSetupOrSettingsFocus = Boolean(
         activeEl?.closest?.(
@@ -7433,21 +7451,28 @@ function Index() {
       );
       const isUserFocusActive = Boolean(
         activeEl &&
-          activeEl !== document.body &&
-          activeEl !== document.documentElement &&
-          (isFormInputFocused || isInSetupOrSettingsFocus),
+        activeEl !== document.body &&
+        activeEl !== document.documentElement &&
+        (isFormInputFocused || isInSetupOrSettingsFocus),
       );
       if (isUserFocusActive) {
         return;
       }
 
       // Scroll container inside subtitles panel ONLY, never scroll whole window or steal document focus
-      const panel = document.getElementById("subtitles-table-panel");
+      const panels = Array.from(document.querySelectorAll("#subtitles-table-panel")).filter(
+        (el): el is HTMLElement => el instanceof HTMLElement,
+      );
+      const panel =
+        panels.find((el) => el.clientHeight > 0 && el.scrollHeight > el.clientHeight) ||
+        panels[0] ||
+        null;
       const rowEl = panel?.querySelector(`[data-row="${targetRowIdx}"]`) as HTMLElement | null;
       if (panel && rowEl && panel.clientHeight > 0 && panel.scrollHeight > panel.clientHeight) {
         const panelRect = panel.getBoundingClientRect();
         const rowRect = rowEl.getBoundingClientRect();
-        panel.scrollTop += rowRect.top - panelRect.top - panel.clientHeight / 2 + rowRect.height / 2;
+        panel.scrollTop +=
+          rowRect.top - panelRect.top - panel.clientHeight / 2 + rowRect.height / 2;
       }
     };
 
@@ -7475,6 +7500,7 @@ function Index() {
     workflowMode,
     rows.length,
     tableDisplayMode,
+    autoScrollCooldownEpoch,
   ]);
 
   const seek = useCallback(

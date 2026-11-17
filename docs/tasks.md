@@ -4,9 +4,7 @@ This file is strictly the active backlog containing pending, active, and upcomin
 
 ## Active Tasks
 
-- [ ] **Task 415: Prompt 204 Chapter 2 — Fix enabling "Auto-Scroll Subtitles" (`menu-option-auto-scroll`) not triggering auto-scroll on Subtitles Table stage**
-  - Diagnose and fix `menu-option-auto-scroll` (`autoFocus` / `onAutoFocusChange`), persistence (`getAutoScrollSetting`), interaction cooldown / button focus traps, and Subtitles Table stage scroll targeting (`#subtitles-table-panel`, `[data-row]`) across both Advanced and Beginner modes.
-  - Add dedicated unit + live Playwright Chromium regression test (`scripts/verify-autoscroll-subtitles-stage.ts`), compile, lint, and migrate to `docs/done.md`.
+_No active tasks remaining._
 
 ## Later Tasks
 

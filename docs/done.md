@@ -1,5 +1,42 @@
 # Done tasks
 
+### Task 415: Prompt 204 Chapter 2 — Fix Enabling "Auto-Scroll Subtitles" (`menu-option-auto-scroll`) Not Triggering Auto-Scroll on Subtitles Table Stage (`v2.1.130`)
+
+- **Prompt**:
+  ```
+  2. enabling "auto-scroll subtitles" didn't trigger auto scroll on the subtitles stage
+  (continued via Prompt 215 & Prompt 217 "go on")
+  ```
+- **Changes**:
+  - `src/utils/appSettings.ts`: Preserved `getAutoScrollSetting()` returning `true` when `yt_auto_scroll === "true"`, kept default `false`, and retained cooldown helpers (`AUTO_SCROLL_COOLDOWN_MS = 5000`, `recordUserInteraction`, `isAutoScrollAllowed`, `resetUserInteractionTimestamp`).
+  - `src/routes/index.tsx`: Synchronized `autoFocus` and `disableScrolling`/`disableAutoFocus` in `onAutoFocusChange(true)` with `resetUserInteractionTimestamp()`, `autoScrollToggleBypassUntilRef`, and pending cooldown timer cancellation; removed `mousemove` from the global interaction cooldown listener and exempted `#floating-draggable-pause-container` / `#auto-scroll-toggle`; converted the Subtitles Table auto-scroll hook to `useLayoutEffect` (importing `useLayoutEffect`) targeting the visible scrollable `#subtitles-table-panel`; added `autoScrollCooldownEpoch` + debounced `userInteractionResumeTimerRef` (`AUTO_SCROLL_COOLDOWN_MS + 50`) so post-cooldown auto-scroll resumes reliably even when `active` / `speakingRow` stayed unchanged during the 5s window.
+  - `src/components/SubtitleRow.tsx`: Added `data-active={isActive ? "true" : undefined}` on `<tr>` so DOM active-row state is directly observable across both modes.
+  - `scripts/verify-autoscroll-subtitles-stage.ts`, `package.json` (`v2.1.130`, `test:autoscroll-subtitles-stage`), & `docs/files.md`: Added unit + source contract + live Chromium E2E test covering Advanced Stage 2 (enable/disable, `mousemove` tolerance, reload persistence, 5s cooldown hold + resume) and Beginner Mode parity.
+- **Verification**: `npm run test:autoscroll-subtitles-stage` (100% PASSED), `npx tsc --noEmit`, `npm run check-version` (`v2.1.130`), `npm run test:learning-goals-no-autoscroll`, `npm run test:auto-focus-disabled`, `npm run test:floating-tts-play-active-during-video`, `npm run test:agents-all` (23/23), `compile_applet`, and `lint_applet` — all **PASSED**; git commit/push attempted and logged in `docs/git.md` (skipped: no `.git` directory).
+
+### Hotfix: Verify `bun install` (`exit status 1` Container Recovery) & Full App Build/E2E Integrity (Prompt 218)
+
+- **Prompt**:
+  ```
+  Fix the errors in the app
+  (bun install failed: exit status 1)
+  ```
+- **Changes**:
+  - Verified container filesystem recovery (`bun install` exited 0 with `701 installs across 833 packages`), restarted the Vite dev server on port 3000, verified zero stale/broken module transforms, and completed full Task 415 post-recovery verification (`v2.1.130`).
+- **Verification**: `bun install` (exit 0), `npm run test:autoscroll-subtitles-stage`, `npm run test:floating-menu-third-option-tts-play`, `npx tsx scripts/verify-hotfix-tts-play-enabled-init.ts`, `npm run test:same-components-parity-policy`, `npm run test:no-duplicate-md`, `npm run test:agents-all` (23/23), `npx tsc --noEmit`, `compile_applet`, and `lint_applet` (0 errors) — all **PASSED**; git commit/push attempted and logged in `docs/git.md` (skipped: no `.git` directory).
+
+### Hotfix: Fix `ReferenceError: Cannot access 'isTtsPlayEnabled' before initialization` (`src/routes/index.tsx`, Prompt 216)
+
+- **Prompt**:
+  ```
+  Fix the errors in the app
+  (ReferenceError: Cannot access 'isTtsPlayEnabled' before initialization at Index in src/routes/index.tsx)
+  ```
+- **Changes**:
+  - `src/routes/index.tsx`: Moved `handleFloatingToggleTtsPlay` (`useCallback`) from line 2713 to line 3375, strictly after `isTtsPlayEnabled` (`useState`) and `onTtsPlayEnabledChange` (`useCallback`), eliminating the Temporal Dead Zone (TDZ) `ReferenceError` during initial render; fixed Prettier indentation on lines 6660-6666 and 7424-7450.
+  - `scripts/verify-hotfix-tts-play-enabled-init.ts` & `scripts/verify-floating-menu-third-option-tts-play.ts`: Added dedicated TDZ ordering verification and aligned floating menu toggle prop check with `handleFloatingToggleTtsPlay`.
+- **Verification**: `npx tsx scripts/verify-hotfix-tts-play-enabled-init.ts`, `npm run test:floating-menu-third-option-tts-play`, `npm run test:floating-tts-play-active-during-video` (Scenarios A/B/C/D1/D2 in live Chromium), `npx tsc --noEmit`, `npm run test:agents-all` (23/23), `compile_applet`, and `lint_applet` (0 errors) — all **PASSED**; git commit/push attempted and logged in `docs/git.md` (skipped: no `.git` directory).
+
 ### Task 414: Prompt 204 Chapter 1 — Fix Unintended Auto-Scroll When Interacting with Controls in Learning Goals Stage (`v2.1.129`)
 
 - **Prompt**:
