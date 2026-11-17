@@ -67,6 +67,10 @@ export interface BeginnerFlowContainerProps {
   languageSkipIncomplete?: Record<string, boolean>;
   onLanguageSkipIncompleteChange?: (langCode: string, val: boolean | undefined) => void;
   onResetAllLanguageCriteria?: () => void;
+  disableScrolling?: boolean;
+  onDisableScrollingChange?: (disabled: boolean) => void;
+  disableAutoFocus?: boolean;
+  onDisableAutoFocusChange?: (disabled: boolean) => void;
 }
 
 export const BeginnerFlowContainer: React.FC<BeginnerFlowContainerProps> = React.memo(
@@ -124,6 +128,10 @@ export const BeginnerFlowContainer: React.FC<BeginnerFlowContainerProps> = React
     languageSkipIncomplete,
     onLanguageSkipIncompleteChange,
     onResetAllLanguageCriteria,
+    disableScrolling,
+    onDisableScrollingChange,
+    disableAutoFocus,
+    onDisableAutoFocusChange,
   }) => {
     // Load initial settings
     const [settings, setSettings] = useState<AppSettings>(() => loadAppSettings());
@@ -293,6 +301,10 @@ export const BeginnerFlowContainer: React.FC<BeginnerFlowContainerProps> = React
               languageSkipIncomplete={languageSkipIncomplete}
               onLanguageSkipIncompleteChange={onLanguageSkipIncompleteChange}
               onResetAllLanguageCriteria={onResetAllLanguageCriteria}
+              disableScrolling={disableScrolling}
+              onDisableScrollingChange={onDisableScrollingChange}
+              disableAutoFocus={disableAutoFocus}
+              onDisableAutoFocusChange={onDisableAutoFocusChange}
             />
           </div>
         </main>

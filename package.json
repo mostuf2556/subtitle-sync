@@ -225,6 +225,7 @@
     "test:openrouter-free-models": "tsx scripts/verify-openrouter-free-models-dropdown.ts",
     "test:game-openrouter-sentences": "tsx scripts/verify-game-openrouter-sentences.ts",
     "test:seek-overrides-tts-queue": "tsx scripts/verify-seek-overrides-tts-queue.ts",
+    "test:autoscroll-subtitles-stage": "tsx scripts/verify-autoscroll-subtitles-stage.ts",
     "test:android-emulator-docs-evidence": "tsx scripts/verify-android-emulator-docs-evidence.ts",
     "test:theme-colors-consistency": "tsx scripts/verify-theme-colors-consistency.ts",
     "test:android-build-hotfix-and-version-details": "tsx scripts/verify-android-build-hotfix-and-version-details.ts",

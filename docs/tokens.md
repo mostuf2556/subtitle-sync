@@ -4,10 +4,11 @@ This document establishes the lightweight, high-efficiency operational protocol 
 
 ---
 
+- Prompt 215 (Go On — Resume Active Backlog): Verified `Task 427` & `Task 414` [COMPLETED & VERIFIED]; executing `Task 415` [ACTIVE] strictly serially and migrating to `docs/done.md` upon verification.
 - Prompt 214 (Tasks 426, 425, 427 — AGENTS.md Sub-Task Git Commit & `docs/git.md` Logging, Demo Tab Switch Keeps Video Playing, & Floating Menu TTS-Play Active During Video Playback):
   - Task 426 [COMPLETED & VERIFIED]: Chapter 0 — Documented sub-task `git commit` + `docs/git.md` logging rule in `AGENTS.md`, created `docs/git.md` & verified `test:agents-git-log-rule` + `test:agents-all` (23/23).
   - Task 425 [COMPLETED & VERIFIED]: Chapter 1 — Kept video player mounted offscreen-invisible across Advanced stages/top tabs and Beginner `Preferences` <-> `Video` tabs so changing tabs never pauses or reloads the player (`test:tab-change-keeps-video-playing`, `v2.1.127`).
-  - Task 427 [ACTIVE]: Chapter 2 — Fix `tts-play` showing as enabled on the floating button menu (`menu-option-tts-play`) while not actually being active during video playback.
+  - Task 427 [COMPLETED & VERIFIED]: Chapter 2 — Fixed `tts-play` showing as enabled on the floating button menu while inactive during video playback (`test:floating-tts-play-active-during-video`, `v2.1.128`).
 - Prompt 213 (Go On — Resume Active Backlog): Execute active serial tasks strictly one at a time (`Task 414` [ACTIVE] -> `Task 415` [PENDING] -> `Task 425` [PENDING]), migrating each to `docs/done.md` upon verification.
 - Prompt 212 (Go On Backlog + Task 425 — Keep Video Player Playing When Changing Tabs on Demo Webpage):
   - Chapter 1 (`1. go on`): Reconciled & migrated `Task 419` to `docs/done.md`; executing `Task 414` [ACTIVE] -> `Task 415` [PENDING] strictly serially.

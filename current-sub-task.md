@@ -1,10 +1,12 @@
 # Current Subtask (`current-sub-task.md`)
 
 - **Status**: [IN PROGRESS]
-- **Active Task**: Task 427 (Prompt 214 Chapter 2 — Fix `tts-play` appearing enabled on floating button menu while inactive during video playback)
-- **Active Step**: Diagnose why `menu-option-tts-play` displays as enabled on `FloatingDraggablePauseButton` yet fails to trigger/stay active during video playback across Advanced & Beginner modes, reproduce in headless Chromium, fix root causes, and verify end-to-end.
-- **Upcoming**: `Task 414` -> `Task 415`
+- **Active Task**: Task 415 (Prompt 204 Chapter 2 — Fix enabling "Auto-Scroll Subtitles" (`menu-option-auto-scroll`) not triggering auto-scroll on Subtitles Table stage)
+- **Active Step**: Fix `getAutoScrollSetting()` persistence, `onAutoFocusChange(true)` immediate cooldown clearance + scroll trigger, `mousemove` / button focus blocking in `src/routes/index.tsx`, and visible `#subtitles-table-panel` / `[data-row]` resolution across Advanced Stage 3 and Beginner Video tab; add unit + live Chromium E2E test (`scripts/verify-autoscroll-subtitles-stage.ts`).
+- **Upcoming**: None (final active task in backlog)
 - **Completed**:
+  - Task 414 (Prompt 204 Ch. 1, `v2.1.129`): Eliminated unintended auto-scroll when interacting with Learning Goals controls (`test:learning-goals-no-autoscroll`, `test:auto-focus-disabled`, `compile_applet`, `lint_applet`, logged in `docs/git.md`)
+  - Task 427 (Prompt 214 Ch. 2, `v2.1.128`): Fixed floating menu `tts-play` inactive during video playback (`test:floating-tts-play-active-during-video`, `test:floating-menu-third-option-tts-play`, `test:tts-playback-coordination`, `compile_applet`, `lint_applet`, logged in `docs/git.md`)
   - Task 425 (Prompt 214 Ch. 1, `v2.1.127`): Kept persistent YouTube player mounted offscreen across Advanced stages/top tabs & Beginner `Preferences` <-> `Video` tabs so tab transitions never pause or recreate playback (`test:tab-change-keeps-video-playing`, `compile_applet`, `lint_applet`, logged in `docs/git.md`)
   - Task 426 (Prompt 214 Ch. 0): Added sub-task `git commit` & `docs/git.md` logging rule in `AGENTS.md`, created `docs/git.md`, cataloged in `docs/files.md`, verified `test:agents-git-log-rule` & `test:agents-all` (23/23 PASSED)
   - Task 419 (Prompt 207 Ch. 4, reconciled on Prompt 212): Game & OpenRouter target-word `X=5` sentence generation verified (`test:game-openrouter-sentences` PASSED) and migrated to `docs/done.md`

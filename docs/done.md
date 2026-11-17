@@ -1,5 +1,31 @@
 # Done tasks
 
+### Task 414: Prompt 204 Chapter 1 — Fix Unintended Auto-Scroll When Interacting with Controls in Learning Goals Stage (`v2.1.129`)
+
+- **Prompt**:
+  ```
+  1. on the learning goals stage, interacting with the controls triggers an auto-scroll
+  ```
+- **Changes**:
+  - `src/routes/index.tsx`: Disabled `autoTimeout` on Stage 1 (`languages`) accordion (`autoTimeout={panelId === "library" ? videoLibraryTimeoutEnabled : false}`) so Stage 1 Learning Goals never snaps shut or jumps scroll after 10s.
+  - `src/components/LanguageBoxesSelector.tsx`: Preserved `#language-boxes-grid` `scrollTop` and `window.scrollX/Y` across selected-language reorders via `useLayoutEffect` (`pendingGridScrollTopRef`, `pendingWindowScrollRef`) and `[overflow-anchor:none]` without calling programmatic `.focus()`.
+  - `src/components/FetchedSubtitlesStagePanel.tsx`: Replaced `.scrollIntoView()` with container-local `terminalBodyRef.current.scrollTop = terminalBodyRef.current.scrollHeight` and `[overflow-anchor:none]`.
+  - `src/components/shared/LearningGoalsFiltersPanel.tsx` & `src/components/beginner/tabs/BeginnerPreferencesTab.tsx`: Added `[overflow-anchor:none]` across both Advanced Stage 1 and Beginner Preferences containers to eliminate browser scroll-anchoring jumps.
+  - `scripts/verify-learning-goals-no-autoscroll.ts`, `package.json` (`v2.1.129`, `test:learning-goals-no-autoscroll`), & `docs/files.md`: Verified source contracts and live Chromium scroll preservation across Advanced Stage 1, Beginner Preferences, and Beginner Video `#language-boxes-grid`.
+- **Verification**: `npm run test:learning-goals-no-autoscroll`, `npm run test:auto-focus-disabled`, `npm run check-version` (`v2.1.129`), `compile_applet`, and `lint_applet` — all **PASSED**; git commit/push attempted and logged in `docs/git.md` (skipped: no `.git` directory).
+
+### Task 427: Prompt 214 Chapter 2 — Fix `tts-play` Appearing Enabled on Floating Button Menu While Inactive During Video Playback (`v2.1.128`)
+
+- **Prompt**:
+  ```
+  2. tts-play is presented as enabled on the floating button menu but actually it isn't active while the video player is playing
+  ```
+- **Changes**:
+  - `src/routes/index.tsx`: Added `hasMatchedLanguageVoice` check in `executeSingleSpeech` so browsers with `voices.length > 0` lacking a target-language voice route directly to TTS3 under `tts3_native` instead of silently hanging; added 2.2s startup watchdog (`armStartWatchdog`/`clearStartWatchdog`) and `native-ended-without-starting` recovery to TTS3; synchronized `pauseMode <-> isTtsPlayEnabled`, cleared stale `isSetupPaused` on play via `setupPauseActivatedAtRef`, and invoked synchronous `unlockTtsAudioPlayback()` on TTS-Play enable gestures.
+  - `src/components/FloatingDraggablePauseButton.tsx`: Invoked `unlockTtsAudioPlayback()` synchronously on floating play and TTS-Play toggle gestures.
+  - `scripts/verify-floating-tts-play-active-during-video.ts`, `package.json` (`v2.1.128`, `test:floating-tts-play-active-during-video`), & `docs/files.md`: Added dedicated source contracts and live Playwright Chromium E2E checks covering Scenarios A/B/C/D1/D2 across Advanced & Beginner modes.
+- **Verification**: `npx tsc --noEmit`, `npm run test:floating-tts-play-active-during-video` (Scenarios A/B/C/D1/D2 PASSED), `npm run test:floating-menu-third-option-tts-play`, `npm run test:tts-playback-coordination`, `compile_applet`, and `lint_applet` — all **PASSED**; git commit/push attempted and logged in `docs/git.md` (skipped: no `.git` directory).
+
 ### Task 425: Prompt 214 Chapter 1 — Fix Changing Tabs on the Demo Webpage Stopping the Video-Player (`v2.1.127`)
 
 - **Prompt**:

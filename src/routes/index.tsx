@@ -125,6 +125,7 @@ import {
   recordUserInteraction,
   isAutoScrollAllowed,
   getLastUserInteractionTimestamp,
+  resetUserInteractionTimestamp,
   AUTO_SCROLL_COOLDOWN_MS,
   getDebugModeSetting,
   setDebugModeSetting,
@@ -2709,6 +2710,9 @@ function Index() {
     },
     [videoId],
   );
+  const handleFloatingToggleTtsPlay = useCallback(() => {
+    onTtsPlayEnabledChange(!isTtsPlayEnabled);
+  }, [isTtsPlayEnabled, onTtsPlayEnabledChange]);
 
   const handleFetchAgainViaServer = useCallback(
     (url: string) => {
@@ -3296,17 +3300,25 @@ function Index() {
       setAutoScrollSetting(false);
     }
   };
+  const autoScrollToggleBypassUntilRef = useRef<number>(0);
   const [autoFocus, setAutoFocusState] = useState(() =>
     typeof window !== "undefined" ? getAutoScrollSetting() : false,
   );
-  const onAutoFocusChange = (enabled: boolean) => {
+  const onAutoFocusChange = useCallback((enabled: boolean) => {
+    if (enabled) {
+      autoScrollToggleBypassUntilRef.current = Date.now() + 800;
+      resetUserInteractionTimestamp();
+    }
     setAutoFocusState(enabled);
     setAutoScrollSetting(enabled);
     setDisableScrollingState(!enabled);
     setDisableScrollingSetting(!enabled);
     setDisableAutoFocusState(!enabled);
     setDisableAutoFocusSetting(!enabled);
-  };
+  }, []);
+  const handleFloatingToggleAutoScroll = useCallback(() => {
+    onAutoFocusChange(!autoFocus);
+  }, [autoFocus, onAutoFocusChange]);
   const [isTtsPlayEnabled, setIsTtsPlayEnabled] = useState<boolean>(() =>
     typeof window !== "undefined" ? (loadAppSettings().autoPlayTTS ?? true) : true,
   );
@@ -5272,7 +5284,14 @@ function Index() {
       setSpoken((prev) => Array.from(new Set([...prev, ...savedLangs])));
     }
     setAudioTrackModeState(getAudioTrackMode());
-    setAutoFocusState(getAutoScrollSetting());
+    const persistedAutoScroll = getAutoScrollSetting();
+    setAutoFocusState(persistedAutoScroll);
+    if (persistedAutoScroll) {
+      setDisableScrollingState(false);
+      setDisableAutoFocusState(false);
+      setDisableScrollingSetting(false);
+      setDisableAutoFocusSetting(false);
+    }
     if (typeof window !== "undefined") {
       const urlDebug = new URLSearchParams(window.location.search).get("debug");
       if (urlDebug === null && isDeveloperModeEnabled()) {
@@ -5815,6 +5834,8 @@ function Index() {
     }
     return false;
   });
+  const useAlternativePlayerViewRef = useRef(useAlternativePlayerView);
+  useAlternativePlayerViewRef.current = useAlternativePlayerView;
 
   const handleToggleAlternativePlayerView = useCallback(() => {
     setUseAlternativePlayerView((prev) => {
@@ -6572,7 +6593,7 @@ function Index() {
     }
     const iv = setInterval(async () => {
       if (
-        (!player.current || !playerEl.current?.querySelector("iframe")) &&
+        (!player.current || playerEl.current?.childElementCount === 0) &&
         playerEl.current &&
         window.YT?.Player
       ) {
@@ -6635,7 +6656,14 @@ function Index() {
           handledTtsFirstSections.current.clear();
           handledVideoFirstSections.current.clear();
           lastMs.current = ms;
-          setPlaybackCurrentTime(ms / 1000);
+          const nextTimeSec = ms / 1000;
+      setPlaybackCurrentTime((prev) =>
+        useAlternativePlayerViewRef.current
+          ? nextTimeSec
+          : Math.floor(prev) === Math.floor(nextTimeSec)
+            ? prev
+            : Math.floor(nextTimeSec),
+      );
           const soughtIdx = findRowIndexAtTimeMs(st.current.rows, ms);
           lastRow.current = soughtIdx;
           setActive(soughtIdx);
@@ -7331,7 +7359,16 @@ function Index() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const onUserInteraction = () => {
+    const onUserInteraction = (evt: Event) => {
+      if (Date.now() < autoScrollToggleBypassUntilRef.current) return;
+      const target = evt.target as HTMLElement | null;
+      if (
+        target?.closest?.(
+          '[data-testid="floating-draggable-pause-container"], [data-testid="floating-controls-container"], #auto-scroll-toggle',
+        )
+      ) {
+        return;
+      }
       recordUserInteraction(Date.now());
     };
 
@@ -7339,7 +7376,6 @@ function Index() {
       "mousedown",
       "mouseup",
       "click",
-      "mousemove",
       "keydown",
       "wheel",
       "touchstart",
@@ -7363,7 +7399,8 @@ function Index() {
     recordUserInteraction(Date.now());
     if (active < 0) return;
     const panel = document.getElementById("subtitles-table-panel");
-    const rowEl = document.querySelector(`[data-row="${active}"]`) as HTMLElement | null;
+    const rowEl = (panel?.querySelector(`[data-row="${active}"]`) ||
+      document.querySelector(`[data-row="${active}"]`)) as HTMLElement | null;
     if (panel && rowEl) {
       const panelRect = panel.getBoundingClientRect();
       const rowRect = rowEl.getBoundingClientRect();
@@ -7375,59 +7412,102 @@ function Index() {
 
   useEffect(() => {
     if (disableScrolling || !autoFocus || isSetupPaused) return;
-    if (active < 0) return;
+    const targetRowIdx = active >= 0 ? active : speakingRow;
+    if (targetRowIdx < 0) return;
 
-    // Never auto-scroll or steal focus if user recently interacted via mouse, keyboard, or touch
-    if (!isAutoScrollAllowed()) {
-      return;
-    }
+    const scrollPanelToTargetRow = () => {
+      // Never auto-scroll or shift focus away if user is editing a form field or interacting inside setup/settings
+      const activeEl =
+        typeof document !== "undefined" ? (document.activeElement as HTMLElement | null) : null;
+      const isFormInputFocused = Boolean(
+        activeEl &&
+          (activeEl.tagName === "INPUT" ||
+            activeEl.tagName === "TEXTAREA" ||
+            activeEl.tagName === "SELECT" ||
+            activeEl.isContentEditable),
+      );
+      const isInSetupOrSettingsFocus = Boolean(
+        activeEl?.closest?.(
+          '#stage-2-learning-goals-card, #language-boxes-grid, [data-testid="learning-goals-filters-panel"], [data-testid="settings-accordion-panel"], [data-testid="beginner-preferences-tab"]',
+        ),
+      );
+      const isUserFocusActive = Boolean(
+        activeEl &&
+          activeEl !== document.body &&
+          activeEl !== document.documentElement &&
+          (isFormInputFocused || isInSetupOrSettingsFocus),
+      );
+      if (isUserFocusActive) {
+        return;
+      }
 
-    // Never auto-scroll or shift focus away if user currently has an element focused on the page (e.g. language buttons, inputs)
-    const activeEl = typeof document !== "undefined" ? document.activeElement : null;
-    const isUserFocusActive =
-      activeEl && activeEl !== document.body && activeEl !== document.documentElement;
-    if (isUserFocusActive) {
-      return;
-    }
-
-    // Scroll container inside subtitles panel ONLY, never scroll whole window or steal document focus
-    const panel = document.getElementById("subtitles-table-panel");
-    const rowEl = document.querySelector(`[data-row="${active}"]`) as HTMLElement | null;
-    if (panel && rowEl) {
-      const panelRect = panel.getBoundingClientRect();
-      const rowRect = rowEl.getBoundingClientRect();
-      panel.scrollTop += rowRect.top - panelRect.top - panel.clientHeight / 2 + rowRect.height / 2;
-    }
-  }, [active, autoFocus, disableScrolling, isSetupPaused]);
-
-  const seek = (r: Row, i: number) => {
-    const targetSec = r.start / 1000;
-    playbackSeekEpochRef.current += 1;
-    pendingSeekTargetRef.current = {
-      targetSec,
-      requestedAt: Date.now(),
+      // Scroll container inside subtitles panel ONLY, never scroll whole window or steal document focus
+      const panel = document.getElementById("subtitles-table-panel");
+      const rowEl = panel?.querySelector(`[data-row="${targetRowIdx}"]`) as HTMLElement | null;
+      if (panel && rowEl && panel.clientHeight > 0 && panel.scrollHeight > panel.clientHeight) {
+        const panelRect = panel.getBoundingClientRect();
+        const rowRect = rowEl.getBoundingClientRect();
+        panel.scrollTop += rowRect.top - panelRect.top - panel.clientHeight / 2 + rowRect.height / 2;
+      }
     };
-    lastTickWallTimeRef.current = Date.now();
-    cancelSpeech();
-    busy.current = false;
-    isPausedForTtsRef.current = false;
-    userExplicitlyPausedRef.current = false;
-    setPauseReason(null);
-    setIsVideoPlaying(true);
-    lastRow.current = i;
-    resetTtsPlaybackProgress(getPlaybackSectionId(r));
-    lastMs.current = r.start;
-    setActive(i);
-    setPlaybackCurrentTime(targetSec);
-    if (workflowMode === "beginner" && beginnerActiveTab !== "video") {
-      setBeginnerActiveTab("video");
+
+    // If user recently touched/scrolled/typed, hold for the remaining 5-second cooldown and then resume
+    if (!isAutoScrollAllowed()) {
+      const elapsed = Date.now() - getLastUserInteractionTimestamp();
+      const remainingMs = Math.max(50, AUTO_SCROLL_COOLDOWN_MS - elapsed + 25);
+      const timer = setTimeout(() => {
+        if (!disableScrolling && autoFocus && !isSetupPaused && isAutoScrollAllowed()) {
+          scrollPanelToTargetRow();
+        }
+      }, remainingMs);
+      return () => clearTimeout(timer);
     }
-    pendingPlayRequestedRef.current = true;
-    handlePlayVideo();
-    const p = player.current || multiVideoPlayerRegistry.get("primary");
-    p?.seekTo(targetSec, true);
-    p?.playVideo();
-  };
+
+    scrollPanelToTargetRow();
+  }, [
+    active,
+    speakingRow,
+    autoFocus,
+    disableScrolling,
+    isSetupPaused,
+    currentAccordionStage,
+    beginnerActiveTab,
+    workflowMode,
+    rows.length,
+    tableDisplayMode,
+  ]);
+
+  const seek = useCallback(
+    (r: Row, i: number) => {
+      const targetSec = r.start / 1000;
+      playbackSeekEpochRef.current += 1;
+      pendingSeekTargetRef.current = {
+        targetSec,
+        requestedAt: Date.now(),
+      };
+      lastTickWallTimeRef.current = Date.now();
+      cancelSpeech();
+      busy.current = false;
+      isPausedForTtsRef.current = false;
+      userExplicitlyPausedRef.current = false;
+      setPauseReason(null);
+      setIsVideoPlaying(true);
+      lastRow.current = i;
+      resetTtsPlaybackProgress(getPlaybackSectionId(r));
+      lastMs.current = r.start;
+      setActive(i);
+      setPlaybackCurrentTime(targetSec);
+      if (workflowMode === "beginner" && beginnerActiveTab !== "video") {
+        setBeginnerActiveTab("video");
+      }
+      pendingPlayRequestedRef.current = true;
+      handlePlayVideo();
+      const p = player.current || multiVideoPlayerRegistry.get("primary");
+      p?.seekTo(targetSec, true);
+      p?.playVideo();
+    },
+    [workflowMode, beginnerActiveTab, handlePlayVideo, resetTtsPlaybackProgress],
+  );
 
   const toggle = (list: string[], set: (v: string[]) => void, c: string) =>
     set(list.includes(c) ? list.filter((x) => x !== c) : [...list, c]);
@@ -7678,7 +7758,7 @@ function Index() {
 
   useEffect(() => {
     const currentActive = active >= 0 ? active : speakingRow;
-    if (isAndroid && autoFocus && !isSetupPaused && active >= 0 && subtitlesLimit > 0) {
+    if (isAndroid && autoFocus && !isSetupPaused && currentActive >= 0 && subtitlesLimit > 0) {
       const targetPage = Math.floor(currentActive / subtitlesLimit) + 1;
       if (targetPage !== subtitlesPage) {
         setSubtitlesPage(targetPage);
@@ -9138,6 +9218,10 @@ function Index() {
                 />
               ) : undefined
             }
+            disableScrolling={disableScrolling}
+            onDisableScrollingChange={onDisableScrollingChange}
+            disableAutoFocus={disableAutoFocus}
+            onDisableAutoFocusChange={onDisableAutoFocusChange}
           />
         </div>
       ) : (
@@ -14936,9 +15020,9 @@ function Index() {
         isSetupPaused={isSetupPaused}
         onToggleSetupPause={toggleSetupPause}
         isAutoScrollEnabled={autoFocus}
-        onToggleAutoScroll={() => onAutoFocusChange(!autoFocus)}
+        onToggleAutoScroll={handleFloatingToggleAutoScroll}
         isTtsPlayEnabled={isTtsPlayEnabled}
-        onToggleTtsPlay={() => onTtsPlayEnabledChange(!isTtsPlayEnabled)}
+        onToggleTtsPlay={handleFloatingToggleTtsPlay}
         isVideoPlaying={isVideoPlaying}
         isSpeaking={Boolean(speakingLang)}
         pauseReason={pauseReason}
