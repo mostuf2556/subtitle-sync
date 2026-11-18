@@ -274,6 +274,15 @@ import {
 } from "@/utils/multiVideoPlayerManager";
 import { VideoInstancesSwiper } from "@/components/VideoInstancesSwiper";
 import { VideoPlaybackControls } from "@/components/VideoPlaybackControls";
+import { ExperimentalAutomateSubtitlesBar } from "@/components/ExperimentalAutomateSubtitlesBar";
+import {
+  AccentPaletteSelector,
+  applyAccentPalette,
+  applyAccentBgOpacity,
+  getSavedAccentPalette,
+  getSavedAccentBgOpacity,
+  type AccentPaletteId,
+} from "@/components/AccentPaletteSelector";
 import { FloatingDraggablePauseButton } from "@/components/FloatingDraggablePauseButton";
 import { FloatingErrorButton } from "@/components/FloatingErrorButton";
 import { trackNetworkRequest, useNetworkRequests } from "@/utils/networkTracker";
@@ -452,6 +461,11 @@ import {
   enrichMetadataWithPlayer,
 } from "@/utils/videoMetadataManager";
 import { notifySubtitleFetch } from "@/utils/subtitleNotificationManager";
+import {
+  buildSubtitleFetchAnnouncement,
+  type SubtitleFetchMethod,
+} from "@/utils/subtitleFetchAnnouncement";
+import { extractSharedStartSeconds } from "@/utils/youtube";
 import { getApkReleaseLinks } from "@/utils/apkUpdater";
 import {
   isValidJsonSubtitleResponse,
@@ -1705,16 +1719,23 @@ function Index() {
   }, []);
 
   const speakFetchedLanguageName = useCallback(
-    (langCode: string) => {
+    (langCode: string, options?: { method?: SubtitleFetchMethod; cuesCount?: number }) => {
       if (!speakLanguageNameOnFetch) return;
       const langMeta = (isAndroid ? SUPPORTED_LANGUAGES_CATALOG : LANGS).find(
         (c) => c.code === langCode,
       );
       const name = langMeta?.name?.split("(")[0]?.trim() || langCode;
-      const rate = rates[langCode] ?? 0.8;
-      const voiceURI = voiceSelections[langCode] || "";
+      const announcement = buildSubtitleFetchAnnouncement({
+        languageName: name,
+        langCode,
+        method: options?.method,
+        cuesCount: options?.cuesCount,
+      });
+      const speakLang = options?.method ? "en-US" : langCode;
+      const rate = rates[speakLang] ?? rates[langCode] ?? 0.9;
+      const voiceURI = voiceSelections[speakLang] || voiceSelections[langCode] || "";
       const volume = getLanguageTtsVolume(ttsVolumes, langCode);
-      void speak(name, langCode, rate, voiceURI, -1, () => {}, volume);
+      void speak(announcement, speakLang, rate, voiceURI, -1, () => {}, volume);
     },
     [speakLanguageNameOnFetch, isAndroid, rates, voiceSelections, ttsVolumes],
   );
@@ -1734,7 +1755,7 @@ function Index() {
           setSpoken((prev) => (prev.includes(lang) ? prev : [...prev, lang]));
         }
       });
-      speakFetchedLanguageName(lang);
+      speakFetchedLanguageName(lang, { method: "interception", cuesCount: json.events?.length });
     },
     [videoId, speakFetchedLanguageName],
   );
@@ -2446,7 +2467,7 @@ function Index() {
                 setTracks((prev) => ({ ...prev, [code]: json! }));
                 setShown((prev) => (prev.includes(code) ? prev : [...prev, code]));
               });
-              speakFetchedLanguageName(code);
+              speakFetchedLanguageName(code, { method: "cache", cuesCount: json.events?.length });
               subtitleRequestQueue.markSucceeded(videoId, code);
               continue;
             }
@@ -2524,7 +2545,10 @@ function Index() {
                     setTracks((prev) => ({ ...prev, [code]: json! }));
                     setShown((prev) => (prev.includes(code) ? prev : [...prev, code]));
                   });
-                  speakFetchedLanguageName(code);
+                  speakFetchedLanguageName(code, {
+                    method: result.winner.send === "session" ? "session" : "anon",
+                    cuesCount: json.events?.length,
+                  });
                   return true;
                 }
               } else if (useFetchServerRef.current && fetchServerUrlRef.current) {
@@ -2554,7 +2578,10 @@ function Index() {
                       setTracks((prev) => ({ ...prev, [code]: json! }));
                       setShown((prev) => (prev.includes(code) ? prev : [...prev, code]));
                     });
-                    speakFetchedLanguageName(code);
+                    speakFetchedLanguageName(code, {
+                      method: "server",
+                      cuesCount: json.events?.length,
+                    });
                     return true;
                   }
                 } else {
@@ -2608,6 +2635,23 @@ function Index() {
       }
     },
     [isAndroid, autoSpeakOnFetch, baseLanguage, videoId, speakFetchedLanguageName],
+  );
+
+  // [Experimental] Isolated state & handler for automate_clicking_on_subtitles (cleanly removable)
+  const [experimentalSubtitleLang, setExperimentalSubtitleLang] = useState<string | undefined>(
+    undefined,
+  );
+  const handleExperimentalSwitchSubtitleLanguage = useCallback(
+    (langCode: string) => {
+      setExperimentalSubtitleLang(langCode);
+      setShown((prev) => (prev.includes(langCode) ? prev : [...prev, langCode]));
+      setTargetLanguages((prev) => (prev.includes(langCode) ? prev : [...prev, langCode]));
+      if (!tracks?.[langCode] && observedUrlRef.current) {
+        attemptedRef.current.delete(`${observedUrlRef.current}|${langCode}`);
+        void fetchFavoriteLanguageSubtitles([langCode], observedUrlRef.current);
+      }
+    },
+    [tracks, fetchFavoriteLanguageSubtitles],
   );
 
   const handleFloatingFetchSingleLanguage = useCallback(
@@ -2699,6 +2743,16 @@ function Index() {
             if (videoId) saveCachedRawJson3(videoId, targetLang, r.body);
             setTracks((prev) => ({ ...prev, [targetLang]: parsed }));
             setShown((prev) => (prev.includes(targetLang) ? prev : [...prev, targetLang]));
+            const fetchMethod: SubtitleFetchMethod =
+              shouldUseServer && fetchServerUrlRef.current
+                ? "server"
+                : withSession
+                  ? "session"
+                  : "anon";
+            speakFetchedLanguageName(targetLang, {
+              method: fetchMethod,
+              cuesCount: parsed.events?.length,
+            });
             notifySubtitleFetch(
               "completed",
               `Fetched live subtitles for ${targetLang}`,
@@ -2710,7 +2764,7 @@ function Index() {
         notifySubtitleFetch("error", `Fetch failed (${r.status || "network error"})`, targetLang);
       }
     },
-    [videoId],
+    [videoId, speakFetchedLanguageName],
   );
 
   const handleFetchAgainViaServer = useCallback(
@@ -3256,6 +3310,16 @@ function Index() {
   }, [videoId]);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [theme, setTheme] = useState<Theme>("dark-blue");
+  const [accentPalette, setAccentPalette] = useState<AccentPaletteId>(() =>
+    getSavedAccentPalette(),
+  );
+  const [accentBgOpacity, setAccentBgOpacity] = useState<number>(() => getSavedAccentBgOpacity());
+  useEffect(() => {
+    applyAccentPalette(accentPalette);
+  }, [accentPalette]);
+  useEffect(() => {
+    applyAccentBgOpacity(accentBgOpacity);
+  }, [accentBgOpacity]);
   const themeWasSelectedRef = useRef(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const [pauseMode, setPauseMode] = useState(true);
@@ -3557,6 +3621,10 @@ function Index() {
         lang: langCode,
         cuesCount: track.events?.length || 0,
       });
+      speakFetchedLanguageName(langCode, {
+        method: "direct",
+        cuesCount: track.events?.length,
+      });
       notifySubtitleFetch(
         "completed",
         `Subtitles loaded for ${getLanguageMeta(langCode).name}`,
@@ -3564,7 +3632,7 @@ function Index() {
         getLanguageMeta(langCode).name,
       );
     },
-    [videoId, observedUrl, autoSpeakOnFetch, baseLanguage],
+    [videoId, observedUrl, autoSpeakOnFetch, baseLanguage, speakFetchedLanguageName],
   );
 
   const handleFetchTableUrl = async (langCode: string, langName: string) => {
@@ -4207,14 +4275,33 @@ function Index() {
     videoId,
   ]);
 
+  const pendingStartSecondsRef = useRef<number | undefined>(
+    typeof window !== "undefined" ? extractSharedStartSeconds(window.location.search) : undefined,
+  );
+
   const handleSelectLibraryVideo = (newId: string, customUrl?: string) => {
     if (!newId) return;
+    const sharedStart = extractSharedStartSeconds(customUrl || newId);
+    if (sharedStart && sharedStart > 0) {
+      pendingStartSecondsRef.current = sharedStart;
+    }
     if (newId === videoId) {
       try {
         if (typeof player.current?.loadVideoById === "function") {
-          player.current.loadVideoById(newId);
+          if (sharedStart && sharedStart > 0) {
+            player.current.loadVideoById({ videoId: newId, startSeconds: Math.floor(sharedStart) });
+            setPlaybackCurrentTime(sharedStart);
+            pendingStartSecondsRef.current = undefined;
+          } else {
+            player.current.loadVideoById(newId);
+          }
           setIsVideoPlaying(true);
         } else if (typeof player.current?.playVideo === "function") {
+          if (sharedStart && sharedStart > 0) {
+            player.current.seekTo?.(sharedStart, true);
+            setPlaybackCurrentTime(sharedStart);
+            pendingStartSecondsRef.current = undefined;
+          }
           player.current.playVideo();
           setIsVideoPlaying(true);
         }
@@ -5150,7 +5237,12 @@ function Index() {
           // Auto-enable "Speak" checkbox for the fetched language
           setSpoken((prev) => (prev.includes(lang) ? prev : [...prev, lang]));
         }
-        if (targetLanguage) speakFetchedLanguageName(lang);
+        if (targetLanguage) {
+          speakFetchedLanguageName(lang, {
+            method: "interception",
+            cuesCount: json.events?.length,
+          });
+        }
 
         const langMeta = LANGS.find((l) => l.code === lang);
         const cuesCount =
@@ -6186,9 +6278,11 @@ function Index() {
   const [playerContainerNode, setPlayerContainerNode] = useState<HTMLDivElement | null>(null);
   const handlePlayerRef = useCallback((el: HTMLDivElement | null) => {
     (playerEl as React.MutableRefObject<HTMLDivElement | null>).current = el;
-    setPlayerContainerNode(el);
+    setPlayerContainerNode((prev) => (prev === el ? prev : el));
   }, []);
   const player = useRef<YTPlayer | null>(null);
+  const activePlayerVideoIdRef = useRef<string>("");
+  const activePlayerHostElRef = useRef<HTMLDivElement | null>(null);
   const playerRestoreSnapshot = useRef<{
     videoId: string;
     seconds: number;
@@ -6435,6 +6529,16 @@ function Index() {
   useEffect(() => {
     const init = () => {
       if (!playerEl.current) return;
+      // Prevent flickering: if a player is already mounted inside this exact container for the same videoId
+      // (including while YT.Player is still initializing before onReady), do not destroy/recreate it.
+      if (
+        player.current &&
+        activePlayerHostElRef.current === playerEl.current &&
+        activePlayerVideoIdRef.current === videoId &&
+        playerEl.current.childElementCount > 0
+      ) {
+        return;
+      }
       if (player.current && typeof player.current.getPlayerState === "function") {
         try {
           const curVid = player.current.getVideoData?.()?.video_id;
@@ -6442,10 +6546,21 @@ function Index() {
           const isAttached = Boolean(iframe && playerEl.current.contains(iframe));
           if (isAttached) {
             if (curVid === videoId) {
+              activePlayerVideoIdRef.current = videoId;
+              activePlayerHostElRef.current = playerEl.current;
               return;
             }
             if (typeof player.current.loadVideoById === "function") {
-              player.current.loadVideoById(videoId);
+              const startSec = pendingStartSecondsRef.current;
+              activePlayerVideoIdRef.current = videoId;
+              activePlayerHostElRef.current = playerEl.current;
+              if (startSec && startSec > 0) {
+                player.current.loadVideoById({ videoId, startSeconds: Math.floor(startSec) });
+                setPlaybackCurrentTime(startSec);
+                pendingStartSecondsRef.current = undefined;
+              } else {
+                player.current.loadVideoById(videoId);
+              }
               return;
             }
           }
@@ -6466,6 +6581,8 @@ function Index() {
       const host = document.createElement("div");
       host.className = "h-full w-full";
       playerEl.current.appendChild(host);
+      activePlayerVideoIdRef.current = videoId;
+      activePlayerHostElRef.current = playerEl.current;
       const restoreSnapshot = playerRestoreSnapshot.current;
       playerRestoreSnapshot.current = null;
       // Ensure interceptor queue and bridges are active before creating player iframe
@@ -6486,6 +6603,9 @@ function Index() {
           cc_load_policy: 1,
           playsinline: 1,
           origin: window.location.origin,
+          ...(pendingStartSecondsRef.current && pendingStartSecondsRef.current > 0
+            ? { start: Math.floor(pendingStartSecondsRef.current) }
+            : {}),
         },
         events: {
           onReady: () => {
@@ -6509,6 +6629,15 @@ function Index() {
                   }
                   setPlaybackCurrentTime(restoreSeconds);
                   setIsVideoPlaying(restoreSnapshot.wasPlaying || pendingPlayRequestedRef.current);
+                } else if (pendingStartSecondsRef.current && pendingStartSecondsRef.current > 0) {
+                  const startSec = Math.floor(pendingStartSecondsRef.current);
+                  player.current.seekTo(startSec, true);
+                  setPlaybackCurrentTime(startSec);
+                  pendingStartSecondsRef.current = undefined;
+                  if (pendingPlayRequestedRef.current) {
+                    player.current.playVideo();
+                    setIsVideoPlaying(true);
+                  }
                 } else if (pendingPlayRequestedRef.current) {
                   player.current.playVideo();
                   setIsVideoPlaying(true);
@@ -8505,6 +8634,14 @@ function Index() {
           })}
         </div>
 
+        {/* Colorful Accent Palette Selector layered over dominant background */}
+        <AccentPaletteSelector
+          accent={accentPalette}
+          onChange={setAccentPalette}
+          bgOpacity={accentBgOpacity}
+          onBgOpacityChange={setAccentBgOpacity}
+        />
+
         {/* Action Toolbar Cluster */}
         <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1 shadow-2xs">
           {isDeveloperMode && debugMode && !isAndroid && (
@@ -8930,6 +9067,13 @@ function Index() {
                       onUpdateProfile={handleUpdateRatioComposition}
                       onDeleteProfile={handleDeleteRatioComposition}
                       compositions={storedCompositions}
+                    />
+                  </div>
+                  <div className="mb-1.5">
+                    <ExperimentalAutomateSubtitlesBar
+                      activeLanguage={experimentalSubtitleLang}
+                      availableLanguages={tracks ? Object.keys(tracks) : []}
+                      onSwitchSubtitleLanguage={handleExperimentalSwitchSubtitleLanguage}
                     />
                   </div>
                   <VideoPlaybackControls
@@ -10299,6 +10443,15 @@ function Index() {
                                   onRateChange={handleRateChange}
                                 />
                                 <div className="pt-2">
+                                  <ExperimentalAutomateSubtitlesBar
+                                    activeLanguage={experimentalSubtitleLang}
+                                    availableLanguages={tracks ? Object.keys(tracks) : []}
+                                    onSwitchSubtitleLanguage={
+                                      handleExperimentalSwitchSubtitleLanguage
+                                    }
+                                  />
+                                </div>
+                                <div className="pt-2">
                                   <TtsFallbackOrderSwitch
                                     currentOrder={ttsFallbackOrderState}
                                     onOrderChange={(newOrder) => {
@@ -10699,7 +10852,7 @@ function Index() {
                                             baseLanguage || "en",
                                           );
                                           try {
-                                            await playAlternativeTtsAudio(
+                                            return await playAlternativeTtsAudio(
                                               sampleText,
                                               baseLanguage || "en",
                                               testRate,
@@ -10709,10 +10862,12 @@ function Index() {
                                                 provider: lovableTtsProviderState,
                                                 speed: testRate,
                                                 isAnonymous: alternativeTtsAnonymousState,
+                                                interrupt: true,
                                               },
                                             );
                                           } catch (err) {
                                             console.warn("Test Alternative TTS error:", err);
+                                            throw err;
                                           } finally {
                                             setIsTestingAlternativeTts(false);
                                           }
@@ -10851,7 +11006,10 @@ function Index() {
                                               prev.includes(langCode) ? prev : [...prev, langCode],
                                             );
                                           });
-                                          speakFetchedLanguageName(langCode);
+                                          speakFetchedLanguageName(langCode, {
+                                            method: "direct",
+                                            cuesCount: json.events?.length,
+                                          });
                                         }}
                                       />
                                     )}

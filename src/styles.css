@@ -173,6 +173,198 @@
   --sidebar-ring: oklch(0.72 0.14 235);
 }
 
+/* Colorful Accent Palettes layered on top of the dominant background theme */
+:root[data-accent="ocean"] {
+  --primary: oklch(0.55 0.16 220);
+  --primary-foreground: oklch(0.98 0.01 220);
+  --ring: oklch(0.55 0.16 220);
+  --accent: oklch(0.91 0.06 215);
+  --highlight: oklch(0.84 0.14 205);
+}
+.dark[data-accent="ocean"],
+.dark-blue[data-accent="ocean"] {
+  --primary: oklch(0.74 0.15 215);
+  --primary-foreground: oklch(0.14 0.04 230);
+  --ring: oklch(0.74 0.15 215);
+  --accent: oklch(0.32 0.09 220);
+  --highlight: oklch(0.76 0.15 205);
+}
+
+:root[data-accent="emerald"] {
+  --primary: oklch(0.52 0.16 155);
+  --primary-foreground: oklch(0.98 0.01 155);
+  --ring: oklch(0.52 0.16 155);
+  --accent: oklch(0.91 0.07 155);
+  --highlight: oklch(0.84 0.15 150);
+}
+.dark[data-accent="emerald"],
+.dark-blue[data-accent="emerald"] {
+  --primary: oklch(0.74 0.17 155);
+  --primary-foreground: oklch(0.14 0.04 160);
+  --ring: oklch(0.74 0.17 155);
+  --accent: oklch(0.31 0.09 155);
+  --highlight: oklch(0.76 0.16 150);
+}
+
+:root[data-accent="sunset"] {
+  --primary: oklch(0.58 0.19 35);
+  --primary-foreground: oklch(0.99 0.01 35);
+  --ring: oklch(0.58 0.19 35);
+  --accent: oklch(0.92 0.08 45);
+  --highlight: oklch(0.85 0.16 55);
+}
+.dark[data-accent="sunset"],
+.dark-blue[data-accent="sunset"] {
+  --primary: oklch(0.74 0.18 38);
+  --primary-foreground: oklch(0.16 0.04 35);
+  --ring: oklch(0.74 0.18 38);
+  --accent: oklch(0.33 0.1 35);
+  --highlight: oklch(0.78 0.17 50);
+}
+
+:root[data-accent="violet"] {
+  --primary: oklch(0.54 0.2 295);
+  --primary-foreground: oklch(0.98 0.01 295);
+  --ring: oklch(0.54 0.2 295);
+  --accent: oklch(0.91 0.07 295);
+  --highlight: oklch(0.84 0.15 295);
+}
+.dark[data-accent="violet"],
+.dark-blue[data-accent="violet"] {
+  --primary: oklch(0.73 0.19 295);
+  --primary-foreground: oklch(0.15 0.05 295);
+  --ring: oklch(0.73 0.19 295);
+  --accent: oklch(0.32 0.11 295);
+  --highlight: oklch(0.76 0.17 295);
+}
+
+:root[data-accent="rose"] {
+  --primary: oklch(0.56 0.21 355);
+  --primary-foreground: oklch(0.99 0.01 355);
+  --ring: oklch(0.56 0.21 355);
+  --accent: oklch(0.92 0.07 355);
+  --highlight: oklch(0.85 0.16 355);
+}
+.dark[data-accent="rose"],
+.dark-blue[data-accent="rose"] {
+  --primary: oklch(0.73 0.19 355);
+  --primary-foreground: oklch(0.16 0.04 355);
+  --ring: oklch(0.73 0.19 355);
+  --accent: oklch(0.32 0.1 355);
+  --highlight: oklch(0.77 0.17 355);
+}
+
+:root[data-accent="rainbow"] {
+  --primary: oklch(0.56 0.22 310);
+  --primary-foreground: oklch(0.99 0.01 310);
+  --ring: oklch(0.56 0.22 310);
+  --accent: oklch(0.91 0.09 200);
+  --highlight: oklch(0.84 0.18 85);
+}
+.dark[data-accent="rainbow"],
+.dark-blue[data-accent="rainbow"] {
+  --primary: oklch(0.75 0.2 310);
+  --primary-foreground: oklch(0.15 0.04 310);
+  --ring: oklch(0.75 0.2 310);
+  --accent: oklch(0.34 0.12 210);
+  --highlight: oklch(0.8 0.18 85);
+}
+
+:root[data-accent="duolingo"] {
+  --primary: oklch(0.68 0.21 135);
+  --primary-foreground: oklch(0.99 0.01 135);
+  --ring: oklch(0.68 0.21 135);
+  --accent: oklch(0.92 0.08 135);
+  --highlight: oklch(0.86 0.18 90);
+}
+.dark[data-accent="duolingo"],
+.dark-blue[data-accent="duolingo"] {
+  --primary: oklch(0.76 0.21 135);
+  --primary-foreground: oklch(0.15 0.04 135);
+  --ring: oklch(0.76 0.21 135);
+  --accent: oklch(0.32 0.11 135);
+  --highlight: oklch(0.84 0.18 90);
+}
+
+/* Observable colorful & rainbow background tint applied directly to app-root-container */
+:root[data-accent] [data-testid="app-root-container"] {
+  background-color: var(--color-background) !important;
+  background-attachment: fixed !important;
+}
+
+:root[data-accent="rainbow"] [data-testid="app-root-container"] {
+  background-image: linear-gradient(
+    135deg,
+    rgba(239, 68, 68, var(--accent-bg-opacity-alpha, 0.35)) 0%,
+    rgba(249, 115, 22, var(--accent-bg-opacity-alpha, 0.35)) 20%,
+    rgba(234, 179, 8, var(--accent-bg-opacity-alpha, 0.35)) 40%,
+    rgba(34, 197, 94, var(--accent-bg-opacity-alpha, 0.35)) 60%,
+    rgba(59, 130, 246, var(--accent-bg-opacity-alpha, 0.35)) 80%,
+    rgba(168, 85, 247, var(--accent-bg-opacity-alpha, 0.35)) 100%
+  ) !important;
+}
+
+:root[data-accent="duolingo"] [data-testid="app-root-container"] {
+  background-image: linear-gradient(
+    135deg,
+    rgba(88, 204, 2, var(--accent-bg-opacity-alpha, 0.35)) 0%,
+    rgba(28, 176, 246, var(--accent-bg-opacity-alpha, 0.35)) 55%,
+    rgba(255, 200, 0, var(--accent-bg-opacity-alpha, 0.35)) 100%
+  ) !important;
+}
+
+:root[data-accent="ocean"] [data-testid="app-root-container"] {
+  background-image: linear-gradient(
+    135deg,
+    rgba(14, 165, 233, var(--accent-bg-opacity-alpha, 0.35)) 0%,
+    rgba(6, 182, 212, var(--accent-bg-opacity-alpha, 0.35)) 50%,
+    rgba(59, 130, 246, var(--accent-bg-opacity-alpha, 0.35)) 100%
+  ) !important;
+}
+
+:root[data-accent="emerald"] [data-testid="app-root-container"] {
+  background-image: linear-gradient(
+    135deg,
+    rgba(16, 185, 129, var(--accent-bg-opacity-alpha, 0.35)) 0%,
+    rgba(20, 184, 166, var(--accent-bg-opacity-alpha, 0.35)) 50%,
+    rgba(34, 197, 94, var(--accent-bg-opacity-alpha, 0.35)) 100%
+  ) !important;
+}
+
+:root[data-accent="sunset"] [data-testid="app-root-container"] {
+  background-image: linear-gradient(
+    135deg,
+    rgba(249, 115, 22, var(--accent-bg-opacity-alpha, 0.35)) 0%,
+    rgba(245, 158, 11, var(--accent-bg-opacity-alpha, 0.35)) 50%,
+    rgba(239, 68, 68, var(--accent-bg-opacity-alpha, 0.35)) 100%
+  ) !important;
+}
+
+:root[data-accent="violet"] [data-testid="app-root-container"] {
+  background-image: linear-gradient(
+    135deg,
+    rgba(139, 92, 246, var(--accent-bg-opacity-alpha, 0.35)) 0%,
+    rgba(168, 85, 247, var(--accent-bg-opacity-alpha, 0.35)) 50%,
+    rgba(99, 102, 241, var(--accent-bg-opacity-alpha, 0.35)) 100%
+  ) !important;
+}
+
+:root[data-accent="rose"] [data-testid="app-root-container"] {
+  background-image: linear-gradient(
+    135deg,
+    rgba(244, 63, 94, var(--accent-bg-opacity-alpha, 0.35)) 0%,
+    rgba(236, 72, 153, var(--accent-bg-opacity-alpha, 0.35)) 50%,
+    rgba(217, 70, 239, var(--accent-bg-opacity-alpha, 0.35)) 100%
+  ) !important;
+}
+
+/* Prevent GPU compositing flicker on embedded YouTube iframes during UI repaints */
+iframe[src*="youtube.com"],
+iframe[src*="youtube-nocookie.com"] {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
 @layer base {
   * {
     border-color: var(--color-border);

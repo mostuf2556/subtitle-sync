@@ -12018,3 +12018,76 @@
 - Added Docker Playwright coverage for `debug=true` gates (including Android server-fetch controls) and the preferences-first Beginner flow.
 - Verification passed: `./docker/manage.sh e2e web --grep 'developer-only views|beginner setup starts' --retries=0` (2 tests), `npm run test:beginner-mode`, `npm run test:v2-version-bump`, `npm run test:agents-version`, `npm run test:agents-last-prompt-rule`, `npm run test:md`, `npm run test:doc-contracts`, `npm run test:no-duplicate-md`, `npm run build`, `npm run lint`, and `git diff --check`.
 - Commits: hotfix `09826e2`; feature `2394d60`. Push attempts failed because Git credentials were unavailable.
+
+### Task 433 (Prompt 221 Ch. 4): TTS-play announcement upon subtitle fetch success
+- **Changes**: Added `src/utils/subtitleFetchAnnouncement.ts` (`buildSubtitleFetchAnnouncement`, `describeSubtitleFetchMethod`) and updated `speakFetchedLanguageName` and all subtitle fetch success call sites in `src/routes/index.tsx` to announce what language subtitles were fetched and by which method (`via server`, `anonymously`, `with session`, `from cache`, `directly`, `from video captions`).
+- **Verification**: `npx tsx scripts/verify-subtitle-fetch-tts-announcement.ts` (PASS), `compile_applet` (PASS), `lint_applet` (PASS).
+
+### Task 434 (Prompt 221 Ch. 5): Experimental `[Experimental]` `automate_clicking_on_subtitles` language switcher control around video
+- **Changes**: Added isolated `src/components/ExperimentalAutomateSubtitlesBar.tsx` (`data-testid="automate_clicking_on_subtitles"`, `[Experimental]` badge, Russian/Spanish/Arabic/Hebrew/English switcher buttons), Storybook story `src/components/ExperimentalAutomateSubtitlesBar.stories.tsx`, and mounted around video controls in `src/routes/index.tsx` without modifying existing controls.
+- **Verification**: `npx tsx scripts/verify-experimental-automate-subtitles.ts` (PASS), `compile_applet` (PASS), `lint_applet` (PASS).
+
+### Task 435: Interactive column-header splitting explanation in SubtitlesTablePanel
+- **Changes**: Added `src/utils/subtitleSplittingExplainer.ts` (`buildColumnSplittingExplanation`) and updated `src/components/SubtitlesTablePanel.tsx` so clicking any column header (`#`, `Time`, or any language column) toggles an explanation panel (`data-testid="subtitles-column-splitting-explanation"`) detailing the active factors affecting current splitting (default timing driver, punctuation splitting, Stage 3 sanitization, track source, max-words & complete-sentence rules, and filter vs highlight mode).
+- **Verification**: `npx tsx scripts/verify-subtitles-table-column-splitting-explanation.ts` (PASS), `compile_applet` (PASS), `lint_applet` (PASS).
+
+### Task 436 (Ch. 1): Sharing a video from YouTube — preserve progress status (time parameter)
+- **Changes**: Added `extractSharedStartSeconds` in `src/utils/youtube.ts` (handling `t` / `start` in seconds or `1h2m3s` format across shared YouTube URLs and app query strings) and wired `pendingStartSecondsRef` in `src/routes/index.tsx` so `YT.Player` `playerVars.start`, `loadVideoById({ videoId, startSeconds })`, and `onReady` seek preserve the shared timestamp.
+- **Verification**: `npx tsx scripts/verify-youtube-share-start-time.ts` (PASS), `compile_applet` (PASS), `lint_applet` (PASS).
+
+### Task 437 (Ch. 2): Colorful accent palette options layered over dominant background theme
+- **Changes**: Added `src/components/AccentPaletteSelector.tsx` (`Default`, `Ocean`, `Emerald`, `Sunset`, `Violet`, `Rose` with `localStorage` persistence) and corresponding Light/Dark/Midnight `[data-accent]` CSS custom-property palettes in `src/styles.css`, mounted right after the dominant background theme selector in `src/routes/index.tsx`.
+- **Verification**: `npx tsx scripts/verify-colorful-accent-palettes.ts` (PASS), `compile_applet` (PASS), `lint_applet` (PASS).
+
+### Task 438 (Ch. 1): Colorful accent palette — background opacity control
+- **Changes**: Added background opacity slider (`0%–100%`, persisted in `localStorage`) and `applyAccentBgOpacity` (`--accent-bg-opacity`) to `src/components/AccentPaletteSelector.tsx`, layered a `color-mix` background tint over the dominant background in `src/styles.css`, and wired state in `src/routes/index.tsx`.
+- **Verification**: `npx tsx scripts/verify-colorful-accent-palettes.ts` (PASS), `compile_applet` (PASS), `lint_applet` (PASS).
+
+### Task 439 (Ch. 2): Fix video flickering
+- **Changes**: Guarded `YT.Player` `init()` with `activePlayerVideoIdRef` and `activePlayerHostElRef` in `src/routes/index.tsx` so an already-mounted iframe for the same `videoId` is never destroyed/recreated during effect re-runs or pre-`onReady` ticks, avoided redundant `setPlayerContainerNode` updates in `handlePlayerRef`, and added GPU compositing stability (`transform: translateZ(0); backface-visibility: hidden;`) for YouTube iframes in `src/styles.css`.
+- **Verification**: `npx tsx scripts/verify-video-flicker-fix.ts` (PASS), `compile_applet` (PASS), `lint_applet` (PASS).
+
+### Task 440: Observable rainbow & colorful background coloring with opacity control
+- **Changes**: Added `Rainbow` option and rainbow border styling to `src/components/AccentPaletteSelector.tsx` (default opacity 35%, setting `--accent-bg-opacity-alpha`), and applied vivid `rgba(..., var(--accent-bg-opacity-alpha))` gradients directly to `[data-testid="app-root-container"]` in `src/styles.css` so they are no longer masked by the opaque `bg-background` wrapper.
+- **Verification**: `npx tsx scripts/verify-colorful-accent-palettes.ts` (PASS), `compile_applet` (PASS), `lint_applet` (PASS).
+
+### Task 441: One-click fullscreen toggle on any stage with responsive/adaptive layout
+- **Changes**: Added one-click fullscreen toggle (`Maximize2` / `Minimize2`, `data-testid="accordion-fullscreen-<id>"`), `Escape`-key exit, body scroll lock, auto-open on fullscreen entry, and adaptive full-viewport layout (`fixed inset-0 z-50 h-dvh w-screen`, sticky header, `overflow-y-auto overscroll-contain`, `max-w-7xl` responsive content wrapper) to `src/components/AccordionSection.tsx`.
+- **Verification**: `npx tsx scripts/verify-stage-fullscreen-toggle.ts` (PASS), `compile_applet` (PASS), `lint_applet` (PASS).
+
+### Task 442: Add Duolingo-inspired color palette option
+- **Changes**: Added `duolingo` preset to `src/components/AccentPaletteSelector.tsx` (green-to-gold swatch) and matching Light/Dark/Midnight `[data-accent="duolingo"]` variables + observable feather-green (`#58CC02`), sky-blue (`#1CB0F6`), and sunny-gold (`#FFC800`) background gradient in `src/styles.css`.
+- **Verification**: `npx tsx scripts/verify-colorful-accent-palettes.ts` (PASS), `compile_applet` (PASS), `lint_applet` (PASS).
+
+### Task 443 (Ch. 1): Play All combinations with X=10 iteration token-protection cap
+- **Changes**: Added `PLAY_ALL_MAX_ITERATIONS = 10`, `Play All (10x)` / `Stop (n/10)` button (`data-testid="ai-game-play-all-btn"`), automatic batch generation for new keyword combinations, and a pause/token-protection notice (`data-testid="ai-game-play-all-limit-notice"`) after 10 iterations in `src/components/OpenRouterSentenceGamePanel.tsx`.
+- **Verification**: `npx tsx scripts/verify-play-all-and-openapi-providers.ts` (PASS), `compile_applet` (PASS), `lint_applet` (PASS).
+
+### Task 444 (Ch. 2): Dynamic OpenAPI TTS provider discovery, exclusion control, and employed provider indicator
+- **Changes**: Added `parseOpenApiProviders`, `fetchOpenApiProviders`, `recordEmployedTtsProvider`, `getLastEmployedTtsProvider`, and `subscribeEmployedTtsProvider` in `src/lib/alternative-tts.ts`; wired `Sync openapi.json` button (`data-testid="btn-sync-openapi-providers"`), dynamic provider checkboxes (to exclude unpleasant providers), and live `Employed provider` badge (`data-testid="tts-employed-provider-badge"`) in `src/components/TtsServiceSettingsPanel.tsx`.
+- **Verification**: `npx tsx scripts/verify-play-all-and-openapi-providers.ts` (PASS), `compile_applet` (PASS), `lint_applet` (PASS).
+
+### Task 445 (Ch. 1): Match TTS pronunciation language to actual text language
+- **Changes**: Added `resolveTextSpeechLanguage` in `src/utils/openRouterSentenceGenerator.ts` (Unicode script detection for Hebrew, Arabic, Cyrillic, Greek, Japanese, Korean, Chinese, Devanagari aligned with expected/alternate language) and applied it to all `onSpeakText` calls in `src/components/OpenRouterSentenceGamePanel.tsx`.
+- **Verification**: `npx tsx scripts/verify-text-lang-pronunciation-and-provider-disable.ts` (PASS), `compile_applet` (PASS), `lint_applet` (PASS).
+
+### Task 446 (Ch. 2): Present currently employed TTS provider as a clickable disable button
+- **Changes**: Added `disableAutoProvider` in `src/lib/alternative-tts.ts` and rendered the currently employed TTS provider as a clickable **Disable** button in both `src/components/OpenRouterSentenceGamePanel.tsx` (`data-testid="btn-disable-employed-provider"`) and `src/components/TtsServiceSettingsPanel.tsx` (`data-testid="tts-employed-provider-badge"`).
+- **Verification**: `npx tsx scripts/verify-text-lang-pronunciation-and-provider-disable.ts` (PASS), `compile_applet` (PASS), `lint_applet` (PASS).
+
+### Task 447 — TTS Service POST-Only Auth & Employed Provider Display
+- **Changes**:
+  - Updated `buildLovableTtsUrl` in `src/lib/alternative-tts.ts` so authentication tokens (`token`, `api_key`) are never placed in GET query parameters.
+  - Changed `getLovableTtsMethod()` default from `"get"` to `"post"` and enforced `POST` in `synthesizeLovableTtsAudio` whenever any auth token or provider API key is present.
+  - Added `extractEmployedProviderFromHeaders` and wired `recordEmployedTtsProvider(...)` into `synthesizeLovableTtsPost`, `fetchLovableTtsJson`, and `fetchLovableTtsBinaryBlob` so the employed TTS provider is always reported from response headers (`x-tts-provider`, `x-provider`, `x-employed-provider`, `x-audio-provider`), JSON body `provider`, or requested provider, enabling the clickable **Provider: `<name>` · Disable** button during normal playback.
+- **Verification**:
+  - `npx tsx scripts/verify-tts-post-and-provider-display.ts` — PASS
+  - `compile_applet` & `lint_applet` — PASS (0 errors)
+
+### Task 448 — Never Pass `speed` to Remote Audio Generation TTS Service
+- **Changes**:
+  - Removed `speed` query parameter from `buildLovableTtsUrl` and `body.speed` from `buildLovableTtsRequestBody` in `src/lib/alternative-tts.ts`, keeping `speed` strictly for client-side audio playback (`audio.playbackRate`).
+  - Added assertions in `scripts/verify-tts-post-and-provider-display.ts` confirming `speed` is never included in GET URLs or POST request bodies.
+- **Verification**:
+  - `npx tsx scripts/verify-tts-post-and-provider-display.ts` — PASS
+  - `compile_applet` & `lint_applet` — PASS (0 errors)

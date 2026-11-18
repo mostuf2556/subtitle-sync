@@ -10,7 +10,13 @@ import {
   ChevronUp,
   LayoutGrid,
   Table as TableIcon,
+  Info,
+  X,
 } from "lucide-react";
+import {
+  buildColumnSplittingExplanation,
+  type ExplainedColumnKey,
+} from "@/utils/subtitleSplittingExplainer";
 
 import { type Row, type Json3, subtitleColumnName } from "@/lib/subtitles";
 import { SubtitleRow, type SubtitleColumn } from "@/components/SubtitleRow";
@@ -145,6 +151,11 @@ export const SubtitlesTablePanel = React.memo(function SubtitlesTablePanel({
   const activeParserConfig = externalParserConfig || localParserConfig;
   const handleParserConfigChange = onParserConfigChange || setLocalParserConfig;
   const [showQuarantinedParser, setShowQuarantinedParser] = React.useState(false);
+  const [explainedColumn, setExplainedColumn] = React.useState<ExplainedColumnKey | null>(null);
+
+  const toggleColumnExplanation = React.useCallback((key: ExplainedColumnKey) => {
+    setExplainedColumn((prev) => (prev === key ? null : key));
+  }, []);
 
   const defaultLang = baseLanguage || cols[0]?.code || "";
   const hasLanguageMaxWords = Boolean(
@@ -182,6 +193,31 @@ export const SubtitlesTablePanel = React.memo(function SubtitlesTablePanel({
     activeParserConfig?.skipIncompleteSentences,
     languageMaxWords,
     languageSkipIncomplete,
+  ]);
+
+  const activeColumnExplanation = React.useMemo(() => {
+    if (!explainedColumn) return null;
+    return buildColumnSplittingExplanation({
+      columnKey: explainedColumn,
+      cols,
+      baseLanguage,
+      parserConfig: activeParserConfig,
+      criteriaMatchAction: activeCriteriaMatchAction,
+      languageMaxWords,
+      languageSkipIncomplete,
+      totalRows: displayedRows.length,
+      visibleRows: effectiveDisplayedRows.length,
+    });
+  }, [
+    explainedColumn,
+    cols,
+    baseLanguage,
+    activeParserConfig,
+    activeCriteriaMatchAction,
+    languageMaxWords,
+    languageSkipIncomplete,
+    displayedRows.length,
+    effectiveDisplayedRows.length,
   ]);
 
   return (
@@ -548,6 +584,49 @@ export const SubtitlesTablePanel = React.memo(function SubtitlesTablePanel({
             </div>
           </div>
         )}
+        {activeColumnExplanation && (
+          <div
+            data-testid="subtitles-column-splitting-explanation"
+            className="mb-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs shadow-xs"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5 font-semibold text-foreground">
+                  <Info className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <span>{activeColumnExplanation.title}</span>
+                </div>
+                <p className="text-muted-foreground leading-relaxed">
+                  {activeColumnExplanation.summary}
+                </p>
+              </div>
+              <button
+                type="button"
+                data-testid="close-column-splitting-explanation-btn"
+                onClick={() => setExplainedColumn(null)}
+                className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
+                aria-label="Close column splitting explanation"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+              {activeColumnExplanation.factors.map((factor) => (
+                <div
+                  key={factor.label}
+                  className="rounded-md border border-border/60 bg-background/70 px-2.5 py-1.5"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium text-foreground">{factor.label}</span>
+                    <span className="font-mono text-[10px] text-primary font-semibold">
+                      {factor.value}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">{factor.detail}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {activeDisplayMode === "single" ? (
           <table
             data-testid="subtitles-table"
@@ -555,7 +634,8 @@ export const SubtitlesTablePanel = React.memo(function SubtitlesTablePanel({
               if (
                 (e.target as HTMLElement).closest("button") ||
                 (e.target as HTMLElement).closest("input") ||
-                (e.target as HTMLElement).closest("select")
+                (e.target as HTMLElement).closest("select") ||
+                (e.target as HTMLElement).closest("thead")
               ) {
                 return;
               }
@@ -570,24 +650,43 @@ export const SubtitlesTablePanel = React.memo(function SubtitlesTablePanel({
               <tr>
                 <th
                   data-testid="table-header-index"
-                  className={`w-14 min-w-[3.5rem] max-w-[3.5rem] px-2.5 py-2.5 text-center font-semibold text-xs tracking-wider uppercase text-muted-foreground ${
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleColumnExplanation("index");
+                  }}
+                  className={`w-14 min-w-[3.5rem] max-w-[3.5rem] px-2.5 py-2.5 text-center font-semibold text-xs tracking-wider uppercase text-muted-foreground cursor-pointer hover:text-foreground transition-colors ${
+                    explainedColumn === "index" ? "ring-1 ring-inset ring-primary/50" : ""
+                  } ${
                     shouldFreezeColumns
                       ? "sticky left-0 z-30 bg-secondary/95 backdrop-blur-md shadow-[1px_0_0_0_rgba(0,0,0,0.1)]"
                       : ""
                   }`}
-                  title="Sentence Running Index"
+                  title="Click to explain what affects row numbering and splitting"
                 >
-                  #
+                  <span className="inline-flex items-center justify-center gap-0.5">
+                    #
+                    <Info className="h-2.5 w-2.5 opacity-60" />
+                  </span>
                 </th>
                 <th
                   data-testid="table-header-time"
-                  className={`w-28 min-w-[7rem] max-w-[7rem] px-3 py-2.5 text-left font-semibold text-xs tracking-wider uppercase text-muted-foreground ${
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleColumnExplanation("time");
+                  }}
+                  className={`w-28 min-w-[7rem] max-w-[7rem] px-3 py-2.5 text-left font-semibold text-xs tracking-wider uppercase text-muted-foreground cursor-pointer hover:text-foreground transition-colors ${
+                    explainedColumn === "time" ? "ring-1 ring-inset ring-primary/50" : ""
+                  } ${
                     shouldFreezeColumns
                       ? "sticky left-14 z-30 bg-secondary/95 backdrop-blur-md shadow-[1px_0_0_0_rgba(0,0,0,0.1)]"
                       : ""
                   }`}
+                  title="Click to explain what affects timestamp splitting"
                 >
-                  Time
+                  <span className="inline-flex items-center gap-1">
+                    Time
+                    <Info className="h-3 w-3 opacity-60" />
+                  </span>
                 </th>
                 {cols.map((l, idx) => {
                   const isFirstCol = idx === 0;
@@ -598,7 +697,16 @@ export const SubtitlesTablePanel = React.memo(function SubtitlesTablePanel({
                       key={`${l.code}-${idx}`}
                       data-testid={`table-header-col-${l.code}`}
                       data-lang-col={l.code}
-                      className={`px-3 py-2.5 text-left font-semibold text-xs min-w-[12rem] border-b-2 ${palette.headerBorder} ${palette.headerBg} ${palette.headerText} ${
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleColumnExplanation(`lang:${l.code}`);
+                      }}
+                      title={`Click to explain what affects current splitting for ${subtitleColumnName(l.code, l.name)}`}
+                      className={`px-3 py-2.5 text-left font-semibold text-xs min-w-[12rem] border-b-2 cursor-pointer transition-colors ${
+                        explainedColumn === `lang:${l.code}`
+                          ? "ring-1 ring-inset ring-primary/50"
+                          : ""
+                      } ${palette.headerBorder} ${palette.headerBg} ${palette.headerText} ${
                         shouldFreezeColumns && isFirstCol
                           ? "sticky left-42 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.15)]"
                           : ""
@@ -611,6 +719,7 @@ export const SubtitlesTablePanel = React.memo(function SubtitlesTablePanel({
                             aria-hidden="true"
                           />
                           {subtitleColumnName(l.code, l.name)}
+                          <Info className="h-3 w-3 opacity-60" aria-hidden="true" />
                           {l.isYouTubeOrJson && (
                             <span title="Parsed from YouTube subtitles or .json artifact">
                               <FileCode

@@ -361,6 +361,45 @@ export function extractYouTubeId(urlOrId: string): string | null {
 }
 
 /**
+ * Extracts a starting timestamp (in seconds) from either a shared YouTube URL
+ * (e.g. https://youtu.be/abc?t=1m30s) or an app query string
+ * (e.g. ?v=abc&t=90, ?start=45, or ?url=https%3A%2F%2Fyoutu.be%2Fabc%3Ft%3D120).
+ */
+export function extractSharedStartSeconds(inputOrSearch?: string | null): number | undefined {
+  if (!inputOrSearch) return undefined;
+  const trimmed = inputOrSearch.trim();
+  if (!trimmed) return undefined;
+
+  // 1. Check query string parameters directly (e.g. ?v=...&t=90 or ?url=...)
+  if (trimmed.startsWith("?") || (!trimmed.includes("://") && trimmed.includes("="))) {
+    try {
+      const params = new URLSearchParams(trimmed.startsWith("?") ? trimmed : `?${trimmed}`);
+      const directTime = params.get("t") || params.get("start");
+      const parsedDirect = parseYouTubeTimestamp(directTime);
+      if (parsedDirect && parsedDirect > 0) return parsedDirect;
+
+      const nestedUrl = params.get("url") || params.get("video") || params.get("shared_url");
+      if (nestedUrl) {
+        const parsedNested = parseYouTubeUrl(nestedUrl);
+        if (parsedNested?.startTime && parsedNested.startTime > 0) {
+          return parsedNested.startTime;
+        }
+      }
+    } catch {
+      // fall through to parseYouTubeUrl
+    }
+  }
+
+  // 2. Parse as a full YouTube URL
+  const parsed = parseYouTubeUrl(trimmed);
+  if (parsed?.startTime && parsed.startTime > 0) {
+    return parsed.startTime;
+  }
+
+  return undefined;
+}
+
+/**
  * Formats a YouTube format type into a clean, human-readable badge label
  */
 export function formatTypeName(type: YouTubeFormatType): string {

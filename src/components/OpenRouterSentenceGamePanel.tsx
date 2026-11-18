@@ -11,7 +11,11 @@ import {
   RefreshCw,
   AlertCircle,
   Plus,
+  Play,
+  Square,
 } from "lucide-react";
+
+export const PLAY_ALL_MAX_ITERATIONS = 10;
 import { Button } from "@/components/ui/button";
 import { RTL } from "@/lib/subtitles";
 import { getOpenRouterApiKeySetting, getOpenRouterModelSetting } from "@/utils/appSettings";
@@ -21,8 +25,15 @@ import {
   OPENROUTER_SENTENCE_BATCH_SIZE,
   generateNextTargetWordSentencesBatch,
   shouldPrefetchNextSentenceBatch,
+  resolveTextSpeechLanguage,
   type GeneratedTargetWordSentence,
 } from "@/utils/openRouterSentenceGenerator";
+import {
+  getLastEmployedTtsProvider,
+  subscribeEmployedTtsProvider,
+  disableAutoProvider,
+  type EmployedTtsProviderInfo,
+} from "@/lib/alternative-tts";
 
 export interface OpenRouterSentenceGamePanelProps {
   /** Candidate target vocabulary words extracted from active subtitles */
@@ -104,6 +115,29 @@ export const OpenRouterSentenceGamePanel: React.FC<OpenRouterSentenceGamePanelPr
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showTranslation, setShowTranslation] = useState<boolean>(true);
   const [lastModelUsed, setLastModelUsed] = useState<string>(effectiveModel);
+  const [isPlayingAll, setIsPlayingAll] = useState<boolean>(false);
+  const [playAllIteration, setPlayAllIteration] = useState<number>(0);
+  const [playAllLimitReached, setPlayAllLimitReached] = useState<boolean>(false);
+  const [employedProvider, setEmployedProvider] = useState<EmployedTtsProviderInfo | null>(() =>
+    getLastEmployedTtsProvider(),
+  );
+  const [disabledProviderNotice, setDisabledProviderNotice] = useState<string | null>(null);
+  const playAllCancelledRef = useRef<boolean>(false);
+  const currentIndexRef = useRef<number>(currentIndex);
+  currentIndexRef.current = currentIndex;
+
+  useEffect(() => {
+    return subscribeEmployedTtsProvider((info) => {
+      setEmployedProvider(info);
+    });
+  }, []);
+
+  const handleDisableEmployedProvider = useCallback(() => {
+    const providerName = employedProvider?.provider;
+    if (!providerName) return;
+    disableAutoProvider(providerName);
+    setDisabledProviderNotice(`Disabled provider "${providerName}"`);
+  }, [employedProvider]);
 
   const isFetchingRef = useRef<boolean>(false);
   const sentencesRef = useRef<GeneratedTargetWordSentence[]>(sentences);
@@ -120,6 +154,7 @@ export const OpenRouterSentenceGamePanel: React.FC<OpenRouterSentenceGamePanelPr
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
+      playAllCancelledRef.current = true;
       abortControllerRef.current?.abort();
       abortControllerRef.current = null;
       isFetchingRef.current = false;
@@ -249,6 +284,95 @@ export const OpenRouterSentenceGamePanel: React.FC<OpenRouterSentenceGamePanelPr
       void fetchBatch({ reset: true });
     }
   }, [effectiveKey, activeWordsForPrompt, fetchBatch, initialSentencesOverride]);
+
+  const handleStopPlayAll = useCallback(() => {
+    playAllCancelledRef.current = true;
+    setIsPlayingAll(false);
+    onStopSpeaking?.();
+  }, [onStopSpeaking]);
+
+  const handleStartPlayAll = useCallback(async () => {
+    if (isPlayingAll) {
+      handleStopPlayAll();
+      return;
+    }
+    playAllCancelledRef.current = false;
+    setPlayAllLimitReached(false);
+    setPlayAllIteration(0);
+    setIsPlayingAll(true);
+
+    try {
+      for (let iter = 1; iter <= PLAY_ALL_MAX_ITERATIONS; iter++) {
+        if (playAllCancelledRef.current || !isMountedRef.current) break;
+
+        let idx = currentIndexRef.current;
+        if (idx >= sentencesRef.current.length) {
+          await fetchBatch({ advanceToNewStart: true });
+          if (playAllCancelledRef.current || !isMountedRef.current) break;
+          idx = currentIndexRef.current;
+        }
+
+        const item = sentencesRef.current[idx];
+        if (!item) break;
+
+        setPlayAllIteration(iter);
+
+        if (onSpeakText) {
+          const sentenceLang = resolveTextSpeechLanguage(
+            item.sentence,
+            baseLanguage,
+            targetLanguage,
+          );
+          await onSpeakText(item.sentence, sentenceLang);
+          if (playAllCancelledRef.current || !isMountedRef.current) break;
+          if (showTranslation && item.translation) {
+            const translationLang = resolveTextSpeechLanguage(
+              item.translation,
+              targetLanguage,
+              baseLanguage,
+            );
+            await onSpeakText(item.translation, translationLang);
+            if (playAllCancelledRef.current || !isMountedRef.current) break;
+          }
+        } else {
+          await new Promise((r) => setTimeout(r, 400));
+        }
+
+        if (playAllCancelledRef.current || !isMountedRef.current) break;
+
+        if (
+          shouldPrefetchNextSentenceBatch(
+            idx + 1,
+            sentencesRef.current.length,
+            isFetchingRef.current,
+          ) &&
+          iter < PLAY_ALL_MAX_ITERATIONS
+        ) {
+          void fetchBatch({ advanceToNewStart: false });
+        }
+
+        if (iter < PLAY_ALL_MAX_ITERATIONS) {
+          const nextIdx = idx + 1;
+          currentIndexRef.current = nextIdx;
+          setCurrentIndex(nextIdx);
+        } else {
+          setPlayAllLimitReached(true);
+        }
+      }
+    } finally {
+      if (isMountedRef.current) {
+        setIsPlayingAll(false);
+      }
+    }
+  }, [
+    isPlayingAll,
+    handleStopPlayAll,
+    fetchBatch,
+    onSpeakText,
+    baseLanguage,
+    targetLanguage,
+    showTranslation,
+  ]);
 
   const activeSentence = sentences[currentIndex] || null;
 
@@ -529,7 +653,16 @@ export const OpenRouterSentenceGamePanel: React.FC<OpenRouterSentenceGamePanelPr
                   size="sm"
                   variant="outline"
                   data-testid="ai-game-speak-sentence-btn"
-                  onClick={() => void onSpeakText(activeSentence.sentence, baseLanguage)}
+                  onClick={() =>
+                    void onSpeakText(
+                      activeSentence.sentence,
+                      resolveTextSpeechLanguage(
+                        activeSentence.sentence,
+                        baseLanguage,
+                        targetLanguage,
+                      ),
+                    )
+                  }
                   className="h-7 px-2.5 text-xs gap-1 shrink-0 border-border"
                 >
                   <Volume2 className="h-3.5 w-3.5" />
@@ -554,7 +687,16 @@ export const OpenRouterSentenceGamePanel: React.FC<OpenRouterSentenceGamePanelPr
                     size="sm"
                     variant="ghost"
                     data-testid="ai-game-speak-translation-btn"
-                    onClick={() => void onSpeakText(activeSentence.translation, targetLanguage)}
+                    onClick={() =>
+                      void onSpeakText(
+                        activeSentence.translation,
+                        resolveTextSpeechLanguage(
+                          activeSentence.translation,
+                          targetLanguage,
+                          baseLanguage,
+                        ),
+                      )
+                    }
                     className="h-7 px-2 text-[11px] gap-1 shrink-0 text-indigo-500"
                   >
                     <Volume2 className="h-3 w-3" />
@@ -563,6 +705,31 @@ export const OpenRouterSentenceGamePanel: React.FC<OpenRouterSentenceGamePanelPr
                 )}
               </div>
             )}
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/50">
+            <div className="flex flex-wrap items-center gap-2">
+              {employedProvider?.provider && (
+                <button
+                  type="button"
+                  data-testid="btn-disable-employed-provider"
+                  onClick={handleDisableEmployedProvider}
+                  className="inline-flex items-center gap-1 rounded border border-destructive/40 bg-destructive/10 hover:bg-destructive/20 px-2 py-1 text-[11px] font-mono text-destructive cursor-pointer transition-colors"
+                  title={`Click to disable TTS provider "${employedProvider.provider}" if its audio is unpleasant`}
+                >
+                  <span>Provider: {employedProvider.provider}</span>
+                  <span className="font-semibold underline">Disable</span>
+                </button>
+              )}
+              {disabledProviderNotice && (
+                <span
+                  data-testid="disabled-provider-notice"
+                  className="text-[11px] font-mono text-amber-600 dark:text-amber-400"
+                >
+                  {disabledProviderNotice}
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/50">
@@ -596,6 +763,30 @@ export const OpenRouterSentenceGamePanel: React.FC<OpenRouterSentenceGamePanelPr
                 </span>
                 <SkipForward className="h-3.5 w-3.5" />
               </Button>
+
+              <Button
+                type="button"
+                size="sm"
+                variant={isPlayingAll ? "destructive" : "outline"}
+                data-testid="ai-game-play-all-btn"
+                onClick={() => void handleStartPlayAll()}
+                className="h-7 px-2.5 text-xs gap-1 font-semibold"
+                title={`Play up to ${PLAY_ALL_MAX_ITERATIONS} different keyword combinations before requiring another click (protects token usage)`}
+              >
+                {isPlayingAll ? (
+                  <>
+                    <Square className="h-3 w-3 fill-current" />
+                    <span>
+                      Stop ({playAllIteration}/{PLAY_ALL_MAX_ITERATIONS})
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-3 w-3 fill-current" />
+                    <span>Play All ({PLAY_ALL_MAX_ITERATIONS}x)</span>
+                  </>
+                )}
+              </Button>
             </div>
 
             <span className="text-[11px] text-muted-foreground font-mono">
@@ -604,6 +795,18 @@ export const OpenRouterSentenceGamePanel: React.FC<OpenRouterSentenceGamePanelPr
                 : `${sentences.length - 1 - currentIndex} buffered ahead`}
             </span>
           </div>
+
+          {playAllLimitReached && !isPlayingAll && (
+            <div
+              data-testid="ai-game-play-all-limit-notice"
+              className="mt-2 flex items-center justify-between gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-[11px] text-amber-600 dark:text-amber-300"
+            >
+              <span>
+                Paused after {PLAY_ALL_MAX_ITERATIONS} combinations to protect token usage. Click{" "}
+                <strong>Play All ({PLAY_ALL_MAX_ITERATIONS}x)</strong> to continue.
+              </span>
+            </div>
+          )}
         </div>
       ) : isFetching ? (
         <div

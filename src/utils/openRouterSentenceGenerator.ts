@@ -371,3 +371,39 @@ export async function generateNextTargetWordSentencesBatch({
 
   throw new Error("Failed to generate sentences from OpenRouter after retry.");
 }
+
+/**
+ * Resolves the best TTS language code for a given text string so pronunciation
+ * always matches the actual script/language of the text (e.g. Hebrew, Arabic,
+ * Cyrillic, CJK, Greek, Devanagari) even if base/target props were swapped.
+ */
+export function resolveTextSpeechLanguage(
+  text: string,
+  expectedLang: string,
+  alternateLang?: string,
+): string {
+  const sample = (text || "").trim();
+  const baseExpected = (expectedLang || "en").split("-")[0].toLowerCase();
+  const baseAlt = (alternateLang || "").split("-")[0].toLowerCase();
+
+  if (!sample) return expectedLang || "en";
+
+  const pick = (detected: string, allowedSet?: string[]) => {
+    if (allowedSet && allowedSet.includes(baseExpected)) return expectedLang;
+    if (baseExpected === detected) return expectedLang;
+    if (allowedSet && allowedSet.includes(baseAlt) && alternateLang) return alternateLang;
+    if (baseAlt === detected && alternateLang) return alternateLang;
+    return detected;
+  };
+
+  if (/[\u0590-\u05FF]/.test(sample)) return pick("he");
+  if (/[\u0600-\u06FF]/.test(sample)) return pick("ar", ["ar", "fa", "ur"]);
+  if (/[\u0400-\u04FF]/.test(sample)) return pick("ru", ["ru", "uk", "bg", "sr"]);
+  if (/[\u0370-\u03FF]/.test(sample)) return pick("el");
+  if (/[\u3040-\u30FF]/.test(sample)) return pick("ja");
+  if (/[\uAC00-\uD7AF]/.test(sample)) return pick("ko");
+  if (/[\u4E00-\u9FFF]/.test(sample)) return pick("zh");
+  if (/[\u0900-\u097F]/.test(sample)) return pick("hi");
+
+  return expectedLang || "en";
+}
