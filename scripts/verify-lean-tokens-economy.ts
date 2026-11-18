@@ -147,6 +147,19 @@ assert(
 console.log("✅ PASS: docs/tasks-index.md and tokens.md delegation 100% verified");
 console.log("✅ PASS: All core protocol contracts and sections are 100% verified");
 
+// 6. Verify current-sub-task.md and docs/todo.md stay lean (< 4000 bytes, no completed-history bloat)
+console.log("6. Verifying current-sub-task.md and docs/todo.md stay lean (< 4KB)...");
+for (const relPath of ["current-sub-task.md", "docs/todo.md"]) {
+  const fullPath = path.join(rootDir, relPath);
+  assert(fs.existsSync(fullPath), `${relPath} must exist`);
+  const fileStat = fs.statSync(fullPath);
+  assert(
+    fileStat.size < 4000,
+    `${relPath} must be lean (< 4KB, no completed-task dumps), got ${fileStat.size} bytes`,
+  );
+  console.log(`✅ PASS: ${relPath} is lean at ${fileStat.size} bytes (< 4KB)`);
+}
+
 console.log("====================================================");
 console.log("🎉 All Lean Tokens Economy Tests PASSED Successfully!");
 console.log("====================================================");

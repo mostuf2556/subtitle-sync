@@ -4,7 +4,10 @@ This file is strictly the active backlog containing pending, active, and upcomin
 
 ## Active Tasks
 
-_No active tasks remaining._
+- [ ] **Task 433 (Ch. 4): TTS-play announcement upon subtitle fetch success (what was fetched & method)**
+  - [ ] **433.1**: Speak a concise TTS announcement when subtitle fetching succeeds, stating what language/subtitles were fetched and which method succeeded (e.g. via server vs direct/anonymously vs session), and verify with dedicated test.
+- [ ] **Task 434 (Ch. 5): Experimental `[Experimental]` `automate_clicking_on_subtitles` language switcher control around video**
+  - [ ] **434.1**: Add isolated experimental component (`[Experimental]` tag, `data-testid="automate_clicking_on_subtitles"`) around the video allowing switching subtitles among `russian` / `spanish` / `arabic` / `hebrew` / `english` without conflicting with existing features, and verify in Storybook + Advanced + Beginner + dedicated test.
 
 ## Later Tasks
 

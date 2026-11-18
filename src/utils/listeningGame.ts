@@ -670,3 +670,117 @@ export function splitSentenceHighlightParts(
   }
   return parts;
 }
+
+export interface ArchivedListeningWordEntry {
+  normalized: string;
+  word: string;
+  archivedAt: number;
+}
+
+export const LISTENING_ARCHIVED_WORDS_STORAGE_KEY = "yt_listening_game_archived_words_v1";
+export const LISTENING_ARCHIVED_WORDS_UPDATED_EVENT = "yt-listening-archived-words-updated";
+
+export function normalizeArchivedWordKey(word: string): string {
+  const clean = sanitizeListeningWord(word) || word.trim();
+  return clean.toLowerCase();
+}
+
+export function loadArchivedListeningWords(): ArchivedListeningWordEntry[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(LISTENING_ARCHIVED_WORDS_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    const seen = new Set<string>();
+    const result: ArchivedListeningWordEntry[] = [];
+    for (const item of parsed) {
+      let word = "";
+      let archivedAt = Date.now();
+      if (typeof item === "string") {
+        word = sanitizeListeningWord(item) || item.trim();
+      } else if (item && typeof item === "object") {
+        const rec = item as Partial<ArchivedListeningWordEntry>;
+        if (typeof rec.word === "string" && rec.word.trim()) {
+          word = sanitizeListeningWord(rec.word) || rec.word.trim();
+        } else if (typeof rec.normalized === "string" && rec.normalized.trim()) {
+          word = rec.normalized.trim();
+        }
+        if (typeof rec.archivedAt === "number" && Number.isFinite(rec.archivedAt)) {
+          archivedAt = rec.archivedAt;
+        }
+      }
+      const normalized = normalizeArchivedWordKey(word);
+      if (!normalized || seen.has(normalized)) continue;
+      seen.add(normalized);
+      result.push({ normalized, word, archivedAt });
+    }
+    return result;
+  } catch {
+    return [];
+  }
+}
+
+export function saveArchivedListeningWords(entries: ArchivedListeningWordEntry[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(LISTENING_ARCHIVED_WORDS_STORAGE_KEY, JSON.stringify(entries));
+    window.dispatchEvent(new CustomEvent(LISTENING_ARCHIVED_WORDS_UPDATED_EVENT));
+  } catch {
+    // ignore storage errors
+  }
+}
+
+export function archiveListeningWord(
+  entries: ArchivedListeningWordEntry[],
+  word: string,
+): ArchivedListeningWordEntry[] {
+  const displayWord = sanitizeListeningWord(word) || word.trim();
+  const normalized = normalizeArchivedWordKey(displayWord);
+  if (!normalized) return entries;
+  if (entries.some((entry) => entry.normalized === normalized)) {
+    return entries;
+  }
+  return [
+    {
+      normalized,
+      word: displayWord,
+      archivedAt: Date.now(),
+    },
+    ...entries,
+  ];
+}
+
+export function unquarantineListeningWord(
+  entries: ArchivedListeningWordEntry[],
+  wordOrNormalized: string,
+): ArchivedListeningWordEntry[] {
+  const targetKey = normalizeArchivedWordKey(wordOrNormalized);
+  if (!targetKey) return entries;
+  return entries.filter((entry) => entry.normalized !== targetKey);
+}
+
+export function clearArchivedListeningWords(): ArchivedListeningWordEntry[] {
+  return [];
+}
+
+export function filterArchivedListeningWords(
+  words: ListeningGameWordItem[],
+  archived: ArchivedListeningWordEntry[],
+): ListeningGameWordItem[] {
+  if (archived.length === 0 || words.length === 0) return words;
+  const archivedSet = new Set(archived.map((entry) => entry.normalized));
+  return words.filter((item) => {
+    const key = normalizeArchivedWordKey(item.normalized || item.word);
+    return !archivedSet.has(key);
+  });
+}
+
+export function filterArchivedWordStrings(
+  words: string[],
+  archived: ArchivedListeningWordEntry[],
+): string[] {
+  if (archived.length === 0 || words.length === 0) return words;
+  const archivedSet = new Set(archived.map((entry) => entry.normalized));
+  return words.filter((w) => !archivedSet.has(normalizeArchivedWordKey(w)));
+}

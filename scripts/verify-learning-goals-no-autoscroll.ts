@@ -117,6 +117,22 @@ try {
     `Stage 1 idle must not snap window scroll (before=${maxScrollAdv}, after=${afterTimeoutScrollY})`,
   );
 
+  // Unfold Learning Goals accordions needed for control interaction
+  const rowCriteriaAcc = page.getByTestId("learning-goal-accordion-row-criteria");
+  if ((await rowCriteriaAcc.count()) > 0) {
+    const isOpen = await rowCriteriaAcc.evaluate((el) => (el as HTMLDetailsElement).open);
+    if (!isOpen) {
+      await page.getByTestId("learning-goal-summary-row-criteria").click();
+    }
+  }
+  const approvedLangsAcc = page.getByTestId("learning-goal-accordion-approved-languages");
+  if ((await approvedLangsAcc.count()) > 0) {
+    const isOpen = await approvedLangsAcc.evaluate((el) => (el as HTMLDetailsElement).open);
+    if (!isOpen) {
+      await page.getByTestId("learning-goal-summary-approved-languages").click();
+    }
+  }
+
   // Interact with Learning Goals filter & language controls without resetting window.scrollY
   const beforeFilterClickY = await page.evaluate(() => {
     const docMax = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
@@ -147,6 +163,12 @@ try {
   // 2B. Beginner Preferences tab: clicking Learning Goals filters preserves window.scrollY
   await page.goto(`${baseUrl}/?mode=beginner`, { waitUntil: "domcontentloaded" });
   await page.getByTestId("beginner-preferences-tab").waitFor({ state: "visible", timeout: 25000 });
+  const beginnerRowCriteriaAcc = page.getByTestId("learning-goal-accordion-beginner-row-criteria");
+  await beginnerRowCriteriaAcc.waitFor({ state: "visible", timeout: 15000 });
+  const beginnerAccOpen = await beginnerRowCriteriaAcc.evaluate((el) => (el as HTMLDetailsElement).open);
+  if (!beginnerAccOpen) {
+    await page.getByTestId("learning-goal-summary-beginner-row-criteria").click();
+  }
   const beginnerFiltersContainer = page.getByTestId("beginner-learning-goals-filters-container");
   await beginnerFiltersContainer
     .getByTestId("learning-goals-filters-panel")

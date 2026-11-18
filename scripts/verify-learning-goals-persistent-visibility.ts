@@ -189,7 +189,13 @@ async function main() {
   // Step 5: Version Synchronization across all 5 files
   console.log("--> [Step 5] Checking version synchronization across all 5 files...");
   const pkgJson = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-  assert.ok(pkgJson.version >= "2.1.53", "package.json version must be >= 2.1.53");
+  const vParts = String(pkgJson.version).split(".").map(Number);
+  const minParts = [2, 1, 53];
+  const isAtLeastMin =
+    vParts[0] > minParts[0] ||
+    (vParts[0] === minParts[0] &&
+      (vParts[1] > minParts[1] || (vParts[1] === minParts[1] && vParts[2] >= minParts[2])));
+  assert.ok(isAtLeastMin, `package.json version (${pkgJson.version}) must be >= 2.1.53`);
 
   const buildGradle = fs.readFileSync(path.join(root, "android-shell/app/build.gradle.kts"), "utf8");
   assert.ok(buildGradle.includes(`versionName = "${pkgJson.version}"`), "build.gradle.kts must match package.json version");

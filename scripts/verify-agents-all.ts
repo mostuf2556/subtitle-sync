@@ -107,6 +107,11 @@ const CHECKS: ScriptCheck[] = [
     name: "Sub-Task Git Commit & docs/git.md Log Rule",
     file: "scripts/verify-agents-git-log-rule.ts",
   },
+  {
+    id: "24",
+    name: "Experimental Features Isolation & Undo Rule",
+    file: "scripts/verify-agents-experimental-isolation-rule.ts",
+  },
 ];
 
 function run() {
