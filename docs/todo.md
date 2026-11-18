@@ -1,51 +1,7 @@
 # Active Subtask Mirror (`docs/todo.md`)
 
-- **Status**: [IDLE]
-- **Active Task**: None (active backlog empty — see `docs/tasks.md`)
-- **Active Step**: None
-- **Upcoming**: None
-- **Completed**:
-  - Task 415 (Prompt 204 Ch. 2, `v2.1.130`) & Hotfix (Prompt 218 post-recovery): Fixed `getAutoScrollSetting()` persistence, `onAutoFocusChange(true)` cooldown clear + visible `#subtitles-table-panel` `useLayoutEffect` scroll, `SubtitleRow` `data-active`, and debounced post-cooldown `autoScrollCooldownEpoch` resume (`test:autoscroll-subtitles-stage` 100% PASSED, `bun install` exit 0, `tsc --noEmit`, `check-version`, `test:learning-goals-no-autoscroll`, `test:auto-focus-disabled`, `test:floating-tts-play-active-during-video`, `test:agents-all` 23/23, `compile_applet`, `lint_applet`, logged in `docs/git.md`)
-  - Hotfix (Prompt 216): Fixed `ReferenceError: Cannot access 'isTtsPlayEnabled' before initialization` in `src/routes/index.tsx` by moving `handleFloatingToggleTtsPlay` after `isTtsPlayEnabled` & `onTtsPlayEnabledChange` declarations (`verify-hotfix-tts-play-enabled-init.ts`, `test:floating-menu-third-option-tts-play`, `test:floating-tts-play-active-during-video`, `tsc --noEmit`, `test:agents-all` 23/23, `compile_applet`, `lint_applet`, logged in `docs/git.md`)
-  - Task 414 (Prompt 204 Ch. 1, `v2.1.129`): Eliminated unintended auto-scroll when interacting with Learning Goals controls (`test:learning-goals-no-autoscroll`, `test:auto-focus-disabled`, `compile_applet`, `lint_applet`, logged in `docs/git.md`)
-  - Task 427 (Prompt 214 Ch. 2, `v2.1.128`): Fixed floating menu `tts-play` inactive during video playback (`test:floating-tts-play-active-during-video`, `test:floating-menu-third-option-tts-play`, `test:tts-playback-coordination`, `compile_applet`, `lint_applet`, logged in `docs/git.md`)
-  - Task 425 (Prompt 214 Ch. 1, `v2.1.127`): Kept persistent YouTube player mounted offscreen across Advanced stages/top tabs & Beginner `Preferences` <-> `Video` tabs (`test:tab-change-keeps-video-playing`, `compile_applet`, `lint_applet`, logged in `docs/git.md`)
-  - Task 426 (Prompt 214 Ch. 0): Added sub-task `git commit` & `docs/git.md` logging rule in `AGENTS.md`, created `docs/git.md`, cataloged in `docs/files.md`, verified `test:agents-git-log-rule` & `test:agents-all` (23/23 PASSED)
-  - Task 419 (Prompt 207 Ch. 4, reconciled on Prompt 212): Game & OpenRouter target-word `X=5` sentence generation verified (`test:game-openrouter-sentences` PASSED) and migrated to `docs/done.md`
-  - Tasks 422–424 (Prompt 211, `v2.1.126`): Removed redundant `#tab-viewer` ("Parallel Viewer") & debug-gated `#top-tabs-nav`, restricted History stage (`stage-step-history`, Stage 6, `?stage=history`, Beginner `historyStageSlot`) to `debugMode === true`, and added OpenRouter API Key + TTS-Service Token `Valid`/`Missing`/`Invalid` indicators and click-to-update inline editors on `floating-menu-toggle-btn` (`test:prompt-211`, `test:agents-all` 22/22, `compile_applet`, `lint_applet`)
-  - Hotfix (Prompt 210): Cleared container-boot Vite HMR reload & stale export `SyntaxError` cache (`unlockTtsAudioPlayback`, `splitSentenceHighlightParts`, `LISTENING_RATE_PRESETS`), verified all 8 reported modules HTTP 200, bumped to `v2.1.125`, restarted Vite dev server (`ERR_BTN: 0`)
-  - Task 421 (Prompt 209): Added YouTube API Default & Auto-Translation switcher container (`youtube-api-default-auto-translations-container`) inside `#switchable-default-subtitles-bar` (`test:youtube-api-default-auto-translations` & `test:agents-all` 22/22 PASSED, `v2.1.124`)
-  - Task 420 (Prompt 208): Fixed progress bar seek during TTS-play or video playback being overwritten by next queued section (`test:seek-overrides-tts-queue` & `test:agents-all` 22/22 PASSED, `v2.1.123`)
-  - Task 418 (Prompt 207 Chapter 3): Fetched live OpenRouter free models (`frontend/v1/models/find`) with API key on init, defaulted to `openrouter/auto:free`, rendered model dropdown across Advanced, Beginner & Storybook (`test:openrouter-free-models` PASSED, `v2.1.121`)
-  - Task 417 (Prompt 207 Chapter 2): Built shared `OpenRouterSettingsPanel` + Storybook story/Workbench tab and mounted as 1st accordion above TTS Service (2nd accordion) in Advanced & Beginner modes (`test:openrouter-accordion` PASSED, `v2.1.120`)
-  - Task 416 (Prompt 207 Chapter 1): Moved TTS Service upper in Settings into its own dedicated accordion (2nd accordion slot) across Advanced & Beginner modes (`test:settings-tts-service-accordion` PASSED, `v2.1.119`)
-  - Hotfix (Prompt 206): Scoped `vite.config.ts` (`optimizeDeps.entries: ["index.html"]` & `server.watch.ignored` for non-app directories), updated `verify-dev-server-prewarming-hotfix.ts`, bumped to `v2.1.118`, restarted Vite dev server, verified HTTP 200 across all modules + live Chromium clean (`ERR_BTN: 0`)
-  - Hotfix (Prompt 203): Fixed Fast Refresh non-component export (`LearningGoalsFiltersPanel.tsx`) & ESLint errors (`AiSubtitlePunctuationTab.tsx`, `NetworkRequestsInspector.tsx`), restarted Vite dev server, verified all 10 reported modules + 200 `src/` files HTTP 200 (`v2.1.117`)
-  - Task 409 (Prompt 197 Chapter 4): Two-band Listening Game word card UI/UX layout, right-rail action alignment, & `max-h-[26rem]` list containers (`test:listening-word-cards-ui-ux` PASSED, `v2.1.116`)
-  - Task 413 (Prompt 201 Chapter 4): Clicking "Both" triggers sequential listening to both words and their sentences (`test:listening-both-playback` PASSED, `v2.1.115`)
-  - Task 412 (Prompt 201 Chapter 3): TTS-play speed override control (`test:listening-tts-speed-override` PASSED)
-  - Task 411 (Prompt 201 Chapter 2): Word sorting by alphabet, word size, or sentence length in words (`test:listening-word-sorting` PASSED)
-  - Task 410 (Prompt 201 Chapter 1): Configurable list of listening languages & playback order (`test:listening-languages-order` PASSED)
-  - Task 408 (Prompt 197 Chapter 3): Display `item.sourceSentence` (highlighting derived word) + `item.sourceTranslation` & Play Sentence trigger (`v2.1.114`)
-  - Hotfix (Prompt 200): Cleared container-boot Vite pre-transform race (`componentOptimizationService.ts` in `BottomLogViewer.tsx`), verified 200/200 `src/` modules HTTP 200 + restarted Vite dev server (`v2.1.114`)
-  - Task 407 (Prompt 197 Chapter 2): Fixed Listening trigger dropping base word on async `cancel()` -> `speak()` race (`v2.1.114`)
-  - Hotfix (Prompt 198): Verified zero stale `componentOptimizationService` imports across Vite client modules, fixed `onDemandTranslationManager.ts` browser CORS/rate-limit flood, & restarted dev server (`v2.1.114`)
-  - Task 406 (Prompt 197 Chapter 1): Remove "X letters" badge from word cards (`ListeningGamePanel.tsx`)
-  - Task 405 (Prompt 196): Listening Game Words List On-Demand Word Translation & Default Play (`v2.1.113`)
-  - Hotfix (Prompt 195) & Task 404 (Prompt 194): Fix App Errors (`Native speech synthesis failed` Flood), TTS Fallback Chain & Game View Words `Listen All` TTS-Play Execution (`v2.1.112`)
-  - Task 403 (Prompt 193): Game View List TTS-Play Fix, Guided Wizard Menu & Empty-Content Guard (`v2.1.111`)
-  - Task 402 (Prompt 192 Chapter 3): History Stage — TTS-Play History Viewer (`v2.1.110`)
-  - Task 401 (Prompt 192 Chapter 2): Game Mode Listening Game (`v2.1.109`)
-  - Task 400 (Prompt 192 Chapter 1): Log Element Error Copy Modes (`v2.1.108`)
-  - Task 399 (Prompt 190 / Prompt 191): Keep `localStorage` Data Between Android Installations (`v2.1.107`)
-  - Task 263 (Later 2, Prompt 186): Formalize Same Components Policy (Beginner & Advanced Mode — Only Order Differs) in `AGENTS.md`, verify 16 shared component blocks across both modes via `scripts/verify-same-components-parity-policy.ts`, clean up stale `Task 224` in `docs/later.md` (`v2.1.106`)
-  - Task 398 (Prompt 181 Chapter 2 / Prompt 184): Add 3rd Option (`menu-option-tts-play`) to Toggle TTS-Play (Enabled by Default, `v2.1.105`)
-  - Hotfix (Prompt 183): Verified `bun install` (`EXIT=0`) & Post-Recovery Full Build/Lint/Test Validation
-  - Hotfix (Prompt 182): Diagnostic Fix-It Check, Stage Click Visibility Regression Fix & Dev Server Clean State
-  - Task 397 (Prompt 181, Chapter 1): Fix Video Stage Disappearing or Showing the Word Game (`v2.1.104`)
-  - Task 396 (Prompt 180): Define `king-of-comma` (Auto Base for Translation) & `mother-tongue-language` (Default Language)
-  - Task 395 (Prompt 179): Unfoldable Per-Language Eligible Records & Matching Default Language (2 Columns)
-  - Task 394 (Prompt 178): Show Eligible/Valid Record Statistics in LearningGoalsFiltersPanel
-  - Task 393 (Prompt 177): Remove 3 Redundant Dropdowns in Learning Goals Per-Language Row Criteria
-  - Hotfix (Prompt 176): Fix Duplicate React Key Error ("pt-BR") & Resolve Deleted `componentOptimizationService` Imports
-  - Task 392 (Prompt 175): Rollback Learning Goals Accordions & Retain Open Category for Row-Criteria (Max Words Limitation Filter Per Language)
+- **Status**: [ACTIVE]
+- **Active Task**: Task 433 (Prompt 221 Ch. 4) — TTS-play announcement upon subtitle fetch success (what was fetched & method)
+- **Active Step**: Sub-task 433.1 — Announce fetched subtitles language/count and acquisition method (via server, anonymously, with session, direct, cache) via TTS on fetch success.
+- **Upcoming**: Task 434.
+- **Completed Archive**: See `docs/done.md`.

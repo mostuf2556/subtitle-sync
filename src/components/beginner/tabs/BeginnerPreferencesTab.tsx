@@ -98,6 +98,7 @@ import {
   LearningGoalsFiltersPanel,
   type LearningGoalsFiltersPanelProps,
 } from "@/components/shared/LearningGoalsFiltersPanel";
+import { LearningGoalAccordion } from "@/components/LearningGoalAccordion";
 import { BookOpen } from "lucide-react";
 
 export interface BeginnerPreferencesTabProps {
@@ -186,8 +187,8 @@ export const BeginnerPreferencesTab: React.FC<BeginnerPreferencesTabProps> = ({
   const [alternativeTtsModeState, setAlternativeTtsModeState] = useState<AlternativeTtsMode>(() =>
     typeof window !== "undefined" ? getAlternativeTtsMode() : "fallback_only",
   );
-  const [alternativeTtsEngineState, setAlternativeTtsEngineState] = useState<AlternativeTtsEngine>(() =>
-    typeof window !== "undefined" ? getAlternativeTtsEngine() : "lovable",
+  const [alternativeTtsEngineState, setAlternativeTtsEngineState] = useState<AlternativeTtsEngine>(
+    () => (typeof window !== "undefined" ? getAlternativeTtsEngine() : "lovable"),
   );
   const [lovableTtsProviderState, setLovableTtsProviderState] = useState<LovableTtsProvider>(() =>
     typeof window !== "undefined" ? getLovableTtsProvider() : "google",
@@ -214,20 +215,29 @@ export const BeginnerPreferencesTab: React.FC<BeginnerPreferencesTabProps> = ({
   }, []);
   const [isTestingAlternativeTts, setIsTestingAlternativeTts] = useState<boolean>(false);
   const [isValidatingRemoteTts, setIsValidatingRemoteTts] = useState<boolean>(false);
-  const [remoteValidationResult, setRemoteValidationResult] = useState<RemoteTtsValidationResult | null>(() => {
-    try {
-      return getLastValidationResult(getAlternativeTtsEngine());
-    } catch {
-      return null;
-    }
-  });
-  const [isAnonymousState, setIsAnonymousState] = useState<boolean>(() => getAlternativeTtsAnonymousMode());
+  const [remoteValidationResult, setRemoteValidationResult] =
+    useState<RemoteTtsValidationResult | null>(() => {
+      try {
+        return getLastValidationResult(getAlternativeTtsEngine());
+      } catch {
+        return null;
+      }
+    });
+  const [isAnonymousState, setIsAnonymousState] = useState<boolean>(() =>
+    getAlternativeTtsAnonymousMode(),
+  );
   const [showOrderHelp, setShowOrderHelp] = useState<boolean>(false);
-  const [localDisableScrolling, setLocalDisableScrolling] = useState<boolean>(() => getDisableScrollingSetting());
-  const [localDisableAutoFocus, setLocalDisableAutoFocus] = useState<boolean>(() => getDisableAutoFocusSetting());
+  const [localDisableScrolling, setLocalDisableScrolling] = useState<boolean>(() =>
+    getDisableScrollingSetting(),
+  );
+  const [localDisableAutoFocus, setLocalDisableAutoFocus] = useState<boolean>(() =>
+    getDisableAutoFocusSetting(),
+  );
 
-  const currentDisableScrolling = disableScrolling !== undefined ? disableScrolling : localDisableScrolling;
-  const currentDisableAutoFocus = disableAutoFocus !== undefined ? disableAutoFocus : localDisableAutoFocus;
+  const currentDisableScrolling =
+    disableScrolling !== undefined ? disableScrolling : localDisableScrolling;
+  const currentDisableAutoFocus =
+    disableAutoFocus !== undefined ? disableAutoFocus : localDisableAutoFocus;
 
   const handleToggleDisableScrolling = (checked: boolean) => {
     setLocalDisableScrolling(checked);
@@ -322,11 +332,18 @@ export const BeginnerPreferencesTab: React.FC<BeginnerPreferencesTabProps> = ({
         if (uid === utteranceId) {
           window.onNativeTTSError = prevErr;
           if (canFallbackToTts3) {
-            playAlternativeTtsAudio(text, baseLanguage, ttsSpeed, undefined, alternativeTtsEngineState, {
-              provider: lovableTtsProviderState || "auto",
-              speed: ttsSpeed,
-              skipInternalWebSpeechFallback: true,
-            }).finally(() => setIsAuditioning(false));
+            playAlternativeTtsAudio(
+              text,
+              baseLanguage,
+              ttsSpeed,
+              undefined,
+              alternativeTtsEngineState,
+              {
+                provider: lovableTtsProviderState || "auto",
+                speed: ttsSpeed,
+                skipInternalWebSpeechFallback: true,
+              },
+            ).finally(() => setIsAuditioning(false));
           } else {
             setIsAuditioning(false);
           }
@@ -339,11 +356,18 @@ export const BeginnerPreferencesTab: React.FC<BeginnerPreferencesTabProps> = ({
     if (!("speechSynthesis" in window)) {
       if (canFallbackToTts3) {
         setIsAuditioning(true);
-        playAlternativeTtsAudio(text, baseLanguage, ttsSpeed, undefined, alternativeTtsEngineState, {
-          provider: lovableTtsProviderState || "auto",
-          speed: ttsSpeed,
-          skipInternalWebSpeechFallback: true,
-        })
+        playAlternativeTtsAudio(
+          text,
+          baseLanguage,
+          ttsSpeed,
+          undefined,
+          alternativeTtsEngineState,
+          {
+            provider: lovableTtsProviderState || "auto",
+            speed: ttsSpeed,
+            skipInternalWebSpeechFallback: true,
+          },
+        )
           .catch(() => {})
           .finally(() => setIsAuditioning(false));
       }
@@ -369,11 +393,18 @@ export const BeginnerPreferencesTab: React.FC<BeginnerPreferencesTabProps> = ({
           return;
         }
         if (canFallbackToTts3) {
-          playAlternativeTtsAudio(text, baseLanguage, ttsSpeed, undefined, alternativeTtsEngineState, {
-            provider: lovableTtsProviderState || "auto",
-            speed: ttsSpeed,
-            skipInternalWebSpeechFallback: true,
-          })
+          playAlternativeTtsAudio(
+            text,
+            baseLanguage,
+            ttsSpeed,
+            undefined,
+            alternativeTtsEngineState,
+            {
+              provider: lovableTtsProviderState || "auto",
+              speed: ttsSpeed,
+              skipInternalWebSpeechFallback: true,
+            },
+          )
             .catch(() => {})
             .finally(() => setIsAuditioning(false));
         } else {
@@ -384,11 +415,18 @@ export const BeginnerPreferencesTab: React.FC<BeginnerPreferencesTabProps> = ({
       window.speechSynthesis.speak(utterance);
     } catch {
       if (canFallbackToTts3) {
-        playAlternativeTtsAudio(text, baseLanguage, ttsSpeed, undefined, alternativeTtsEngineState, {
-          provider: lovableTtsProviderState || "auto",
-          speed: ttsSpeed,
-          skipInternalWebSpeechFallback: true,
-        })
+        playAlternativeTtsAudio(
+          text,
+          baseLanguage,
+          ttsSpeed,
+          undefined,
+          alternativeTtsEngineState,
+          {
+            provider: lovableTtsProviderState || "auto",
+            speed: ttsSpeed,
+            skipInternalWebSpeechFallback: true,
+          },
+        )
           .catch(() => {})
           .finally(() => setIsAuditioning(false));
       } else {
@@ -808,7 +846,14 @@ export const BeginnerPreferencesTab: React.FC<BeginnerPreferencesTabProps> = ({
                       )}
                     </div>
                     <p className="text-[10.5px] text-muted-foreground leading-normal">
-                      Set authorization code (<code className="font-mono text-primary">Bearer spk_...</code> or <code className="font-mono text-primary">spk_...</code>) for <code className="font-mono text-primary">https://tts3.lovable.app/api/public/tts</code> POST requests, or an upstream key (<code className="font-mono text-primary">sk_...</code>).
+                      Set authorization code (
+                      <code className="font-mono text-primary">Bearer spk_...</code> or{" "}
+                      <code className="font-mono text-primary">spk_...</code>) for{" "}
+                      <code className="font-mono text-primary">
+                        https://tts3.lovable.app/api/public/tts
+                      </code>{" "}
+                      POST requests, or an upstream key (
+                      <code className="font-mono text-primary">sk_...</code>).
                     </p>
                   </div>
 
@@ -842,9 +887,22 @@ export const BeginnerPreferencesTab: React.FC<BeginnerPreferencesTabProps> = ({
                   </div>
 
                   <p className="text-[10px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
-                    <span>Provider: <strong className="text-foreground font-mono">{lovableTtsProviderState}</strong></span>
+                    <span>
+                      Provider:{" "}
+                      <strong className="text-foreground font-mono">
+                        {lovableTtsProviderState}
+                      </strong>
+                    </span>
                     <span>•</span>
-                    <span>Voice: <span className="text-foreground">{lovableTtsProviderState === "google" ? "Default" : lovableTtsVoiceState || (lovableTtsProviderState === "openrouter" ? "alloy" : "Kore")}</span></span>
+                    <span>
+                      Voice:{" "}
+                      <span className="text-foreground">
+                        {lovableTtsProviderState === "google"
+                          ? "Default"
+                          : lovableTtsVoiceState ||
+                            (lovableTtsProviderState === "openrouter" ? "alloy" : "Kore")}
+                      </span>
+                    </span>
                   </p>
                   {/* Anonymity Mode Selector (Regular vs Anonymous) */}
                   <div
@@ -987,7 +1045,11 @@ export const BeginnerPreferencesTab: React.FC<BeginnerPreferencesTabProps> = ({
                           ) : (
                             <>
                               <Play className="h-3 w-3 text-white fill-current" />
-                              <span>▶ Test Audio ({alternativeTtsEngineState === "lovable" ? "TTS3" : "Google Direct"})</span>
+                              <span>
+                                ▶ Test Audio (
+                                {alternativeTtsEngineState === "lovable" ? "TTS3" : "Google Direct"}
+                                )
+                              </span>
                             </>
                           )}
                         </button>
@@ -1082,63 +1144,65 @@ export const BeginnerPreferencesTab: React.FC<BeginnerPreferencesTabProps> = ({
         />
       </label>
 
-      {/* Default Language (Translation Source) Card */}
-      <div
-        className="bg-card border border-border rounded-xl p-3.5 shadow-sm space-y-3"
-        data-testid="beginner-default-language-card"
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Languages className="w-4 h-4 text-primary" />
-            <h3 className="text-xs font-semibold text-foreground">
-              Default Language (Translation Source)
-            </h3>
-          </div>
+      {/* Default Language (Translation Source) Accordion */}
+      <LearningGoalAccordion
+        id="beginner-default-language"
+        title="Default Language (Translation Source)"
+        icon={<Languages className="w-4 h-4 text-primary" />}
+        badge={
           <span className="text-[10px] bg-primary/10 text-primary font-medium px-2 py-0.5 rounded-full">
-            Synchronized
+            {baseLanguage ? `${baseLanguage.toUpperCase()} • Synced` : "Synchronized"}
           </span>
+        }
+        defaultOpen={false}
+        autoTimeout={false}
+      >
+        <div className="space-y-2" data-testid="beginner-default-language-card">
+          <p className="text-[11px] text-muted-foreground">
+            The single authoritative source language used for translation and parallel alignment
+            across the entire app.
+          </p>
+          <div className="flex flex-wrap gap-2 pt-1">
+            {availableDefaultLanguages && availableDefaultLanguages.length > 0 ? (
+              Array.from(new Set(availableDefaultLanguages)).map((langCode, idx) => {
+                const isDefault = baseLanguage === langCode;
+                const langMeta = ALL_KNOWN_LANGUAGES.find((l) => l.code === langCode);
+                return (
+                  <button
+                    key={`${langCode}-${idx}`}
+                    type="button"
+                    data-testid={`beginner-default-lang-btn-${langCode}`}
+                    onClick={() => onBaseLanguageChange?.(langCode)}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition-all cursor-pointer ${
+                      isDefault
+                        ? "border-primary bg-primary text-primary-foreground shadow-sm ring-1 ring-primary/40"
+                        : "border-border bg-background hover:bg-muted text-foreground"
+                    }`}
+                  >
+                    {isDefault && <Check className="h-3 w-3" />}
+                    <span>{langMeta?.name || langCode.toUpperCase()}</span>
+                    <span className="text-[10px] opacity-75 font-mono">({langCode})</span>
+                  </button>
+                );
+              })
+            ) : (
+              <span className="text-muted-foreground italic text-[11px]">
+                No fetched subtitle languages detected yet.
+              </span>
+            )}
+          </div>
         </div>
-        <p className="text-[11px] text-muted-foreground">
-          The single authoritative source language used for translation and parallel alignment across the entire app.
-        </p>
-        <div className="flex flex-wrap gap-2 pt-1">
-          {availableDefaultLanguages && availableDefaultLanguages.length > 0 ? (
-            Array.from(new Set(availableDefaultLanguages)).map((langCode, idx) => {
-              const isDefault = baseLanguage === langCode;
-              const langMeta = ALL_KNOWN_LANGUAGES.find((l) => l.code === langCode);
-              return (
-                <button
-                  key={`${langCode}-${idx}`}
-                  type="button"
-                  data-testid={`beginner-default-lang-btn-${langCode}`}
-                  onClick={() => onBaseLanguageChange?.(langCode)}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition-all cursor-pointer ${
-                    isDefault
-                      ? "border-primary bg-primary text-primary-foreground shadow-sm ring-1 ring-primary/40"
-                      : "border-border bg-background hover:bg-muted text-foreground"
-                  }`}
-                >
-                  {isDefault && <Check className="h-3 w-3" />}
-                  <span>{langMeta?.name || langCode.toUpperCase()}</span>
-                  <span className="text-[10px] opacity-75 font-mono">({langCode})</span>
-                </button>
-              );
-            })
-          ) : (
-            <span className="text-muted-foreground italic text-[11px]">
-              No fetched subtitle languages detected yet.
-            </span>
-          )}
-        </div>
-      </div>
+      </LearningGoalAccordion>
 
       {/* Global Features: Disable Scrolling & Disable Auto-Focus */}
-      <div className="bg-card border border-border rounded-xl p-3.5 shadow-sm space-y-3" data-testid="beginner-global-features-card">
-        <div className="flex items-center gap-2">
-          <Sliders className="w-4 h-4 text-primary" />
-          <h3 className="text-xs font-semibold text-foreground">Global Features</h3>
-        </div>
-        <div className="space-y-2 pt-1 text-xs">
+      <LearningGoalAccordion
+        id="beginner-global-features"
+        title="Global Features"
+        icon={<Sliders className="w-4 h-4 text-primary" />}
+        defaultOpen={false}
+        autoTimeout={false}
+      >
+        <div className="space-y-2 text-xs" data-testid="beginner-global-features-card">
           <label className="flex items-center justify-between gap-2 p-2 rounded-lg border border-border/60 bg-muted/20 cursor-pointer">
             <span className="text-foreground font-medium flex items-center gap-1.5">
               <span>Disable scrolling</span>
@@ -1166,107 +1230,118 @@ export const BeginnerPreferencesTab: React.FC<BeginnerPreferencesTabProps> = ({
             />
           </label>
         </div>
-      </div>
+      </LearningGoalAccordion>
 
       {/* TTS Speed & Voice Selection */}
-      <div className="bg-card border border-border rounded-xl p-3.5 shadow-sm space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Gauge className="w-4 h-4 text-primary" />
-            <h3 className="text-xs font-semibold text-foreground">TTS Speed & Voice</h3>
+      <LearningGoalAccordion
+        id="beginner-tts-speed-voice"
+        title="TTS Speed & Voice"
+        icon={<Gauge className="w-4 h-4 text-primary" />}
+        badge={
+          <span className="text-[10px] font-mono text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+            {ttsSpeed.toFixed(2)}x
+          </span>
+        }
+        defaultOpen={false}
+        autoTimeout={false}
+      >
+        <div className="space-y-3">
+          <div className="flex items-center justify-end">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={handleTestVoice}
+              disabled={isAuditioning}
+              className="h-7 px-2.5 text-[11px] border-primary/40 text-primary hover:bg-primary/10"
+              data-testid="btn-test-voice"
+            >
+              <Volume2 className="w-3 h-3 mr-1" />
+              {isAuditioning ? "Speaking..." : "Audition Voice"}
+            </Button>
           </div>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={handleTestVoice}
-            disabled={isAuditioning}
-            className="h-7 px-2.5 text-[11px] border-primary/40 text-primary hover:bg-primary/10"
-            data-testid="btn-test-voice"
-          >
-            <Volume2 className="w-3 h-3 mr-1" />
-            {isAuditioning ? "Speaking..." : "Audition Voice"}
-          </Button>
-        </div>
 
-        {/* Speed Slider */}
-        <div className="space-y-1.5 pt-1">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">Narration Speed</span>
-            <span className="font-semibold text-primary font-mono" data-testid="tts-speed-val">
-              {ttsSpeed.toFixed(2)}x
-            </span>
+          {/* Speed Slider */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Narration Speed</span>
+              <span className="font-semibold text-primary font-mono" data-testid="tts-speed-val">
+                {ttsSpeed.toFixed(2)}x
+              </span>
+            </div>
+            <Slider
+              value={[ttsSpeed]}
+              onValueChange={([val]) => onTtsSpeedChange(val)}
+              min={0.5}
+              max={2.0}
+              step={0.05}
+              className="w-full"
+              data-testid="tts-speed-slider"
+            />
+            <div className="flex items-center justify-between pt-1">
+              {[0.75, 1.0, 1.25, 1.5].map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => onTtsSpeedChange(preset)}
+                  className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                    Math.abs(ttsSpeed - preset) < 0.02
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-background text-muted-foreground hover:text-foreground border border-border"
+                  }`}
+                >
+                  {preset}x
+                </button>
+              ))}
+            </div>
           </div>
-          <Slider
-            value={[ttsSpeed]}
-            onValueChange={([val]) => onTtsSpeedChange(val)}
-            min={0.5}
-            max={2.0}
-            step={0.05}
-            className="w-full"
-            data-testid="tts-speed-slider"
-          />
-          <div className="flex items-center justify-between pt-1">
-            {[0.75, 1.0, 1.25, 1.5].map((preset) => (
-              <button
-                key={preset}
-                type="button"
-                onClick={() => onTtsSpeedChange(preset)}
-                className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
-                  Math.abs(ttsSpeed - preset) < 0.02
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-background text-muted-foreground hover:text-foreground border border-border"
-                }`}
-              >
-                {preset}x
-              </button>
-            ))}
-          </div>
-        </div>
 
-        {/* Voice Selector */}
-        <div className="space-y-1.5 pt-2">
-          <label className="text-xs text-muted-foreground flex items-center justify-between">
-            <span>Synthesis Voice</span>
-            <span className="text-[10px] text-muted-foreground/70">
-              {filteredVoices.length} voices found
-            </span>
-          </label>
-          <select
-            value={ttsVoice}
-            onChange={(e) => onTtsVoiceChange(e.target.value)}
-            className="w-full h-9 rounded-md bg-background border border-border text-foreground text-xs px-2.5 focus:outline-none focus:ring-1 focus:ring-primary"
-            data-testid="tts-voice-select"
-          >
-            <option value="">(Default System Voice)</option>
-            {filteredVoices.map((voice) => (
-              <option key={voice.voiceURI} value={voice.voiceURI}>
-                {voice.name} ({voice.lang})
-              </option>
-            ))}
-          </select>
+          {/* Voice Selector */}
+          <div className="space-y-1.5 pt-1">
+            <label className="text-xs text-muted-foreground flex items-center justify-between">
+              <span>Synthesis Voice</span>
+              <span className="text-[10px] text-muted-foreground/70">
+                {filteredVoices.length} voices found
+              </span>
+            </label>
+            <select
+              value={ttsVoice}
+              onChange={(e) => onTtsVoiceChange(e.target.value)}
+              className="w-full h-9 rounded-md bg-background border border-border text-foreground text-xs px-2.5 focus:outline-none focus:ring-1 focus:ring-primary"
+              data-testid="tts-voice-select"
+            >
+              <option value="">(Default System Voice)</option>
+              {filteredVoices.map((voice) => (
+                <option key={voice.voiceURI} value={voice.voiceURI}>
+                  {voice.name} ({voice.lang})
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-      </div>
+      </LearningGoalAccordion>
 
       {/* Performance Mode: Fast vs. Slow (Disables and hides non-obligatory elements by default) */}
       <PerformanceModeSettingsPanel />
 
       {/* 3. Global Favorite Languages Panel (Learning Goals: Favorite & Target Languages) */}
-      <div
-        id="beginner-favorite-languages-section"
-        data-testid="beginner-favorite-languages-section"
-        className="rounded-lg border border-border/80 bg-card/70 p-3 space-y-2 shadow-xs"
-      >
-        <div className="flex items-center justify-between border-b border-border/40 pb-1.5">
-          <div className="flex items-center gap-1.5 font-semibold text-xs text-foreground uppercase tracking-wider">
-            <BookOpen className="h-3.5 w-3.5 text-primary" />
-            <span>Favorite & Target Languages ({(targetLanguages || []).length})</span>
-          </div>
-          <span className="text-muted-foreground text-[10px] font-mono truncate max-w-48">
+      <LearningGoalAccordion
+        id="beginner-favorite-languages"
+        title={`Favorite & Target Languages (${(targetLanguages || []).length})`}
+        icon={<BookOpen className="h-3.5 w-3.5 text-primary" />}
+        badge={
+          <span className="text-muted-foreground text-[10px] font-mono truncate max-w-40 block">
             {(targetLanguages || []).join(", ") || "None"}
           </span>
-        </div>
-        <div className="bg-card rounded-lg p-2 space-y-3">
+        }
+        defaultOpen={false}
+        autoTimeout={false}
+      >
+        <div
+          id="beginner-favorite-languages-section"
+          data-testid="beginner-favorite-languages-section"
+          className="bg-card rounded-lg p-1.5 space-y-3"
+        >
           <GlobalFavoriteLanguagesPanel
             catalog={catalog || ALL_KNOWN_LANGUAGES}
             favoriteLanguages={favoriteLanguages}
@@ -1277,68 +1352,74 @@ export const BeginnerPreferencesTab: React.FC<BeginnerPreferencesTabProps> = ({
             onSaveCurrentSelectionAsFavorites={onSaveCurrentSelectionAsFavorites || (() => {})}
           />
         </div>
-      </div>
+      </LearningGoalAccordion>
 
       {/* 4. Learning Goals: Per-Language Narration Ratios Settings (at the end of learning goals stage) */}
       {perLanguageTtsSettingsSlot && (
-        <div
-          id="beginner-narration-ratios-section"
-          data-testid="beginner-narration-ratios-section"
-          className="rounded-lg border border-border/80 bg-card/70 p-3 space-y-2 shadow-xs"
+        <LearningGoalAccordion
+          id="beginner-narration-ratios"
+          title="Narration Ratios & Playing Precedence"
+          icon={<Sliders className="h-3.5 w-3.5 text-primary" />}
+          defaultOpen={false}
+          autoTimeout={false}
         >
-          <div className="flex items-center justify-between border-b border-border/40 pb-1.5">
-            <div className="flex items-center gap-1.5 font-semibold text-xs text-foreground uppercase tracking-wider">
-              <Sliders className="h-3.5 w-3.5 text-primary" />
-              <span>Narration Ratios & Playing Precedence</span>
+          <div
+            id="beginner-narration-ratios-section"
+            data-testid="beginner-narration-ratios-section"
+            className="space-y-2"
+          >
+            <div
+              id="beginner-learning-goals-ratios-container"
+              data-testid="beginner-learning-goals-ratios-container"
+              className="space-y-2"
+            >
+              {perLanguageTtsSettingsSlot}
             </div>
           </div>
-          <div
-            id="beginner-learning-goals-ratios-container"
-            data-testid="beginner-learning-goals-ratios-container"
-            className="space-y-2 pt-1"
-          >
-            {perLanguageTtsSettingsSlot}
-          </div>
-        </div>
+        </LearningGoalAccordion>
       )}
 
       {/* 5. Learning Goals: Subtitle Row Filters (Max Words Slider & Complete Sentence Filter & Per-Language Max Words) */}
       {(learningGoalsFiltersSlot || onMaxWordsPerSentenceChange) && (
-        <div
-          id="beginner-row-criteria-section"
-          data-testid="beginner-row-criteria-section"
-          className="rounded-lg border border-border/80 bg-card/70 p-3 space-y-2 shadow-xs"
-        >
-          <div className="flex items-center justify-between border-b border-border/40 pb-1.5">
-            <div className="flex items-center gap-1.5 font-semibold text-xs text-foreground uppercase tracking-wider">
-              <Filter className="h-3.5 w-3.5 text-primary" />
-              <span>Subtitle Row Criteria & Filters (Per Language)</span>
-            </div>
+        <LearningGoalAccordion
+          id="beginner-row-criteria"
+          title="Subtitle Row Criteria & Filters (Per Language)"
+          icon={<Filter className="h-3.5 w-3.5 text-primary" />}
+          badge={
             <span className="text-primary font-mono text-[10px] font-bold bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20">
               {maxWordsPerSentence ?? 10}w max
             </span>
-          </div>
+          }
+          defaultOpen={false}
+          autoTimeout={false}
+        >
           <div
-            id="beginner-learning-goals-filters-container"
-            data-testid="beginner-learning-goals-filters-container"
-            className="space-y-2 pt-1"
+            id="beginner-row-criteria-section"
+            data-testid="beginner-row-criteria-section"
+            className="space-y-2"
           >
-            {learningGoalsFiltersSlot ?? (
-              <LearningGoalsFiltersPanel
-                maxWords={maxWordsPerSentence ?? 10}
-                onMaxWordsChange={onMaxWordsPerSentenceChange!}
-                skipIncompleteSentences={skipIncompleteSentences ?? false}
-                onSkipIncompleteSentencesChange={onSkipIncompleteSentencesChange ?? (() => {})}
-                languageMaxWords={languageMaxWords}
-                onLanguageMaxWordsChange={onLanguageMaxWordsChange}
-                languageSkipIncomplete={languageSkipIncomplete}
-                onLanguageSkipIncompleteChange={onLanguageSkipIncompleteChange}
-                onResetAllLanguageCriteria={onResetAllLanguageCriteria}
-                learningLanguages={learningLanguages}
-              />
-            )}
+            <div
+              id="beginner-learning-goals-filters-container"
+              data-testid="beginner-learning-goals-filters-container"
+              className="space-y-2"
+            >
+              {learningGoalsFiltersSlot ?? (
+                <LearningGoalsFiltersPanel
+                  maxWords={maxWordsPerSentence ?? 10}
+                  onMaxWordsChange={onMaxWordsPerSentenceChange!}
+                  skipIncompleteSentences={skipIncompleteSentences ?? false}
+                  onSkipIncompleteSentencesChange={onSkipIncompleteSentencesChange ?? (() => {})}
+                  languageMaxWords={languageMaxWords}
+                  onLanguageMaxWordsChange={onLanguageMaxWordsChange}
+                  languageSkipIncomplete={languageSkipIncomplete}
+                  onLanguageSkipIncompleteChange={onLanguageSkipIncompleteChange}
+                  onResetAllLanguageCriteria={onResetAllLanguageCriteria}
+                  learningLanguages={learningLanguages}
+                />
+              )}
+            </div>
           </div>
-        </div>
+        </LearningGoalAccordion>
       )}
 
       {/* Navigation Footer */}

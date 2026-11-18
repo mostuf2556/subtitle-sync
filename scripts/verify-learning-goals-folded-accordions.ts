@@ -70,6 +70,24 @@ assert.ok(
     indexContent.includes('title="3. Narration & Ratios"'),
   "Narration & Ratios must be wrapped in LearningGoalAccordion",
 );
+assert.ok(
+  indexContent.includes('id="row-criteria"') &&
+    indexContent.includes('title="4. Row Criteria & Filters (Per Language)"'),
+  "Row Criteria & Filters must be wrapped in LearningGoalAccordion",
+);
+for (const subId of [
+  "narration-order",
+  "narration-ratios-slider",
+  "narration-blacklist",
+  "narration-granularity",
+  "narration-speed",
+  "narration-volume",
+]) {
+  assert.ok(
+    indexContent.includes(`id="${subId}"`),
+    `Narration sub-section ${subId} must be wrapped in LearningGoalAccordion`,
+  );
+}
 console.log("✓ Advanced Mode Stage 2 Learning Goals accordions verified.");
 
 console.log("Checking Beginner Mode Stage in src/components/beginner/tabs/BeginnerPreferencesTab.tsx...");
@@ -80,21 +98,20 @@ const beginnerTabPath = path.join(
 assert.ok(fs.existsSync(beginnerTabPath), "BeginnerPreferencesTab.tsx must exist");
 const beginnerContent = fs.readFileSync(beginnerTabPath, "utf-8");
 
-assert.ok(
-  beginnerContent.includes('id="beginner-favorite-languages"') &&
-    beginnerContent.includes("LearningGoalAccordion"),
-  "Beginner favorite languages must be wrapped in LearningGoalAccordion",
-);
-assert.ok(
-  beginnerContent.includes('id="beginner-narration-ratios"') &&
-    beginnerContent.includes("LearningGoalAccordion"),
-  "Beginner narration ratios must be wrapped in LearningGoalAccordion",
-);
-assert.ok(
-  beginnerContent.includes('id="beginner-row-criteria"') &&
-    beginnerContent.includes("LearningGoalAccordion"),
-  "Beginner row criteria must be wrapped in LearningGoalAccordion",
-);
+for (const beginnerId of [
+  "beginner-default-language",
+  "beginner-global-features",
+  "beginner-tts-speed-voice",
+  "beginner-favorite-languages",
+  "beginner-narration-ratios",
+  "beginner-row-criteria",
+]) {
+  assert.ok(
+    beginnerContent.includes(`id="${beginnerId}"`) &&
+      beginnerContent.includes("LearningGoalAccordion"),
+    `Beginner section ${beginnerId} must be wrapped in LearningGoalAccordion`,
+  );
+}
 console.log("✓ Beginner Mode Learning Goals accordions verified.");
 
-console.log("All verifications for Task 386 passed successfully!");
+console.log("All verifications for Task 429 Learning Goals accordions passed successfully!");

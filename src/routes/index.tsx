@@ -288,6 +288,7 @@ import {
   registerAppStateProvider,
 } from "@/utils/logBuffer";
 import { AccordionSection } from "@/components/AccordionSection";
+import { LearningGoalAccordion } from "@/components/LearningGoalAccordion";
 import { StateMachineActionLogsInspector } from "@/components/StateMachineActionLogsInspector";
 import { BottomLogViewer } from "@/components/BottomLogViewer";
 import { CriticalCaptionsAlert } from "@/components/CriticalCaptionsAlert";
@@ -12498,16 +12499,11 @@ function Index() {
 
                               <div className="space-y-2 text-xs">
                                 {/* 1. Set Default Source Language from Successfully Fetched Subtitles */}
-                                <div
-                                  id="stage-2-default-source-lang-container"
-                                  data-testid="stage-2-default-source-lang-container"
-                                  className="p-2.5 rounded-lg bg-card/80 border border-border/80 space-y-2 shadow-xs"
-                                >
-                                  <div className="flex items-center justify-between border-b border-border/40 pb-1.5">
-                                    <div className="flex items-center gap-1.5 font-semibold text-xs text-foreground uppercase tracking-wider">
-                                      <Globe className="h-3.5 w-3.5 text-primary" />
-                                      <span>1. Default Source Language</span>
-                                    </div>
+                                <LearningGoalAccordion
+                                  id="default-source-lang"
+                                  title="1. Default Source Language"
+                                  icon={<Globe className="h-3.5 w-3.5 text-primary" />}
+                                  badge={
                                     <span className="text-primary font-mono text-[11px] font-medium flex items-center gap-1">
                                       <CheckCircle2 className="h-3 w-3 text-emerald-500" />
                                       <span>
@@ -12516,279 +12512,301 @@ function Index() {
                                           "Awaiting fetch"}
                                       </span>
                                     </span>
-                                  </div>
-                                  <div className="flex flex-col space-y-1 pt-0.5">
-                                    {fetchedSubtitleLanguages.length > 0 ? (
-                                      fetchedSubtitleLanguages.map((langCode, idx) => {
-                                        const isDefault = baseLanguage === langCode;
-                                        const langMeta = LANGS.find((l) => l.code === langCode);
-                                        return (
-                                          <button
-                                            key={`${langCode}-${idx}`}
-                                            type="button"
-                                            data-testid={`stage-2-default-lang-${langCode}`}
-                                            onClick={() => {
-                                              if (fetchedSubtitleLanguages.includes(langCode)) {
-                                                handleSelectDefaultSubtitle(langCode);
-                                              }
-                                            }}
-                                            className={`w-full px-2.5 py-1.5 rounded-md text-xs font-medium border flex items-center justify-between transition-all cursor-pointer ${
-                                              isDefault
-                                                ? "border-primary bg-primary/15 text-primary font-semibold shadow-xs ring-1 ring-primary/40"
-                                                : "border-border/60 bg-background/80 hover:bg-muted text-foreground"
-                                            }`}
-                                          >
-                                            <div className="flex items-center gap-1.5">
-                                              {isDefault ? (
-                                                <Check className="h-3.5 w-3.5 text-primary" />
-                                              ) : (
-                                                <Globe className="h-3.5 w-3.5 text-muted-foreground" />
-                                              )}
-                                              <span>
-                                                {langMeta?.name || langCode.toUpperCase()}
-                                              </span>
-                                              <span className="text-[10px] text-muted-foreground font-mono">
-                                                ({langCode})
-                                              </span>
-                                            </div>
-                                            <span className="text-[9px] bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-mono px-1.5 py-0.2 rounded">
-                                              Fetched
-                                            </span>
-                                          </button>
-                                        );
-                                      })
-                                    ) : (
-                                      <div className="flex items-center gap-1.5 text-muted-foreground italic text-[11px] py-1">
-                                        <Info className="h-3.5 w-3.5" />
-                                        <span>No fetched tracks yet</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* 2. Approve Favorite Languages to Learn */}
-                                <div
-                                  id="stage-2-approved-languages-container"
-                                  data-testid="stage-2-approved-languages-container"
-                                  className="p-2.5 rounded-lg bg-card/80 border border-border/80 space-y-2 shadow-xs"
+                                  }
+                                  defaultOpen={false}
+                                  autoTimeout={false}
                                 >
-                                  <div className="flex items-center justify-between border-b border-border/40 pb-1.5">
-                                    <div className="flex items-center gap-1.5 font-semibold text-xs text-foreground uppercase tracking-wider">
-                                      <BookOpen className="h-3.5 w-3.5 text-primary" />
-                                      <span>
-                                        2. Approved Learning Languages ({targetLanguages.length})
-                                      </span>
-                                    </div>
-                                    <span className="text-muted-foreground text-[10px] font-mono truncate max-w-48">
-                                      {targetLanguages.join(", ") || "None"}
-                                    </span>
-                                  </div>
-                                  <div className="flex flex-col space-y-1 max-h-48 overflow-y-auto divide-y divide-border/40 border border-border/50 rounded-md bg-background/60 p-1 [overflow-anchor:none]">
-                                    {(favoriteLanguages.length > 0
-                                      ? Array.from(new Set(favoriteLanguages))
-                                      : ["en", "es", "he", "ar", "fr", "de", "it", "ru", "pt"]
-                                    ).map((code, idx) => {
-                                      const isSelected = targetLanguages.includes(code);
-                                      const meta =
-                                        LANGS.find((l) => l.code === code) ||
-                                        SUPPORTED_LANGUAGES_CATALOG.find((l) => l.code === code);
-                                      return (
-                                        <div
-                                          key={`${code}-${idx}`}
-                                          className={`flex items-center justify-between px-2 py-1 text-xs transition-colors rounded ${
-                                            isSelected
-                                              ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-medium"
-                                              : "text-muted-foreground hover:bg-muted/40"
-                                          }`}
-                                        >
-                                          <button
-                                            type="button"
-                                            data-testid={`stage-2-learning-lang-${code}`}
-                                            onClick={() => {
-                                              if (isSelected) {
-                                                handleTargetLanguagesChange(
-                                                  targetLanguages.filter((c) => c !== code),
-                                                );
-                                              } else {
-                                                handleTargetLanguagesChange([
-                                                  ...targetLanguages,
-                                                  code,
-                                                ]);
-                                              }
-                                            }}
-                                            className="inline-flex items-center gap-2 cursor-pointer flex-1 text-left"
-                                            title={
-                                              isSelected
-                                                ? `Unselect ${meta?.name || code}`
-                                                : `Select ${meta?.name || code}`
-                                            }
-                                          >
-                                            {isSelected ? (
-                                              <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                                            ) : (
-                                              <Plus className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                                            )}
-                                            <span>{meta?.name || code}</span>
-                                            <span className="text-[10px] opacity-70 font-mono">
-                                              ({code})
-                                            </span>
-                                          </button>
-                                          {favoriteLanguages.includes(code) && (
-                                            <button
-                                              type="button"
-                                              data-testid={`stage-2-remove-fav-${code}`}
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                const nextFavs = favoriteLanguages.filter(
-                                                  (c) => c !== code,
-                                                );
-                                                handleUpdateFavoriteLanguages(nextFavs);
-                                                handleTargetLanguagesChange(
-                                                  targetLanguages.filter((c) => c !== code),
-                                                );
-                                              }}
-                                              className="hover:text-destructive hover:bg-destructive/10 rounded-full h-4 w-4 inline-flex items-center justify-center text-[12px] leading-none text-muted-foreground/70 hover:text-destructive transition ml-1 cursor-pointer"
-                                              title={`Remove ${meta?.name || code} from favorites`}
-                                              aria-label={`Remove ${meta?.name || code} from favorites`}
-                                            >
-                                              <X className="h-3 w-3" />
-                                            </button>
-                                          )}
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-
-                                  {/* Extend Favorite Languages Control - Stage 2 in-place */}
                                   <div
-                                    id="stage-2-extend-favorites-container"
-                                    data-testid="stage-2-extend-favorites-container"
-                                    className="pt-2 border-t border-border/50 mt-1.5 space-y-1"
+                                    id="stage-2-default-source-lang-container"
+                                    data-testid="stage-2-default-source-lang-container"
+                                    className="space-y-2"
                                   >
-                                    <div className="flex items-center justify-between text-xs">
-                                      <span className="font-semibold text-foreground flex items-center gap-1.5">
-                                        <PlusCircle className="h-3.5 w-3.5 text-primary" />
-                                        <span>Add Language</span>
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                      <input
-                                        type="text"
-                                        id="stage-2-filter-languages-input"
-                                        data-testid="stage-2-filter-languages-input"
-                                        list="stage-2-languages-datalist"
-                                        placeholder="Filter or add language…"
-                                        value={stage2AddFavoriteFilter}
-                                        onChange={(e) => {
-                                          const val = e.target.value;
-                                          setStage2AddFavoriteFilter(val);
-                                          const trimmed = val.trim();
-                                          if (trimmed) {
-                                            const matched = SUPPORTED_LANGUAGES_CATALOG.find(
-                                              (c) =>
-                                                !favoriteLanguages.includes(c.code) &&
-                                                (c.code.toLowerCase() === trimmed.toLowerCase() ||
-                                                  c.name.toLowerCase() === trimmed.toLowerCase() ||
-                                                  `${c.name} (${c.code})`.toLowerCase() ===
-                                                    trimmed.toLowerCase()),
-                                            );
-                                            if (matched) {
-                                              const nextFavs = [...favoriteLanguages, matched.code];
-                                              handleUpdateFavoriteLanguages(nextFavs);
-                                              if (!targetLanguages.includes(matched.code)) {
-                                                handleTargetLanguagesChange([
-                                                  ...targetLanguages,
-                                                  matched.code,
-                                                ]);
-                                              }
-                                              setStage2AddFavoriteFilter("");
-                                            }
-                                          }
-                                        }}
-                                        className="rounded border border-input bg-background px-2.5 py-1 text-xs w-full sm:w-64 focus:outline-none focus:ring-1 focus:ring-primary"
-                                      />
-                                      <datalist
-                                        id="stage-2-languages-datalist"
-                                        data-testid="stage-2-languages-datalist"
-                                      >
-                                        {SUPPORTED_LANGUAGES_CATALOG.filter(
-                                          (c) => !favoriteLanguages.includes(c.code),
-                                        ).map((c) => (
-                                          <option key={c.code} value={`${c.name} (${c.code})`}>
-                                            {c.code}
-                                          </option>
-                                        ))}
-                                      </datalist>
-                                      {stage2AddFavoriteFilter && (
-                                        <button
-                                          type="button"
-                                          onClick={() => setStage2AddFavoriteFilter("")}
-                                          className="text-[11px] text-muted-foreground hover:text-foreground px-2 py-0.5 rounded border border-border shrink-0 cursor-pointer"
-                                          title="Clear filter"
-                                        >
-                                          Clear
-                                        </button>
+                                    <div className="flex flex-col space-y-1">
+                                      {fetchedSubtitleLanguages.length > 0 ? (
+                                        fetchedSubtitleLanguages.map((langCode, idx) => {
+                                          const isDefault = baseLanguage === langCode;
+                                          const langMeta = LANGS.find((l) => l.code === langCode);
+                                          return (
+                                            <button
+                                              key={`${langCode}-${idx}`}
+                                              type="button"
+                                              data-testid={`stage-2-default-lang-${langCode}`}
+                                              onClick={() => {
+                                                if (fetchedSubtitleLanguages.includes(langCode)) {
+                                                  handleSelectDefaultSubtitle(langCode);
+                                                }
+                                              }}
+                                              className={`w-full px-2.5 py-1.5 rounded-md text-xs font-medium border flex items-center justify-between transition-all cursor-pointer ${
+                                                isDefault
+                                                  ? "border-primary bg-primary/15 text-primary font-semibold shadow-xs ring-1 ring-primary/40"
+                                                  : "border-border/60 bg-background/80 hover:bg-muted text-foreground"
+                                              }`}
+                                            >
+                                              <div className="flex items-center gap-1.5">
+                                                {isDefault ? (
+                                                  <Check className="h-3.5 w-3.5 text-primary" />
+                                                ) : (
+                                                  <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+                                                )}
+                                                <span>
+                                                  {langMeta?.name || langCode.toUpperCase()}
+                                                </span>
+                                                <span className="text-[10px] text-muted-foreground font-mono">
+                                                  ({langCode})
+                                                </span>
+                                              </div>
+                                              <span className="text-[9px] bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-mono px-1.5 py-0.2 rounded">
+                                                Fetched
+                                              </span>
+                                            </button>
+                                          );
+                                        })
+                                      ) : (
+                                        <div className="flex items-center gap-1.5 text-muted-foreground italic text-[11px] py-1">
+                                          <Info className="h-3.5 w-3.5" />
+                                          <span>No fetched tracks yet</span>
+                                        </div>
                                       )}
                                     </div>
-                                    {stage2AddFavoriteFilter.trim() && (
-                                      <div className="flex flex-col space-y-1 max-h-28 overflow-y-auto pt-0.5">
-                                        {SUPPORTED_LANGUAGES_CATALOG.filter(
-                                          (c) =>
-                                            !favoriteLanguages.includes(c.code) &&
-                                            (c.name
-                                              .toLowerCase()
-                                              .includes(
-                                                stage2AddFavoriteFilter.trim().toLowerCase(),
-                                              ) ||
-                                              c.code
-                                                .toLowerCase()
-                                                .includes(
-                                                  stage2AddFavoriteFilter.trim().toLowerCase(),
-                                                )),
-                                        )
-                                          .slice(0, 16)
-                                          .map((c) => (
+                                  </div>
+                                </LearningGoalAccordion>
+
+                                {/* 2. Approve Favorite Languages to Learn */}
+                                <LearningGoalAccordion
+                                  id="approved-languages"
+                                  title={`2. Approved Learning Languages (${targetLanguages.length})`}
+                                  icon={<BookOpen className="h-3.5 w-3.5 text-primary" />}
+                                  badge={
+                                    <span className="text-muted-foreground text-[10px] font-mono truncate max-w-44 block">
+                                      {targetLanguages.join(", ") || "None"}
+                                    </span>
+                                  }
+                                  defaultOpen={false}
+                                  autoTimeout={false}
+                                >
+                                  <div
+                                    id="stage-2-approved-languages-container"
+                                    data-testid="stage-2-approved-languages-container"
+                                    className="space-y-2"
+                                  >
+                                    <div className="flex flex-col space-y-1 max-h-48 overflow-y-auto divide-y divide-border/40 border border-border/50 rounded-md bg-background/60 p-1 [overflow-anchor:none]">
+                                      {(favoriteLanguages.length > 0
+                                        ? Array.from(new Set(favoriteLanguages))
+                                        : ["en", "es", "he", "ar", "fr", "de", "it", "ru", "pt"]
+                                      ).map((code, idx) => {
+                                        const isSelected = targetLanguages.includes(code);
+                                        const meta =
+                                          LANGS.find((l) => l.code === code) ||
+                                          SUPPORTED_LANGUAGES_CATALOG.find((l) => l.code === code);
+                                        return (
+                                          <div
+                                            key={`${code}-${idx}`}
+                                            className={`flex items-center justify-between px-2 py-1 text-xs transition-colors rounded ${
+                                              isSelected
+                                                ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-medium"
+                                                : "text-muted-foreground hover:bg-muted/40"
+                                            }`}
+                                          >
                                             <button
-                                              key={c.code}
                                               type="button"
-                                              data-testid={`stage-2-add-lang-item-${c.code}`}
+                                              data-testid={`stage-2-learning-lang-${code}`}
                                               onClick={() => {
-                                                const nextFavs = [...favoriteLanguages, c.code];
-                                                handleUpdateFavoriteLanguages(nextFavs);
-                                                if (!targetLanguages.includes(c.code)) {
+                                                if (isSelected) {
+                                                  handleTargetLanguagesChange(
+                                                    targetLanguages.filter((c) => c !== code),
+                                                  );
+                                                } else {
                                                   handleTargetLanguagesChange([
                                                     ...targetLanguages,
-                                                    c.code,
+                                                    code,
+                                                  ]);
+                                                }
+                                              }}
+                                              className="inline-flex items-center gap-2 cursor-pointer flex-1 text-left"
+                                              title={
+                                                isSelected
+                                                  ? `Unselect ${meta?.name || code}`
+                                                  : `Select ${meta?.name || code}`
+                                              }
+                                            >
+                                              {isSelected ? (
+                                                <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                              ) : (
+                                                <Plus className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                              )}
+                                              <span>{meta?.name || code}</span>
+                                              <span className="text-[10px] opacity-70 font-mono">
+                                                ({code})
+                                              </span>
+                                            </button>
+                                            {favoriteLanguages.includes(code) && (
+                                              <button
+                                                type="button"
+                                                data-testid={`stage-2-remove-fav-${code}`}
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  const nextFavs = favoriteLanguages.filter(
+                                                    (c) => c !== code,
+                                                  );
+                                                  handleUpdateFavoriteLanguages(nextFavs);
+                                                  handleTargetLanguagesChange(
+                                                    targetLanguages.filter((c) => c !== code),
+                                                  );
+                                                }}
+                                                className="hover:text-destructive hover:bg-destructive/10 rounded-full h-4 w-4 inline-flex items-center justify-center text-[12px] leading-none text-muted-foreground/70 hover:text-destructive transition ml-1 cursor-pointer"
+                                                title={`Remove ${meta?.name || code} from favorites`}
+                                                aria-label={`Remove ${meta?.name || code} from favorites`}
+                                              >
+                                                <X className="h-3 w-3" />
+                                              </button>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+
+                                    {/* Extend Favorite Languages Control - Stage 2 in-place */}
+                                    <div
+                                      id="stage-2-extend-favorites-container"
+                                      data-testid="stage-2-extend-favorites-container"
+                                      className="pt-2 border-t border-border/50 mt-1.5 space-y-1"
+                                    >
+                                      <div className="flex items-center justify-between text-xs">
+                                        <span className="font-semibold text-foreground flex items-center gap-1.5">
+                                          <PlusCircle className="h-3.5 w-3.5 text-primary" />
+                                          <span>Add Language</span>
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-1.5">
+                                        <input
+                                          type="text"
+                                          id="stage-2-filter-languages-input"
+                                          data-testid="stage-2-filter-languages-input"
+                                          list="stage-2-languages-datalist"
+                                          placeholder="Filter or add language…"
+                                          value={stage2AddFavoriteFilter}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            setStage2AddFavoriteFilter(val);
+                                            const trimmed = val.trim();
+                                            if (trimmed) {
+                                              const matched = SUPPORTED_LANGUAGES_CATALOG.find(
+                                                (c) =>
+                                                  !favoriteLanguages.includes(c.code) &&
+                                                  (c.code.toLowerCase() === trimmed.toLowerCase() ||
+                                                    c.name.toLowerCase() ===
+                                                      trimmed.toLowerCase() ||
+                                                    `${c.name} (${c.code})`.toLowerCase() ===
+                                                      trimmed.toLowerCase()),
+                                              );
+                                              if (matched) {
+                                                const nextFavs = [
+                                                  ...favoriteLanguages,
+                                                  matched.code,
+                                                ];
+                                                handleUpdateFavoriteLanguages(nextFavs);
+                                                if (!targetLanguages.includes(matched.code)) {
+                                                  handleTargetLanguagesChange([
+                                                    ...targetLanguages,
+                                                    matched.code,
                                                   ]);
                                                 }
                                                 setStage2AddFavoriteFilter("");
-                                              }}
-                                              className="inline-flex items-center gap-1.5 rounded bg-secondary/80 hover:bg-primary/20 text-foreground px-2 py-1 text-xs border border-border cursor-pointer transition-colors"
-                                            >
-                                              <Plus className="h-3 w-3 text-primary" />
-                                              <span>{c.name}</span>
-                                              <span className="text-[10px] text-muted-foreground font-mono">
-                                                ({c.code})
-                                              </span>
-                                            </button>
+                                              }
+                                            }
+                                          }}
+                                          className="rounded border border-input bg-background px-2.5 py-1 text-xs w-full sm:w-64 focus:outline-none focus:ring-1 focus:ring-primary"
+                                        />
+                                        <datalist
+                                          id="stage-2-languages-datalist"
+                                          data-testid="stage-2-languages-datalist"
+                                        >
+                                          {SUPPORTED_LANGUAGES_CATALOG.filter(
+                                            (c) => !favoriteLanguages.includes(c.code),
+                                          ).map((c) => (
+                                            <option key={c.code} value={`${c.name} (${c.code})`}>
+                                              {c.code}
+                                            </option>
                                           ))}
+                                        </datalist>
+                                        {stage2AddFavoriteFilter && (
+                                          <button
+                                            type="button"
+                                            onClick={() => setStage2AddFavoriteFilter("")}
+                                            className="text-[11px] text-muted-foreground hover:text-foreground px-2 py-0.5 rounded border border-border shrink-0 cursor-pointer"
+                                            title="Clear filter"
+                                          >
+                                            Clear
+                                          </button>
+                                        )}
                                       </div>
-                                    )}
+                                      {stage2AddFavoriteFilter.trim() && (
+                                        <div className="flex flex-col space-y-1 max-h-28 overflow-y-auto pt-0.5">
+                                          {SUPPORTED_LANGUAGES_CATALOG.filter(
+                                            (c) =>
+                                              !favoriteLanguages.includes(c.code) &&
+                                              (c.name
+                                                .toLowerCase()
+                                                .includes(
+                                                  stage2AddFavoriteFilter.trim().toLowerCase(),
+                                                ) ||
+                                                c.code
+                                                  .toLowerCase()
+                                                  .includes(
+                                                    stage2AddFavoriteFilter.trim().toLowerCase(),
+                                                  )),
+                                          )
+                                            .slice(0, 16)
+                                            .map((c) => (
+                                              <button
+                                                key={c.code}
+                                                type="button"
+                                                data-testid={`stage-2-add-lang-item-${c.code}`}
+                                                onClick={() => {
+                                                  const nextFavs = [...favoriteLanguages, c.code];
+                                                  handleUpdateFavoriteLanguages(nextFavs);
+                                                  if (!targetLanguages.includes(c.code)) {
+                                                    handleTargetLanguagesChange([
+                                                      ...targetLanguages,
+                                                      c.code,
+                                                    ]);
+                                                  }
+                                                  setStage2AddFavoriteFilter("");
+                                                }}
+                                                className="inline-flex items-center gap-1.5 rounded bg-secondary/80 hover:bg-primary/20 text-foreground px-2 py-1 text-xs border border-border cursor-pointer transition-colors"
+                                              >
+                                                <Plus className="h-3 w-3 text-primary" />
+                                                <span>{c.name}</span>
+                                                <span className="text-[10px] text-muted-foreground font-mono">
+                                                  ({c.code})
+                                                </span>
+                                              </button>
+                                            ))}
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
-                                </div>
+                                </LearningGoalAccordion>
 
                                 {/* 3. Language Ratios (Learning Goals Frequency) - Located at end of Stage 2 Learning Goals */}
-                                <div
-                                  id="stage-2-narration-ratios-container"
-                                  data-testid="stage-2-narration-ratios-container"
-                                  className="p-2.5 rounded-lg bg-card/80 border border-border/80 space-y-2 shadow-xs w-full"
+                                <LearningGoalAccordion
+                                  id="narration-ratios"
+                                  title="3. Narration & Ratios"
+                                  icon={<Sliders className="h-3.5 w-3.5 text-primary" />}
+                                  badge={
+                                    <span className="text-[10px] font-mono text-muted-foreground">
+                                      {targetLanguages.length + 1} tracks
+                                    </span>
+                                  }
+                                  defaultOpen={false}
+                                  autoTimeout={false}
                                 >
-                                  <div className="flex items-center justify-between border-b border-border/40 pb-1.5 flex-wrap gap-2">
-                                    <div className="flex items-center gap-1.5 font-semibold text-xs text-foreground uppercase tracking-wider">
-                                      <Sliders className="h-3.5 w-3.5 text-primary" />
-                                      <span>3. Narration & Ratios</span>
-                                    </div>
-                                    <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                                  <div
+                                    id="stage-2-narration-ratios-container"
+                                    data-testid="stage-2-narration-ratios-container"
+                                    className="space-y-2 w-full"
+                                  >
+                                    <div className="flex items-center justify-end pb-1 border-b border-border/40">
                                       <LanguageRatioCompositionSelector
                                         activeCompositionId={activeRatioCompositionId}
                                         onSelectComposition={handleSelectRatioComposition}
@@ -12798,1100 +12816,1165 @@ function Index() {
                                         compositions={storedCompositions}
                                       />
                                     </div>
-                                  </div>
-                                  <div
-                                    id="stage-2-language-ratios-container"
-                                    data-testid="stage-2-language-ratios-container"
-                                    className="space-y-2 pt-0.5"
-                                  >
-                                    {(() => {
-                                      const learningLangCodes = Array.from(
-                                        new Set(
-                                          [baseLanguage, primaryTtsLang, ...targetLanguages].filter(
-                                            (code): code is string => Boolean(code),
+                                    <div
+                                      id="stage-2-language-ratios-container"
+                                      data-testid="stage-2-language-ratios-container"
+                                      className="space-y-2 pt-0.5"
+                                    >
+                                      {(() => {
+                                        const learningLangCodes = Array.from(
+                                          new Set(
+                                            [
+                                              baseLanguage,
+                                              primaryTtsLang,
+                                              ...targetLanguages,
+                                            ].filter((code): code is string => Boolean(code)),
                                           ),
-                                        ),
-                                      );
-                                      const orderedLearningCodes = [...learningLangCodes].sort(
-                                        (a, b) => {
-                                          const ia = languageOrder.indexOf(a);
-                                          const ib = languageOrder.indexOf(b);
-                                          if (ia >= 0 && ib >= 0) return ia - ib;
-                                          if (ia >= 0) return -1;
-                                          if (ib >= 0) return 1;
-                                          return 0;
-                                        },
-                                      );
-                                      const activeLearningVideoBarIndex = getVideoBarIndex(
-                                        orderedLearningCodes,
-                                        ttsLanguageOrders,
-                                        sectionOrder,
-                                      );
-                                      const handleSetLearningVideoBarPosition = (
-                                        newIndex: number,
-                                      ) => {
-                                        const {
-                                          sectionOrder: nextSectionOrder,
-                                          languageOrders: nextLanguageOrders,
-                                        } = updatePrecedenceFromVideoBarIndex(
-                                          orderedLearningCodes,
-                                          newIndex,
                                         );
-                                        handleSectionOrderChange(nextSectionOrder);
-                                        for (const [code, ord] of Object.entries(
-                                          nextLanguageOrders,
-                                        )) {
-                                          handleTtsLanguageOrderChange(code, ord);
-                                        }
-                                      };
+                                        const orderedLearningCodes = [...learningLangCodes].sort(
+                                          (a, b) => {
+                                            const ia = languageOrder.indexOf(a);
+                                            const ib = languageOrder.indexOf(b);
+                                            if (ia >= 0 && ib >= 0) return ia - ib;
+                                            if (ia >= 0) return -1;
+                                            if (ib >= 0) return 1;
+                                            return 0;
+                                          },
+                                        );
+                                        const activeLearningVideoBarIndex = getVideoBarIndex(
+                                          orderedLearningCodes,
+                                          ttsLanguageOrders,
+                                          sectionOrder,
+                                        );
+                                        const handleSetLearningVideoBarPosition = (
+                                          newIndex: number,
+                                        ) => {
+                                          const {
+                                            sectionOrder: nextSectionOrder,
+                                            languageOrders: nextLanguageOrders,
+                                          } = updatePrecedenceFromVideoBarIndex(
+                                            orderedLearningCodes,
+                                            newIndex,
+                                          );
+                                          handleSectionOrderChange(nextSectionOrder);
+                                          for (const [code, ord] of Object.entries(
+                                            nextLanguageOrders,
+                                          )) {
+                                            handleTtsLanguageOrderChange(code, ord);
+                                          }
+                                        };
 
-                                      return (
-                                        <div className="space-y-2.5">
-                                          {/* Ingredient 1: Order of playing (together with the video-playing precedence bar) */}
-                                          <div
-                                            data-testid="stage-2-ingredient-order-section"
-                                            className="p-2.5 rounded-lg bg-card/80 border border-border/80 space-y-1.5 shadow-xs"
-                                          >
-                                            <div className="flex items-center justify-between border-b border-border/40 pb-1">
-                                              <div className="flex items-center gap-1.5 font-semibold text-xs text-foreground uppercase tracking-wider">
+                                        return (
+                                          <div className="space-y-2">
+                                            {/* Ingredient 1: Order of playing (together with the video-playing precedence bar) */}
+                                            <LearningGoalAccordion
+                                              id="narration-order"
+                                              title="1. Playback Order"
+                                              icon={
                                                 <ListOrdered className="h-3.5 w-3.5 text-primary" />
-                                                <span>1. Playback Order</span>
-                                              </div>
-                                              <span className="text-[10px] text-muted-foreground font-mono">
-                                                {orderedLearningCodes.length} langs
-                                              </span>
-                                            </div>
+                                              }
+                                              badge={
+                                                <span className="text-[10px] text-muted-foreground font-mono">
+                                                  {orderedLearningCodes.length} langs
+                                                </span>
+                                              }
+                                              defaultOpen={false}
+                                              autoTimeout={false}
+                                            >
+                                              <div
+                                                data-testid="stage-2-ingredient-order-section"
+                                                className="space-y-1.5"
+                                              >
+                                                <div className="flex flex-col space-y-1.5">
+                                                  {activeLearningVideoBarIndex === 0 && (
+                                                    <VideoPlaybackPrecedenceBar
+                                                      currentPosition={0}
+                                                      totalRecords={orderedLearningCodes.length}
+                                                      onMoveUp={() =>
+                                                        handleSetLearningVideoBarPosition(0)
+                                                      }
+                                                      onMoveDown={() =>
+                                                        handleSetLearningVideoBarPosition(1)
+                                                      }
+                                                      onPlaceAtTop={() =>
+                                                        handleSetLearningVideoBarPosition(0)
+                                                      }
+                                                      onPlaceAtBottom={() =>
+                                                        handleSetLearningVideoBarPosition(
+                                                          orderedLearningCodes.length,
+                                                        )
+                                                      }
+                                                    />
+                                                  )}
 
-                                            <div className="flex flex-col space-y-1.5 pt-0.5">
-                                              {activeLearningVideoBarIndex === 0 && (
-                                                <VideoPlaybackPrecedenceBar
-                                                  currentPosition={0}
-                                                  totalRecords={orderedLearningCodes.length}
-                                                  onMoveUp={() =>
-                                                    handleSetLearningVideoBarPosition(0)
-                                                  }
-                                                  onMoveDown={() =>
-                                                    handleSetLearningVideoBarPosition(1)
-                                                  }
-                                                  onPlaceAtTop={() =>
-                                                    handleSetLearningVideoBarPosition(0)
-                                                  }
-                                                  onPlaceAtBottom={() =>
-                                                    handleSetLearningVideoBarPosition(
-                                                      orderedLearningCodes.length,
-                                                    )
-                                                  }
-                                                />
-                                              )}
+                                                  {orderedLearningCodes.map((langCode, idx) => {
+                                                    const isPrimary =
+                                                      langCode === primaryTtsLang ||
+                                                      (langCode === baseLanguage &&
+                                                        !primaryTtsLang);
+                                                    const meta =
+                                                      LANGS.find((l) => l.code === langCode) ||
+                                                      SUPPORTED_LANGUAGES_CATALOG.find(
+                                                        (l) => l.code === langCode,
+                                                      );
 
-                                              {orderedLearningCodes.map((langCode, idx) => {
-                                                const isPrimary =
-                                                  langCode === primaryTtsLang ||
-                                                  (langCode === baseLanguage && !primaryTtsLang);
-                                                const meta =
-                                                  LANGS.find((l) => l.code === langCode) ||
-                                                  SUPPORTED_LANGUAGES_CATALOG.find(
-                                                    (l) => l.code === langCode,
-                                                  );
+                                                    return (
+                                                      <Fragment key={`order-${langCode}-${idx}`}>
+                                                        <div
+                                                          data-testid={`stage-2-order-row-${langCode}`}
+                                                          className="flex items-center justify-between gap-2 p-1.5 px-2.5 rounded-md bg-background/80 border border-border/60"
+                                                        >
+                                                          <div className="flex items-center gap-2 min-w-0">
+                                                            <Languages className="h-3.5 w-3.5 text-primary shrink-0" />
+                                                            <span className="text-xs font-semibold text-foreground truncate">
+                                                              {idx + 1}.{" "}
+                                                              {meta?.name || langCode.toUpperCase()}
+                                                            </span>
+                                                            <span className="text-[10px] text-muted-foreground font-mono">
+                                                              ({langCode})
+                                                            </span>
+                                                            {isPrimary && (
+                                                              <span
+                                                                data-testid={`stage-2-primary-badge-${langCode}`}
+                                                                className="bg-primary/20 text-primary border border-primary/40 px-1.5 py-0.2 rounded text-[9px] font-bold uppercase tracking-wider"
+                                                              >
+                                                                1x Source
+                                                              </span>
+                                                            )}
+                                                          </div>
 
-                                                return (
-                                                  <Fragment key={`order-${langCode}-${idx}`}>
-                                                    <div
-                                                      data-testid={`stage-2-order-row-${langCode}`}
-                                                      className="flex items-center justify-between gap-2 p-1.5 px-2.5 rounded-md bg-background/80 border border-border/60"
-                                                    >
-                                                      <div className="flex items-center gap-2 min-w-0">
-                                                        <Languages className="h-3.5 w-3.5 text-primary shrink-0" />
-                                                        <span className="text-xs font-semibold text-foreground truncate">
-                                                          {idx + 1}.{" "}
-                                                          {meta?.name || langCode.toUpperCase()}
-                                                        </span>
-                                                        <span className="text-[10px] text-muted-foreground font-mono">
-                                                          ({langCode})
-                                                        </span>
-                                                        {isPrimary && (
-                                                          <span
-                                                            data-testid={`stage-2-primary-badge-${langCode}`}
-                                                            className="bg-primary/20 text-primary border border-primary/40 px-1.5 py-0.2 rounded text-[9px] font-bold uppercase tracking-wider"
+                                                          {/* Order controls */}
+                                                          <div
+                                                            data-testid={`stage-2-order-controls-${langCode}`}
+                                                            className="flex items-center gap-1 shrink-0"
                                                           >
-                                                            1x Source
-                                                          </span>
-                                                        )}
-                                                      </div>
-
-                                                      {/* Order controls */}
-                                                      <div
-                                                        data-testid={`stage-2-order-controls-${langCode}`}
-                                                        className="flex items-center gap-1 shrink-0"
-                                                      >
-                                                        <Button
-                                                          type="button"
-                                                          variant="ghost"
-                                                          size="sm"
-                                                          className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground border border-border/50"
-                                                          disabled={idx === 0}
-                                                          onClick={() => moveLanguage(langCode, -1)}
-                                                          title={`Move ${meta?.name || langCode} earlier`}
-                                                          aria-label={`Move ${meta?.name || langCode} earlier`}
-                                                          data-testid={`stage-2-btn-move-lang-up-${langCode}`}
-                                                        >
-                                                          <ChevronUp className="h-3.5 w-3.5" />
-                                                        </Button>
-                                                        <Button
-                                                          type="button"
-                                                          variant="ghost"
-                                                          size="sm"
-                                                          className={`h-6 px-1.5 text-xs border ${
-                                                            activeLearningVideoBarIndex === idx
-                                                              ? "text-primary bg-primary/10 border-primary/40 font-semibold"
-                                                              : "text-muted-foreground hover:text-foreground border-border/50"
-                                                          }`}
-                                                          onClick={() =>
-                                                            handleSetLearningVideoBarPosition(idx)
-                                                          }
-                                                          title={`Place video before ${meta?.name || langCode}`}
-                                                          aria-label={`Place video before ${meta?.name || langCode}`}
-                                                          data-testid={`btn-place-video-before-${langCode}`}
-                                                        >
-                                                          <Film className="h-3 w-3" />
-                                                        </Button>
-                                                        <Button
-                                                          type="button"
-                                                          variant="ghost"
-                                                          size="sm"
-                                                          className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground border border-border/50"
-                                                          disabled={
-                                                            idx === orderedLearningCodes.length - 1
-                                                          }
-                                                          onClick={() => moveLanguage(langCode, 1)}
-                                                          title={`Move ${meta?.name || langCode} later`}
-                                                          aria-label={`Move ${meta?.name || langCode} later`}
-                                                          data-testid={`stage-2-btn-move-lang-down-${langCode}`}
-                                                        >
-                                                          <ChevronDown className="h-3.5 w-3.5" />
-                                                        </Button>
-                                                      </div>
-                                                    </div>
-
-                                                    {activeLearningVideoBarIndex === idx + 1 && (
-                                                      <VideoPlaybackPrecedenceBar
-                                                        currentPosition={idx + 1}
-                                                        totalRecords={orderedLearningCodes.length}
-                                                        onMoveUp={() =>
-                                                          handleSetLearningVideoBarPosition(idx)
-                                                        }
-                                                        onMoveDown={() =>
-                                                          handleSetLearningVideoBarPosition(
-                                                            Math.min(
-                                                              orderedLearningCodes.length,
-                                                              idx + 2,
-                                                            ),
-                                                          )
-                                                        }
-                                                        onPlaceAtTop={() =>
-                                                          handleSetLearningVideoBarPosition(0)
-                                                        }
-                                                        onPlaceAtBottom={() =>
-                                                          handleSetLearningVideoBarPosition(
-                                                            orderedLearningCodes.length,
-                                                          )
-                                                        }
-                                                      />
-                                                    )}
-                                                  </Fragment>
-                                                );
-                                              })}
-                                            </div>
-                                          </div>
-
-                                          {/* Ingredient 2: TTS-play ratio (slider control with plus/minus buttons on 2 edges) */}
-                                          <div
-                                            data-testid="stage-2-ingredient-ratios-section"
-                                            className="p-2.5 rounded-lg bg-card/80 border border-border/80 space-y-1.5 shadow-xs"
-                                          >
-                                            <div className="flex items-center justify-between border-b border-border/40 pb-1">
-                                              <div className="flex items-center gap-1.5 font-semibold text-xs text-foreground uppercase tracking-wider">
-                                                <Gauge className="h-3.5 w-3.5 text-primary" />
-                                                <span>2. TTS Ratios</span>
-                                              </div>
-                                            </div>
-
-                                            <div className="flex flex-col space-y-1.5 pt-0.5">
-                                              {orderedLearningCodes.map((langCode, idx) => {
-                                                const meta =
-                                                  LANGS.find((l) => l.code === langCode) ||
-                                                  SUPPORTED_LANGUAGES_CATALOG.find(
-                                                    (l) => l.code === langCode,
-                                                  );
-                                                const currentRatio = getLanguageTtsRatio(
-                                                  ttsRatios,
-                                                  langCode,
-                                                );
-
-                                                return (
-                                                  <div
-                                                    key={`ratio-${langCode}-${idx}`}
-                                                    data-testid={`stage-2-ratio-row-${langCode}`}
-                                                    className="p-2 rounded-md bg-background/80 border border-border/60 space-y-1.5"
-                                                  >
-                                                    <div
-                                                      data-testid={`stage-2-ratio-slider-container-${langCode}`}
-                                                      className="space-y-1.5"
-                                                    >
-                                                      <div className="flex items-center justify-between text-xs">
-                                                        <div className="flex items-center gap-1.5 font-medium text-foreground">
-                                                          <Languages className="h-3.5 w-3.5 text-primary shrink-0" />
-                                                          <span>
-                                                            {meta?.name || langCode.toUpperCase()}
-                                                          </span>
-                                                          <span className="text-[10px] text-muted-foreground font-mono">
-                                                            ({langCode})
-                                                          </span>
-                                                        </div>
-                                                        <span
-                                                          data-testid={`stage-2-ratio-display-${langCode}`}
-                                                          className="font-mono text-xs font-bold text-primary"
-                                                        >
-                                                          1:{currentRatio}
-                                                        </span>
-                                                      </div>
-
-                                                      <div className="flex items-center gap-1.5">
-                                                        <Button
-                                                          type="button"
-                                                          variant="ghost"
-                                                          size="icon"
-                                                          data-testid={`stage-2-ratio-decrement-${langCode}`}
-                                                          aria-label={`Decrease ratio for ${meta?.name || langCode}`}
-                                                          title="Decrease ratio by 1"
-                                                          disabled={currentRatio <= 1}
-                                                          onClick={() => {
-                                                            const nextRatio = Math.max(
-                                                              1,
-                                                              currentRatio - 1,
-                                                            );
-                                                            const next = {
-                                                              ...ttsRatios,
-                                                              [langCode]: nextRatio,
-                                                            };
-                                                            setTtsRatios(next);
-                                                            saveTtsRatioPreference(
-                                                              langCode,
-                                                              nextRatio,
-                                                            );
-                                                            if (videoId)
-                                                              saveVideoSettings(videoId, {
-                                                                ttsRatios: {
-                                                                  [langCode]: nextRatio,
-                                                                },
-                                                              });
-                                                          }}
-                                                          className="h-6 w-6 rounded text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted"
-                                                        >
-                                                          <Minus className="h-3 w-3" />
-                                                        </Button>
-
-                                                        <input
-                                                          type="range"
-                                                          min={1}
-                                                          max={20}
-                                                          step={1}
-                                                          value={currentRatio}
-                                                          data-testid={`stage-2-ratio-slider-${langCode}`}
-                                                          aria-label={`TTS ratio slider for ${meta?.name || langCode}`}
-                                                          onChange={(e) => {
-                                                            const val = Math.max(
-                                                              1,
-                                                              Math.min(20, Number(e.target.value)),
-                                                            );
-                                                            const next = {
-                                                              ...ttsRatios,
-                                                              [langCode]: val,
-                                                            };
-                                                            setTtsRatios(next);
-                                                            saveTtsRatioPreference(langCode, val);
-                                                            if (videoId)
-                                                              saveVideoSettings(videoId, {
-                                                                ttsRatios: { [langCode]: val },
-                                                              });
-                                                          }}
-                                                          className="flex-1 h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
-                                                        />
-
-                                                        <Button
-                                                          type="button"
-                                                          variant="ghost"
-                                                          size="icon"
-                                                          data-testid={`stage-2-ratio-increment-${langCode}`}
-                                                          aria-label={`Increase ratio for ${meta?.name || langCode}`}
-                                                          title="Increase ratio by 1"
-                                                          disabled={currentRatio >= 20}
-                                                          onClick={() => {
-                                                            const nextRatio = Math.min(
-                                                              20,
-                                                              currentRatio + 1,
-                                                            );
-                                                            const next = {
-                                                              ...ttsRatios,
-                                                              [langCode]: nextRatio,
-                                                            };
-                                                            setTtsRatios(next);
-                                                            saveTtsRatioPreference(
-                                                              langCode,
-                                                              nextRatio,
-                                                            );
-                                                            if (videoId)
-                                                              saveVideoSettings(videoId, {
-                                                                ttsRatios: {
-                                                                  [langCode]: nextRatio,
-                                                                },
-                                                              });
-                                                          }}
-                                                          className="h-6 w-6 rounded text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted"
-                                                        >
-                                                          <Plus className="h-3 w-3" />
-                                                        </Button>
-                                                      </div>
-
-                                                      {/* Quick Presets */}
-                                                      <div className="flex items-center gap-1 pt-0.5 overflow-x-auto">
-                                                        <span className="text-[9px] text-muted-foreground">
-                                                          Presets:
-                                                        </span>
-                                                        {[1, 2, 3, 4, 5, 7, 10, 15, 20].map(
-                                                          (ratioVal) => (
-                                                            <button
-                                                              key={ratioVal}
+                                                            <Button
                                                               type="button"
-                                                              data-testid={`stage-2-ratio-btn-${langCode}-${ratioVal}`}
+                                                              variant="ghost"
+                                                              size="sm"
+                                                              className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground border border-border/50"
+                                                              disabled={idx === 0}
+                                                              onClick={() =>
+                                                                moveLanguage(langCode, -1)
+                                                              }
+                                                              title={`Move ${meta?.name || langCode} earlier`}
+                                                              aria-label={`Move ${meta?.name || langCode} earlier`}
+                                                              data-testid={`stage-2-btn-move-lang-up-${langCode}`}
+                                                            >
+                                                              <ChevronUp className="h-3.5 w-3.5" />
+                                                            </Button>
+                                                            <Button
+                                                              type="button"
+                                                              variant="ghost"
+                                                              size="sm"
+                                                              className={`h-6 px-1.5 text-xs border ${
+                                                                activeLearningVideoBarIndex === idx
+                                                                  ? "text-primary bg-primary/10 border-primary/40 font-semibold"
+                                                                  : "text-muted-foreground hover:text-foreground border-border/50"
+                                                              }`}
+                                                              onClick={() =>
+                                                                handleSetLearningVideoBarPosition(
+                                                                  idx,
+                                                                )
+                                                              }
+                                                              title={`Place video before ${meta?.name || langCode}`}
+                                                              aria-label={`Place video before ${meta?.name || langCode}`}
+                                                              data-testid={`btn-place-video-before-${langCode}`}
+                                                            >
+                                                              <Film className="h-3 w-3" />
+                                                            </Button>
+                                                            <Button
+                                                              type="button"
+                                                              variant="ghost"
+                                                              size="sm"
+                                                              className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground border border-border/50"
+                                                              disabled={
+                                                                idx ===
+                                                                orderedLearningCodes.length - 1
+                                                              }
+                                                              onClick={() =>
+                                                                moveLanguage(langCode, 1)
+                                                              }
+                                                              title={`Move ${meta?.name || langCode} later`}
+                                                              aria-label={`Move ${meta?.name || langCode} later`}
+                                                              data-testid={`stage-2-btn-move-lang-down-${langCode}`}
+                                                            >
+                                                              <ChevronDown className="h-3.5 w-3.5" />
+                                                            </Button>
+                                                          </div>
+                                                        </div>
+
+                                                        {activeLearningVideoBarIndex ===
+                                                          idx + 1 && (
+                                                          <VideoPlaybackPrecedenceBar
+                                                            currentPosition={idx + 1}
+                                                            totalRecords={
+                                                              orderedLearningCodes.length
+                                                            }
+                                                            onMoveUp={() =>
+                                                              handleSetLearningVideoBarPosition(idx)
+                                                            }
+                                                            onMoveDown={() =>
+                                                              handleSetLearningVideoBarPosition(
+                                                                Math.min(
+                                                                  orderedLearningCodes.length,
+                                                                  idx + 2,
+                                                                ),
+                                                              )
+                                                            }
+                                                            onPlaceAtTop={() =>
+                                                              handleSetLearningVideoBarPosition(0)
+                                                            }
+                                                            onPlaceAtBottom={() =>
+                                                              handleSetLearningVideoBarPosition(
+                                                                orderedLearningCodes.length,
+                                                              )
+                                                            }
+                                                          />
+                                                        )}
+                                                      </Fragment>
+                                                    );
+                                                  })}
+                                                </div>
+                                              </div>
+                                            </LearningGoalAccordion>
+
+                                            {/* Ingredient 2: TTS-play ratio (slider control with plus/minus buttons on 2 edges) */}
+                                            <LearningGoalAccordion
+                                              id="narration-ratios-slider"
+                                              title="2. TTS Ratios"
+                                              icon={<Gauge className="h-3.5 w-3.5 text-primary" />}
+                                              defaultOpen={false}
+                                              autoTimeout={false}
+                                            >
+                                              <div
+                                                data-testid="stage-2-ingredient-ratios-section"
+                                                className="space-y-1.5"
+                                              >
+                                                <div className="flex flex-col space-y-1.5">
+                                                  {orderedLearningCodes.map((langCode, idx) => {
+                                                    const meta =
+                                                      LANGS.find((l) => l.code === langCode) ||
+                                                      SUPPORTED_LANGUAGES_CATALOG.find(
+                                                        (l) => l.code === langCode,
+                                                      );
+                                                    const currentRatio = getLanguageTtsRatio(
+                                                      ttsRatios,
+                                                      langCode,
+                                                    );
+
+                                                    return (
+                                                      <div
+                                                        key={`ratio-${langCode}-${idx}`}
+                                                        data-testid={`stage-2-ratio-row-${langCode}`}
+                                                        className="p-2 rounded-md bg-background/80 border border-border/60 space-y-1.5"
+                                                      >
+                                                        <div
+                                                          data-testid={`stage-2-ratio-slider-container-${langCode}`}
+                                                          className="space-y-1.5"
+                                                        >
+                                                          <div className="flex items-center justify-between text-xs">
+                                                            <div className="flex items-center gap-1.5 font-medium text-foreground">
+                                                              <Languages className="h-3.5 w-3.5 text-primary shrink-0" />
+                                                              <span>
+                                                                {meta?.name ||
+                                                                  langCode.toUpperCase()}
+                                                              </span>
+                                                              <span className="text-[10px] text-muted-foreground font-mono">
+                                                                ({langCode})
+                                                              </span>
+                                                            </div>
+                                                            <span
+                                                              data-testid={`stage-2-ratio-display-${langCode}`}
+                                                              className="font-mono text-xs font-bold text-primary"
+                                                            >
+                                                              1:{currentRatio}
+                                                            </span>
+                                                          </div>
+
+                                                          <div className="flex items-center gap-1.5">
+                                                            <Button
+                                                              type="button"
+                                                              variant="ghost"
+                                                              size="icon"
+                                                              data-testid={`stage-2-ratio-decrement-${langCode}`}
+                                                              aria-label={`Decrease ratio for ${meta?.name || langCode}`}
+                                                              title="Decrease ratio by 1"
+                                                              disabled={currentRatio <= 1}
                                                               onClick={() => {
+                                                                const nextRatio = Math.max(
+                                                                  1,
+                                                                  currentRatio - 1,
+                                                                );
                                                                 const next = {
                                                                   ...ttsRatios,
-                                                                  [langCode]: ratioVal,
+                                                                  [langCode]: nextRatio,
                                                                 };
                                                                 setTtsRatios(next);
                                                                 saveTtsRatioPreference(
                                                                   langCode,
-                                                                  ratioVal,
+                                                                  nextRatio,
                                                                 );
                                                                 if (videoId)
                                                                   saveVideoSettings(videoId, {
                                                                     ttsRatios: {
-                                                                      [langCode]: ratioVal,
+                                                                      [langCode]: nextRatio,
                                                                     },
                                                                   });
                                                               }}
-                                                              className={`px-1.5 py-0.2 rounded text-[9px] font-mono transition-colors cursor-pointer ${
-                                                                currentRatio === ratioVal
-                                                                  ? "bg-primary text-primary-foreground font-bold shadow-xs"
-                                                                  : "text-muted-foreground/70 hover:text-foreground bg-muted/30"
-                                                              }`}
-                                                              title={`Set ratio to 1:${ratioVal}`}
+                                                              className="h-6 w-6 rounded text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted"
                                                             >
-                                                              {ratioVal}
-                                                            </button>
-                                                          ),
-                                                        )}
-                                                      </div>
-                                                    </div>
-                                                  </div>
-                                                );
-                                              })}
-                                            </div>
-                                          </div>
+                                                              <Minus className="h-3 w-3" />
+                                                            </Button>
 
-                                          {/* Ingredient 3: Blacklisted (List presentation) */}
-                                          <div
-                                            data-testid="stage-2-ingredient-blacklist-section"
-                                            className="p-2.5 rounded-lg bg-card/80 border border-border/80 space-y-1.5 shadow-xs"
-                                          >
-                                            <div className="flex items-center justify-between border-b border-border/40 pb-1">
-                                              <div className="flex items-center gap-1.5 font-semibold text-xs text-foreground uppercase tracking-wider">
-                                                <VolumeX className="h-3.5 w-3.5 text-primary" />
-                                                <span>3. Blacklist</span>
-                                              </div>
-                                              <span className="text-[10px] text-muted-foreground font-mono">
-                                                Blacklisted (Skip sentence, allow word)
-                                              </span>
-                                            </div>
+                                                            <input
+                                                              type="range"
+                                                              min={1}
+                                                              max={20}
+                                                              step={1}
+                                                              value={currentRatio}
+                                                              data-testid={`stage-2-ratio-slider-${langCode}`}
+                                                              aria-label={`TTS ratio slider for ${meta?.name || langCode}`}
+                                                              onChange={(e) => {
+                                                                const val = Math.max(
+                                                                  1,
+                                                                  Math.min(
+                                                                    20,
+                                                                    Number(e.target.value),
+                                                                  ),
+                                                                );
+                                                                const next = {
+                                                                  ...ttsRatios,
+                                                                  [langCode]: val,
+                                                                };
+                                                                setTtsRatios(next);
+                                                                saveTtsRatioPreference(
+                                                                  langCode,
+                                                                  val,
+                                                                );
+                                                                if (videoId)
+                                                                  saveVideoSettings(videoId, {
+                                                                    ttsRatios: { [langCode]: val },
+                                                                  });
+                                                              }}
+                                                              className="flex-1 h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                                                            />
 
-                                            <div className="flex flex-col space-y-1 pt-0.5">
-                                              {orderedLearningCodes.map((langCode, idx) => {
-                                                const meta =
-                                                  LANGS.find((l) => l.code === langCode) ||
-                                                  SUPPORTED_LANGUAGES_CATALOG.find(
-                                                    (l) => l.code === langCode,
-                                                  );
-                                                const isBlacklisted = isLanguageTtsBlacklisted(
-                                                  langCode,
-                                                  ttsBlacklist,
-                                                );
+                                                            <Button
+                                                              type="button"
+                                                              variant="ghost"
+                                                              size="icon"
+                                                              data-testid={`stage-2-ratio-increment-${langCode}`}
+                                                              aria-label={`Increase ratio for ${meta?.name || langCode}`}
+                                                              title="Increase ratio by 1"
+                                                              disabled={currentRatio >= 20}
+                                                              onClick={() => {
+                                                                const nextRatio = Math.min(
+                                                                  20,
+                                                                  currentRatio + 1,
+                                                                );
+                                                                const next = {
+                                                                  ...ttsRatios,
+                                                                  [langCode]: nextRatio,
+                                                                };
+                                                                setTtsRatios(next);
+                                                                saveTtsRatioPreference(
+                                                                  langCode,
+                                                                  nextRatio,
+                                                                );
+                                                                if (videoId)
+                                                                  saveVideoSettings(videoId, {
+                                                                    ttsRatios: {
+                                                                      [langCode]: nextRatio,
+                                                                    },
+                                                                  });
+                                                              }}
+                                                              className="h-6 w-6 rounded text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted"
+                                                            >
+                                                              <Plus className="h-3 w-3" />
+                                                            </Button>
+                                                          </div>
 
-                                                return (
-                                                  <div
-                                                    key={`blacklist-${langCode}-${idx}`}
-                                                    data-testid={`stage-2-blacklist-container-${langCode}`}
-                                                    className="flex items-center justify-between gap-2 p-1.5 px-2.5 rounded-md bg-background/80 border border-border/60 text-xs"
-                                                  >
-                                                    <div className="flex items-center gap-2 min-w-0">
-                                                      {isBlacklisted ? (
-                                                        <VolumeX className="h-3.5 w-3.5 text-destructive shrink-0" />
-                                                      ) : (
-                                                        <Volume2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                                                      )}
-                                                      <span className="font-medium text-foreground truncate">
-                                                        {meta?.name || langCode.toUpperCase()}
-                                                      </span>
-                                                      <span className="text-[10px] text-muted-foreground font-mono">
-                                                        ({langCode})
-                                                      </span>
-                                                    </div>
-
-                                                    <button
-                                                      type="button"
-                                                      data-testid={`stage-2-toggle-blacklist-${langCode}`}
-                                                      aria-label={`Toggle TTS sentence playback for ${meta?.name || langCode} (preserves word TTS)`}
-                                                      title={
-                                                        isBlacklisted
-                                                          ? `Whitelisted (click to whitelist)`
-                                                          : `Blacklist ${meta?.name || langCode}`
-                                                      }
-                                                      onClick={() =>
-                                                        handleToggleTtsBlacklist(langCode)
-                                                      }
-                                                      className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium border transition-colors cursor-pointer shrink-0 ${
-                                                        isBlacklisted
-                                                          ? "bg-destructive/15 text-destructive border-destructive/40 font-semibold"
-                                                          : "bg-muted/60 text-muted-foreground hover:text-foreground border-border"
-                                                      }`}
-                                                    >
-                                                      {isBlacklisted ? (
-                                                        <>
-                                                          <VolumeX className="h-3 w-3" />
-                                                          <span>Muted</span>
-                                                        </>
-                                                      ) : (
-                                                        <>
-                                                          <Volume2 className="h-3 w-3 text-emerald-500" />
-                                                          <span>Active</span>
-                                                        </>
-                                                      )}
-                                                    </button>
-                                                  </div>
-                                                );
-                                              })}
-                                            </div>
-                                          </div>
-
-                                          {/* Ingredient 4: Sentence or Word (List presentation) */}
-                                          <div
-                                            data-testid="stage-2-ingredient-sentence-word-section"
-                                            className="p-2.5 rounded-lg bg-card/80 border border-border/80 space-y-1.5 shadow-xs"
-                                          >
-                                            <div className="flex items-center justify-between border-b border-border/40 pb-1">
-                                              <div className="flex items-center gap-1.5 font-semibold text-xs text-foreground uppercase tracking-wider">
-                                                <Type className="h-3.5 w-3.5 text-primary" />
-                                                <span>4. Sentence or Word</span>
-                                              </div>
-                                              <span className="text-[10px] text-muted-foreground font-mono">
-                                                Granularity
-                                              </span>
-                                            </div>
-
-                                            <div className="flex flex-col space-y-1 pt-0.5">
-                                              {orderedLearningCodes.map((langCode, idx) => {
-                                                const meta =
-                                                  LANGS.find((l) => l.code === langCode) ||
-                                                  SUPPORTED_LANGUAGES_CATALOG.find(
-                                                    (l) => l.code === langCode,
-                                                  );
-                                                const isWordMode = getZeroKnowledgeInLang(langCode);
-
-                                                return (
-                                                  <div
-                                                    key={`zk-${langCode}-${idx}`}
-                                                    data-testid={`stage-2-sentence-or-word-container-${langCode}`}
-                                                    className="flex items-center justify-between gap-2 p-1.5 px-2.5 rounded-md bg-background/80 border border-border/60 text-xs"
-                                                  >
-                                                    <div className="flex items-center gap-2 min-w-0">
-                                                      {isWordMode ? (
-                                                        <Type className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                                                      ) : (
-                                                        <FileText className="h-3.5 w-3.5 text-sky-500 shrink-0" />
-                                                      )}
-                                                      <span className="font-medium text-foreground truncate">
-                                                        {meta?.name || langCode.toUpperCase()}
-                                                      </span>
-                                                      <span className="text-[10px] text-muted-foreground font-mono">
-                                                        ({langCode})
-                                                      </span>
-                                                    </div>
-
-                                                    <div className="flex items-center gap-1.5 shrink-0">
-                                                      {isWordMode && (
-                                                        <div className="flex items-center gap-1 bg-background/60 px-1 py-0.5 rounded border border-border/60">
-                                                          <button
-                                                            type="button"
-                                                            data-testid={`pick-word-strategy-longest-${langCode}`}
-                                                            onClick={() =>
-                                                              handleSetPickWordStrategy(
-                                                                "longest",
-                                                                langCode,
-                                                              )
-                                                            }
-                                                            className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors cursor-pointer ${
-                                                              getPickWordStrategy(langCode) ===
-                                                              "longest"
-                                                                ? "bg-primary text-primary-foreground font-bold shadow-xs"
-                                                                : "text-muted-foreground hover:text-foreground"
-                                                            }`}
-                                                            title="Pick longest word"
-                                                          >
-                                                            <Sparkles className="h-2.5 w-2.5" />
-                                                            <span>Longest</span>
-                                                          </button>
-                                                          <button
-                                                            type="button"
-                                                            data-testid={`pick-word-strategy-random-${langCode}`}
-                                                            onClick={() =>
-                                                              handleSetPickWordStrategy(
-                                                                "random",
-                                                                langCode,
-                                                              )
-                                                            }
-                                                            className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors cursor-pointer ${
-                                                              getPickWordStrategy(langCode) ===
-                                                              "random"
-                                                                ? "bg-primary text-primary-foreground font-bold shadow-xs"
-                                                                : "text-muted-foreground hover:text-foreground"
-                                                            }`}
-                                                            title="Pick random word"
-                                                          >
-                                                            <Shuffle className="h-2.5 w-2.5" />
-                                                            <span>Random</span>
-                                                          </button>
+                                                          {/* Quick Presets */}
+                                                          <div className="flex items-center gap-1 pt-0.5 overflow-x-auto">
+                                                            <span className="text-[9px] text-muted-foreground">
+                                                              Presets:
+                                                            </span>
+                                                            {[1, 2, 3, 4, 5, 7, 10, 15, 20].map(
+                                                              (ratioVal) => (
+                                                                <button
+                                                                  key={ratioVal}
+                                                                  type="button"
+                                                                  data-testid={`stage-2-ratio-btn-${langCode}-${ratioVal}`}
+                                                                  onClick={() => {
+                                                                    const next = {
+                                                                      ...ttsRatios,
+                                                                      [langCode]: ratioVal,
+                                                                    };
+                                                                    setTtsRatios(next);
+                                                                    saveTtsRatioPreference(
+                                                                      langCode,
+                                                                      ratioVal,
+                                                                    );
+                                                                    if (videoId)
+                                                                      saveVideoSettings(videoId, {
+                                                                        ttsRatios: {
+                                                                          [langCode]: ratioVal,
+                                                                        },
+                                                                      });
+                                                                  }}
+                                                                  className={`px-1.5 py-0.2 rounded text-[9px] font-mono transition-colors cursor-pointer ${
+                                                                    currentRatio === ratioVal
+                                                                      ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                                                                      : "text-muted-foreground/70 hover:text-foreground bg-muted/30"
+                                                                  }`}
+                                                                  title={`Set ratio to 1:${ratioVal}`}
+                                                                >
+                                                                  {ratioVal}
+                                                                </button>
+                                                              ),
+                                                            )}
+                                                          </div>
                                                         </div>
-                                                      )}
-
-                                                      <button
-                                                        type="button"
-                                                        data-testid={`zero-knowledge-toggle-${langCode}`}
-                                                        id={`zero-knowledge-toggle-${langCode}`}
-                                                        aria-label={`Toggle sentence or word narration for ${meta?.name || langCode}`}
-                                                        title={
-                                                          isWordMode
-                                                            ? `${meta?.name || langCode}: Word mode`
-                                                            : `Sentence mode for ${meta?.name || langCode}`
-                                                        }
-                                                        onClick={() =>
-                                                          handleToggleZeroKnowledge(langCode)
-                                                        }
-                                                        className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium border transition-colors cursor-pointer ${
-                                                          isWordMode
-                                                            ? "bg-amber-500/20 text-amber-300 border-amber-500/50 font-semibold"
-                                                            : "bg-muted/60 text-muted-foreground hover:text-foreground border-border"
-                                                        }`}
-                                                      >
-                                                        {isWordMode ? (
-                                                          <Type className="h-3 w-3" />
-                                                        ) : (
-                                                          <FileText className="h-3 w-3" />
-                                                        )}
-                                                        <span>
-                                                          {isWordMode ? "Word" : "Sentence"}
-                                                        </span>
-                                                      </button>
-                                                    </div>
-                                                  </div>
-                                                );
-                                              })}
-                                            </div>
-                                          </div>
-
-                                          {/* Ingredient 5: TTS Speed Rate Per Language (Effective for both Native & External TTS) */}
-                                          <div
-                                            data-testid="stage-2-ingredient-speed-section"
-                                            className="p-2.5 rounded-lg bg-card/80 border border-border/80 space-y-1.5 shadow-xs"
-                                          >
-                                            <div className="flex items-center justify-between border-b border-border/40 pb-1">
-                                              <div className="flex items-center gap-1.5 font-semibold text-xs text-foreground uppercase tracking-wider">
-                                                <Gauge className="h-3.5 w-3.5 text-primary" />
-                                                <span>
-                                                  5. Speech Rate (Native &amp; External TTS)
-                                                </span>
+                                                      </div>
+                                                    );
+                                                  })}
+                                                </div>
                                               </div>
-                                              <span className="text-[10px] text-muted-foreground font-mono">
-                                                0.25x – 2.5x
-                                              </span>
-                                            </div>
+                                            </LearningGoalAccordion>
 
-                                            <div className="flex flex-col space-y-1.5 pt-0.5">
-                                              {orderedLearningCodes.map((langCode, idx) => {
-                                                const meta =
-                                                  LANGS.find((l) => l.code === langCode) ||
-                                                  SUPPORTED_LANGUAGES_CATALOG.find(
-                                                    (l) => l.code === langCode,
-                                                  );
-                                                const currentRate = rates[langCode] ?? 1.0;
+                                            {/* Ingredient 3: Blacklisted (List presentation) */}
+                                            <LearningGoalAccordion
+                                              id="narration-blacklist"
+                                              title="3. Blacklist"
+                                              icon={
+                                                <VolumeX className="h-3.5 w-3.5 text-primary" />
+                                              }
+                                              badge={
+                                                <span className="text-[10px] text-muted-foreground font-mono">
+                                                  Blacklisted (Skip sentence, allow word)
+                                                </span>
+                                              }
+                                              defaultOpen={false}
+                                              autoTimeout={false}
+                                            >
+                                              <div
+                                                data-testid="stage-2-ingredient-blacklist-section"
+                                                className="space-y-1.5"
+                                              >
+                                                <div className="flex flex-col space-y-1">
+                                                  {orderedLearningCodes.map((langCode, idx) => {
+                                                    const meta =
+                                                      LANGS.find((l) => l.code === langCode) ||
+                                                      SUPPORTED_LANGUAGES_CATALOG.find(
+                                                        (l) => l.code === langCode,
+                                                      );
+                                                    const isBlacklisted = isLanguageTtsBlacklisted(
+                                                      langCode,
+                                                      ttsBlacklist,
+                                                    );
 
-                                                return (
-                                                  <div
-                                                    key={`speed-${langCode}-${idx}`}
-                                                    data-testid={`stage-2-speed-row-${langCode}`}
-                                                    className="p-2 rounded-md bg-background/80 border border-border/60 space-y-1.5"
-                                                  >
-                                                    <div
-                                                      data-testid={`stage-2-speed-slider-container-${langCode}`}
-                                                      className="space-y-1.5"
-                                                    >
-                                                      <div className="flex items-center justify-between text-xs">
-                                                        <div className="flex items-center gap-1.5 font-medium text-foreground">
-                                                          <Languages className="h-3.5 w-3.5 text-primary shrink-0" />
-                                                          <span>
+                                                    return (
+                                                      <div
+                                                        key={`blacklist-${langCode}-${idx}`}
+                                                        data-testid={`stage-2-blacklist-container-${langCode}`}
+                                                        className="flex items-center justify-between gap-2 p-1.5 px-2.5 rounded-md bg-background/80 border border-border/60 text-xs"
+                                                      >
+                                                        <div className="flex items-center gap-2 min-w-0">
+                                                          {isBlacklisted ? (
+                                                            <VolumeX className="h-3.5 w-3.5 text-destructive shrink-0" />
+                                                          ) : (
+                                                            <Volume2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                                                          )}
+                                                          <span className="font-medium text-foreground truncate">
                                                             {meta?.name || langCode.toUpperCase()}
                                                           </span>
                                                           <span className="text-[10px] text-muted-foreground font-mono">
                                                             ({langCode})
                                                           </span>
                                                         </div>
-                                                        <span
-                                                          data-testid={`stage-2-speed-display-${langCode}`}
-                                                          className="font-mono text-xs font-bold text-primary"
-                                                        >
-                                                          {currentRate.toFixed(2)}x
-                                                        </span>
-                                                      </div>
 
-                                                      <div className="flex items-center gap-1.5">
-                                                        <Button
+                                                        <button
                                                           type="button"
-                                                          variant="ghost"
-                                                          size="icon"
-                                                          data-testid={`stage-2-speed-decrement-${langCode}`}
-                                                          aria-label={`Decrease speed for ${meta?.name || langCode}`}
-                                                          title="Decrease speed by 0.1x"
-                                                          disabled={currentRate <= 0.25}
-                                                          onClick={() => {
-                                                            const nextRate = Math.max(
-                                                              0.25,
-                                                              Math.round(
-                                                                (currentRate - 0.1) * 100,
-                                                              ) / 100,
-                                                            );
-                                                            const next = {
-                                                              ...rates,
-                                                              [langCode]: nextRate,
-                                                            };
-                                                            setRates(next);
-                                                            saveTtsRatePreference(
-                                                              langCode,
-                                                              nextRate,
-                                                            );
-                                                            if (videoId)
-                                                              saveVideoSettings(videoId, {
-                                                                ttsRates: { [langCode]: nextRate },
-                                                              });
-                                                          }}
-                                                          className="h-6 w-6 rounded text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted"
+                                                          data-testid={`stage-2-toggle-blacklist-${langCode}`}
+                                                          aria-label={`Toggle TTS sentence playback for ${meta?.name || langCode} (preserves word TTS)`}
+                                                          title={
+                                                            isBlacklisted
+                                                              ? `Whitelisted (click to whitelist)`
+                                                              : `Blacklist ${meta?.name || langCode}`
+                                                          }
+                                                          onClick={() =>
+                                                            handleToggleTtsBlacklist(langCode)
+                                                          }
+                                                          className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium border transition-colors cursor-pointer shrink-0 ${
+                                                            isBlacklisted
+                                                              ? "bg-destructive/15 text-destructive border-destructive/40 font-semibold"
+                                                              : "bg-muted/60 text-muted-foreground hover:text-foreground border-border"
+                                                          }`}
                                                         >
-                                                          <Minus className="h-3 w-3" />
-                                                        </Button>
-
-                                                        <input
-                                                          type="range"
-                                                          min={0.25}
-                                                          max={2.5}
-                                                          step={0.05}
-                                                          value={currentRate}
-                                                          data-testid={`stage-2-speed-slider-${langCode}`}
-                                                          aria-label={`TTS speed slider for ${meta?.name || langCode}`}
-                                                          onChange={(e) => {
-                                                            const val = Math.max(
-                                                              0.25,
-                                                              Math.min(2.5, Number(e.target.value)),
-                                                            );
-                                                            const next = {
-                                                              ...rates,
-                                                              [langCode]: val,
-                                                            };
-                                                            setRates(next);
-                                                            saveTtsRatePreference(langCode, val);
-                                                            if (videoId)
-                                                              saveVideoSettings(videoId, {
-                                                                ttsRates: { [langCode]: val },
-                                                              });
-                                                          }}
-                                                          className="flex-1 h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
-                                                        />
-
-                                                        <Button
-                                                          type="button"
-                                                          variant="ghost"
-                                                          size="icon"
-                                                          data-testid={`stage-2-speed-increment-${langCode}`}
-                                                          aria-label={`Increase speed for ${meta?.name || langCode}`}
-                                                          title="Increase speed by 0.1x"
-                                                          disabled={currentRate >= 2.5}
-                                                          onClick={() => {
-                                                            const nextRate = Math.min(
-                                                              2.5,
-                                                              Math.round(
-                                                                (currentRate + 0.1) * 100,
-                                                              ) / 100,
-                                                            );
-                                                            const next = {
-                                                              ...rates,
-                                                              [langCode]: nextRate,
-                                                            };
-                                                            setRates(next);
-                                                            saveTtsRatePreference(
-                                                              langCode,
-                                                              nextRate,
-                                                            );
-                                                            if (videoId)
-                                                              saveVideoSettings(videoId, {
-                                                                ttsRates: { [langCode]: nextRate },
-                                                              });
-                                                          }}
-                                                          className="h-6 w-6 rounded text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted"
-                                                        >
-                                                          <Plus className="h-3 w-3" />
-                                                        </Button>
+                                                          {isBlacklisted ? (
+                                                            <>
+                                                              <VolumeX className="h-3 w-3" />
+                                                              <span>Muted</span>
+                                                            </>
+                                                          ) : (
+                                                            <>
+                                                              <Volume2 className="h-3 w-3 text-emerald-500" />
+                                                              <span>Active</span>
+                                                            </>
+                                                          )}
+                                                        </button>
                                                       </div>
+                                                    );
+                                                  })}
+                                                </div>
+                                              </div>
+                                            </LearningGoalAccordion>
 
-                                                      {/* Quick Speed Presets */}
-                                                      <div className="flex items-center gap-1 pt-0.5 overflow-x-auto">
-                                                        <span className="text-[9px] text-muted-foreground">
-                                                          Presets:
-                                                        </span>
-                                                        {[0.5, 0.75, 1.0, 1.25, 1.5, 2.0].map(
-                                                          (rateVal) => (
-                                                            <button
-                                                              key={rateVal}
+                                            {/* Ingredient 4: Sentence or Word (List presentation) */}
+                                            <LearningGoalAccordion
+                                              id="narration-granularity"
+                                              title="4. Sentence or Word"
+                                              icon={<Type className="h-3.5 w-3.5 text-primary" />}
+                                              badge={
+                                                <span className="text-[10px] text-muted-foreground font-mono">
+                                                  Granularity
+                                                </span>
+                                              }
+                                              defaultOpen={false}
+                                              autoTimeout={false}
+                                            >
+                                              <div
+                                                data-testid="stage-2-ingredient-sentence-word-section"
+                                                className="space-y-1.5"
+                                              >
+                                                <div className="flex flex-col space-y-1">
+                                                  {orderedLearningCodes.map((langCode, idx) => {
+                                                    const meta =
+                                                      LANGS.find((l) => l.code === langCode) ||
+                                                      SUPPORTED_LANGUAGES_CATALOG.find(
+                                                        (l) => l.code === langCode,
+                                                      );
+                                                    const isWordMode =
+                                                      getZeroKnowledgeInLang(langCode);
+
+                                                    return (
+                                                      <div
+                                                        key={`zk-${langCode}-${idx}`}
+                                                        data-testid={`stage-2-sentence-or-word-container-${langCode}`}
+                                                        className="flex items-center justify-between gap-2 p-1.5 px-2.5 rounded-md bg-background/80 border border-border/60 text-xs"
+                                                      >
+                                                        <div className="flex items-center gap-2 min-w-0">
+                                                          {isWordMode ? (
+                                                            <Type className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                                                          ) : (
+                                                            <FileText className="h-3.5 w-3.5 text-sky-500 shrink-0" />
+                                                          )}
+                                                          <span className="font-medium text-foreground truncate">
+                                                            {meta?.name || langCode.toUpperCase()}
+                                                          </span>
+                                                          <span className="text-[10px] text-muted-foreground font-mono">
+                                                            ({langCode})
+                                                          </span>
+                                                        </div>
+
+                                                        <div className="flex items-center gap-1.5 shrink-0">
+                                                          {isWordMode && (
+                                                            <div className="flex items-center gap-1 bg-background/60 px-1 py-0.5 rounded border border-border/60">
+                                                              <button
+                                                                type="button"
+                                                                data-testid={`pick-word-strategy-longest-${langCode}`}
+                                                                onClick={() =>
+                                                                  handleSetPickWordStrategy(
+                                                                    "longest",
+                                                                    langCode,
+                                                                  )
+                                                                }
+                                                                className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors cursor-pointer ${
+                                                                  getPickWordStrategy(langCode) ===
+                                                                  "longest"
+                                                                    ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                                                                    : "text-muted-foreground hover:text-foreground"
+                                                                }`}
+                                                                title="Pick longest word"
+                                                              >
+                                                                <Sparkles className="h-2.5 w-2.5" />
+                                                                <span>Longest</span>
+                                                              </button>
+                                                              <button
+                                                                type="button"
+                                                                data-testid={`pick-word-strategy-random-${langCode}`}
+                                                                onClick={() =>
+                                                                  handleSetPickWordStrategy(
+                                                                    "random",
+                                                                    langCode,
+                                                                  )
+                                                                }
+                                                                className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors cursor-pointer ${
+                                                                  getPickWordStrategy(langCode) ===
+                                                                  "random"
+                                                                    ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                                                                    : "text-muted-foreground hover:text-foreground"
+                                                                }`}
+                                                                title="Pick random word"
+                                                              >
+                                                                <Shuffle className="h-2.5 w-2.5" />
+                                                                <span>Random</span>
+                                                              </button>
+                                                            </div>
+                                                          )}
+
+                                                          <button
+                                                            type="button"
+                                                            data-testid={`zero-knowledge-toggle-${langCode}`}
+                                                            id={`zero-knowledge-toggle-${langCode}`}
+                                                            aria-label={`Toggle sentence or word narration for ${meta?.name || langCode}`}
+                                                            title={
+                                                              isWordMode
+                                                                ? `${meta?.name || langCode}: Word mode`
+                                                                : `Sentence mode for ${meta?.name || langCode}`
+                                                            }
+                                                            onClick={() =>
+                                                              handleToggleZeroKnowledge(langCode)
+                                                            }
+                                                            className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium border transition-colors cursor-pointer ${
+                                                              isWordMode
+                                                                ? "bg-amber-500/20 text-amber-300 border-amber-500/50 font-semibold"
+                                                                : "bg-muted/60 text-muted-foreground hover:text-foreground border-border"
+                                                            }`}
+                                                          >
+                                                            {isWordMode ? (
+                                                              <Type className="h-3 w-3" />
+                                                            ) : (
+                                                              <FileText className="h-3 w-3" />
+                                                            )}
+                                                            <span>
+                                                              {isWordMode ? "Word" : "Sentence"}
+                                                            </span>
+                                                          </button>
+                                                        </div>
+                                                      </div>
+                                                    );
+                                                  })}
+                                                </div>
+                                              </div>
+                                            </LearningGoalAccordion>
+
+                                            {/* Ingredient 5: TTS Speed Rate Per Language (Effective for both Native & External TTS) */}
+                                            <LearningGoalAccordion
+                                              id="narration-speed"
+                                              title="5. Speech Rate (Native & External TTS)"
+                                              icon={<Gauge className="h-3.5 w-3.5 text-primary" />}
+                                              badge={
+                                                <span className="text-[10px] text-muted-foreground font-mono">
+                                                  0.25x – 2.5x
+                                                </span>
+                                              }
+                                              defaultOpen={false}
+                                              autoTimeout={false}
+                                            >
+                                              <div
+                                                data-testid="stage-2-ingredient-speed-section"
+                                                className="space-y-1.5"
+                                              >
+                                                <div className="flex flex-col space-y-1.5">
+                                                  {orderedLearningCodes.map((langCode, idx) => {
+                                                    const meta =
+                                                      LANGS.find((l) => l.code === langCode) ||
+                                                      SUPPORTED_LANGUAGES_CATALOG.find(
+                                                        (l) => l.code === langCode,
+                                                      );
+                                                    const currentRate = rates[langCode] ?? 1.0;
+
+                                                    return (
+                                                      <div
+                                                        key={`speed-${langCode}-${idx}`}
+                                                        data-testid={`stage-2-speed-row-${langCode}`}
+                                                        className="p-2 rounded-md bg-background/80 border border-border/60 space-y-1.5"
+                                                      >
+                                                        <div
+                                                          data-testid={`stage-2-speed-slider-container-${langCode}`}
+                                                          className="space-y-1.5"
+                                                        >
+                                                          <div className="flex items-center justify-between text-xs">
+                                                            <div className="flex items-center gap-1.5 font-medium text-foreground">
+                                                              <Languages className="h-3.5 w-3.5 text-primary shrink-0" />
+                                                              <span>
+                                                                {meta?.name ||
+                                                                  langCode.toUpperCase()}
+                                                              </span>
+                                                              <span className="text-[10px] text-muted-foreground font-mono">
+                                                                ({langCode})
+                                                              </span>
+                                                            </div>
+                                                            <span
+                                                              data-testid={`stage-2-speed-display-${langCode}`}
+                                                              className="font-mono text-xs font-bold text-primary"
+                                                            >
+                                                              {currentRate.toFixed(2)}x
+                                                            </span>
+                                                          </div>
+
+                                                          <div className="flex items-center gap-1.5">
+                                                            <Button
                                                               type="button"
-                                                              data-testid={`stage-2-speed-btn-${langCode}-${rateVal}`}
+                                                              variant="ghost"
+                                                              size="icon"
+                                                              data-testid={`stage-2-speed-decrement-${langCode}`}
+                                                              aria-label={`Decrease speed for ${meta?.name || langCode}`}
+                                                              title="Decrease speed by 0.1x"
+                                                              disabled={currentRate <= 0.25}
                                                               onClick={() => {
+                                                                const nextRate = Math.max(
+                                                                  0.25,
+                                                                  Math.round(
+                                                                    (currentRate - 0.1) * 100,
+                                                                  ) / 100,
+                                                                );
                                                                 const next = {
                                                                   ...rates,
-                                                                  [langCode]: rateVal,
+                                                                  [langCode]: nextRate,
                                                                 };
                                                                 setRates(next);
                                                                 saveTtsRatePreference(
                                                                   langCode,
-                                                                  rateVal,
+                                                                  nextRate,
                                                                 );
                                                                 if (videoId)
                                                                   saveVideoSettings(videoId, {
                                                                     ttsRates: {
-                                                                      [langCode]: rateVal,
+                                                                      [langCode]: nextRate,
                                                                     },
                                                                   });
                                                               }}
-                                                              className={`px-1.5 py-0.2 rounded text-[9px] font-mono transition-colors cursor-pointer ${
-                                                                Math.abs(currentRate - rateVal) <
-                                                                0.03
-                                                                  ? "bg-primary text-primary-foreground font-bold shadow-xs"
-                                                                  : "text-muted-foreground/70 hover:text-foreground bg-muted/30"
-                                                              }`}
-                                                              title={`Set speed to ${rateVal}x`}
+                                                              className="h-6 w-6 rounded text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted"
                                                             >
-                                                              {rateVal}x
-                                                            </button>
-                                                          ),
-                                                        )}
-                                                      </div>
-                                                    </div>
-                                                  </div>
-                                                );
-                                              })}
-                                            </div>
-                                          </div>
+                                                              <Minus className="h-3 w-3" />
+                                                            </Button>
 
-                                          {/* Ingredient 6: Custom Volume per Translation (0% – 100%) */}
-                                          <div
-                                            data-testid="stage-2-ingredient-volume-section"
-                                            className="p-2.5 rounded-lg bg-card/80 border border-border/80 space-y-1.5 shadow-xs"
-                                          >
-                                            <div className="flex items-center justify-between border-b border-border/40 pb-1">
-                                              <div className="flex items-center gap-1.5 font-semibold text-xs text-foreground uppercase tracking-wider">
-                                                <Volume2 className="h-3.5 w-3.5 text-primary" />
-                                                <span>6. Volume per Translation (0% – 100%)</span>
-                                              </div>
-                                              <span className="text-[10px] text-muted-foreground font-mono">
-                                                Custom volume
-                                              </span>
-                                            </div>
+                                                            <input
+                                                              type="range"
+                                                              min={0.25}
+                                                              max={2.5}
+                                                              step={0.05}
+                                                              value={currentRate}
+                                                              data-testid={`stage-2-speed-slider-${langCode}`}
+                                                              aria-label={`TTS speed slider for ${meta?.name || langCode}`}
+                                                              onChange={(e) => {
+                                                                const val = Math.max(
+                                                                  0.25,
+                                                                  Math.min(
+                                                                    2.5,
+                                                                    Number(e.target.value),
+                                                                  ),
+                                                                );
+                                                                const next = {
+                                                                  ...rates,
+                                                                  [langCode]: val,
+                                                                };
+                                                                setRates(next);
+                                                                saveTtsRatePreference(
+                                                                  langCode,
+                                                                  val,
+                                                                );
+                                                                if (videoId)
+                                                                  saveVideoSettings(videoId, {
+                                                                    ttsRates: { [langCode]: val },
+                                                                  });
+                                                              }}
+                                                              className="flex-1 h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                                                            />
 
-                                            <div className="flex flex-col space-y-1.5 pt-0.5">
-                                              {orderedLearningCodes.map((langCode, idx) => {
-                                                const meta =
-                                                  LANGS.find((l) => l.code === langCode) ||
-                                                  SUPPORTED_LANGUAGES_CATALOG.find(
-                                                    (l) => l.code === langCode,
-                                                  );
-                                                const currentVolume = getLanguageTtsVolume(
-                                                  ttsVolumes,
-                                                  langCode,
-                                                );
-                                                const volumePercent = Math.round(
-                                                  currentVolume * 100,
-                                                );
-                                                const isMuted = volumePercent === 0;
+                                                            <Button
+                                                              type="button"
+                                                              variant="ghost"
+                                                              size="icon"
+                                                              data-testid={`stage-2-speed-increment-${langCode}`}
+                                                              aria-label={`Increase speed for ${meta?.name || langCode}`}
+                                                              title="Increase speed by 0.1x"
+                                                              disabled={currentRate >= 2.5}
+                                                              onClick={() => {
+                                                                const nextRate = Math.min(
+                                                                  2.5,
+                                                                  Math.round(
+                                                                    (currentRate + 0.1) * 100,
+                                                                  ) / 100,
+                                                                );
+                                                                const next = {
+                                                                  ...rates,
+                                                                  [langCode]: nextRate,
+                                                                };
+                                                                setRates(next);
+                                                                saveTtsRatePreference(
+                                                                  langCode,
+                                                                  nextRate,
+                                                                );
+                                                                if (videoId)
+                                                                  saveVideoSettings(videoId, {
+                                                                    ttsRates: {
+                                                                      [langCode]: nextRate,
+                                                                    },
+                                                                  });
+                                                              }}
+                                                              className="h-6 w-6 rounded text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted"
+                                                            >
+                                                              <Plus className="h-3 w-3" />
+                                                            </Button>
+                                                          </div>
 
-                                                return (
-                                                  <div
-                                                    key={`volume-${langCode}-${idx}`}
-                                                    data-testid={`stage-2-volume-row-${langCode}`}
-                                                    className="p-2 rounded-md bg-background/80 border border-border/60 space-y-1.5"
-                                                  >
-                                                    <div
-                                                      data-testid={`stage-2-volume-slider-container-${langCode}`}
-                                                      className="space-y-1.5"
-                                                    >
-                                                      <div className="flex items-center justify-between text-xs">
-                                                        <div className="flex items-center gap-1.5 font-medium text-foreground">
-                                                          <Languages className="h-3.5 w-3.5 text-primary shrink-0" />
-                                                          <span>
-                                                            {meta?.name || langCode.toUpperCase()}
-                                                          </span>
-                                                          <span className="text-[10px] text-muted-foreground font-mono">
-                                                            ({langCode})
-                                                          </span>
-                                                        </div>
-                                                        <div className="flex items-center gap-1.5">
-                                                          <span
-                                                            data-testid={`stage-2-volume-display-${langCode}`}
-                                                            className={`font-mono text-xs font-bold ${
-                                                              isMuted
-                                                                ? "text-destructive"
-                                                                : "text-primary"
-                                                            }`}
-                                                          >
-                                                            {isMuted
-                                                              ? "0% (Muted)"
-                                                              : `${volumePercent}%`}
-                                                          </span>
-                                                          <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            data-testid={`stage-2-volume-mute-toggle-${langCode}`}
-                                                            aria-label={`Toggle mute for ${meta?.name || langCode}`}
-                                                            title={
-                                                              isMuted
-                                                                ? "Unmute (restore to 100%)"
-                                                                : "Mute (set to 0%)"
-                                                            }
-                                                            onClick={() => {
-                                                              const nextVol = isMuted ? 1.0 : 0.0;
-                                                              const next = {
-                                                                ...ttsVolumes,
-                                                                [langCode]: nextVol,
-                                                              };
-                                                              setTtsVolumes(next);
-                                                              saveTtsVolumePreference(
-                                                                langCode,
-                                                                nextVol,
-                                                              );
-                                                              if (videoId) {
-                                                                saveVideoSettings(videoId, {
-                                                                  ttsVolumes: {
-                                                                    [langCode]: nextVol,
-                                                                  },
-                                                                });
-                                                              }
-                                                            }}
-                                                            className="h-5 w-5 rounded text-muted-foreground hover:text-foreground"
-                                                          >
-                                                            {isMuted ? (
-                                                              <VolumeX className="h-3 w-3 text-destructive" />
-                                                            ) : (
-                                                              <Volume2 className="h-3 w-3 text-emerald-500" />
-                                                            )}
-                                                          </Button>
-                                                        </div>
-                                                      </div>
-
-                                                      <div className="flex items-center gap-1.5">
-                                                        <Button
-                                                          type="button"
-                                                          variant="ghost"
-                                                          size="icon"
-                                                          data-testid={`stage-2-volume-decrement-${langCode}`}
-                                                          aria-label={`Decrease volume for ${meta?.name || langCode}`}
-                                                          title="Decrease volume by 10%"
-                                                          disabled={currentVolume <= 0}
-                                                          onClick={() => {
-                                                            const nextVol = Math.max(
-                                                              0,
-                                                              Math.round(
-                                                                (currentVolume - 0.1) * 100,
-                                                              ) / 100,
-                                                            );
-                                                            const next = {
-                                                              ...ttsVolumes,
-                                                              [langCode]: nextVol,
-                                                            };
-                                                            setTtsVolumes(next);
-                                                            saveTtsVolumePreference(
-                                                              langCode,
-                                                              nextVol,
-                                                            );
-                                                            if (videoId) {
-                                                              saveVideoSettings(videoId, {
-                                                                ttsVolumes: { [langCode]: nextVol },
-                                                              });
-                                                            }
-                                                          }}
-                                                          className="h-6 w-6 rounded text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted"
-                                                        >
-                                                          <Minus className="h-3 w-3" />
-                                                        </Button>
-
-                                                        <input
-                                                          type="range"
-                                                          min={0}
-                                                          max={1}
-                                                          step={0.05}
-                                                          value={currentVolume}
-                                                          data-testid={`stage-2-volume-slider-${langCode}`}
-                                                          aria-label={`TTS volume slider for ${meta?.name || langCode}`}
-                                                          onChange={(e) => {
-                                                            const val = Math.max(
-                                                              0,
-                                                              Math.min(
-                                                                1,
-                                                                Math.round(
-                                                                  Number(e.target.value) * 100,
-                                                                ) / 100,
+                                                          {/* Quick Speed Presets */}
+                                                          <div className="flex items-center gap-1 pt-0.5 overflow-x-auto">
+                                                            <span className="text-[9px] text-muted-foreground">
+                                                              Presets:
+                                                            </span>
+                                                            {[0.5, 0.75, 1.0, 1.25, 1.5, 2.0].map(
+                                                              (rateVal) => (
+                                                                <button
+                                                                  key={rateVal}
+                                                                  type="button"
+                                                                  data-testid={`stage-2-speed-btn-${langCode}-${rateVal}`}
+                                                                  onClick={() => {
+                                                                    const next = {
+                                                                      ...rates,
+                                                                      [langCode]: rateVal,
+                                                                    };
+                                                                    setRates(next);
+                                                                    saveTtsRatePreference(
+                                                                      langCode,
+                                                                      rateVal,
+                                                                    );
+                                                                    if (videoId)
+                                                                      saveVideoSettings(videoId, {
+                                                                        ttsRates: {
+                                                                          [langCode]: rateVal,
+                                                                        },
+                                                                      });
+                                                                  }}
+                                                                  className={`px-1.5 py-0.2 rounded text-[9px] font-mono transition-colors cursor-pointer ${
+                                                                    Math.abs(
+                                                                      currentRate - rateVal,
+                                                                    ) < 0.03
+                                                                      ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                                                                      : "text-muted-foreground/70 hover:text-foreground bg-muted/30"
+                                                                  }`}
+                                                                  title={`Set speed to ${rateVal}x`}
+                                                                >
+                                                                  {rateVal}x
+                                                                </button>
                                                               ),
-                                                            );
-                                                            const next = {
-                                                              ...ttsVolumes,
-                                                              [langCode]: val,
-                                                            };
-                                                            setTtsVolumes(next);
-                                                            saveTtsVolumePreference(langCode, val);
-                                                            if (videoId) {
-                                                              saveVideoSettings(videoId, {
-                                                                ttsVolumes: { [langCode]: val },
-                                                              });
-                                                            }
-                                                          }}
-                                                          className="flex-1 h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
-                                                        />
-
-                                                        <Button
-                                                          type="button"
-                                                          variant="ghost"
-                                                          size="icon"
-                                                          data-testid={`stage-2-volume-increment-${langCode}`}
-                                                          aria-label={`Increase volume for ${meta?.name || langCode}`}
-                                                          title="Increase volume by 10%"
-                                                          disabled={currentVolume >= 1}
-                                                          onClick={() => {
-                                                            const nextVol = Math.min(
-                                                              1,
-                                                              Math.round(
-                                                                (currentVolume + 0.1) * 100,
-                                                              ) / 100,
-                                                            );
-                                                            const next = {
-                                                              ...ttsVolumes,
-                                                              [langCode]: nextVol,
-                                                            };
-                                                            setTtsVolumes(next);
-                                                            saveTtsVolumePreference(
-                                                              langCode,
-                                                              nextVol,
-                                                            );
-                                                            if (videoId) {
-                                                              saveVideoSettings(videoId, {
-                                                                ttsVolumes: { [langCode]: nextVol },
-                                                              });
-                                                            }
-                                                          }}
-                                                          className="h-6 w-6 rounded text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted"
-                                                        >
-                                                          <Plus className="h-3 w-3" />
-                                                        </Button>
+                                                            )}
+                                                          </div>
+                                                        </div>
                                                       </div>
+                                                    );
+                                                  })}
+                                                </div>
+                                              </div>
+                                            </LearningGoalAccordion>
 
-                                                      {/* Quick Volume Presets */}
-                                                      <div className="flex items-center gap-1 pt-0.5 overflow-x-auto">
-                                                        <span className="text-[9px] text-muted-foreground">
-                                                          Presets:
-                                                        </span>
-                                                        {[0.0, 0.25, 0.5, 0.75, 1.0].map(
-                                                          (volVal) => {
-                                                            const pctLabel = `${Math.round(volVal * 100)}%`;
-                                                            const isCurrent =
-                                                              Math.abs(currentVolume - volVal) <
-                                                              0.03;
-                                                            return (
-                                                              <button
-                                                                key={volVal}
+                                            {/* Ingredient 6: Custom Volume per Translation (0% – 100%) */}
+                                            <LearningGoalAccordion
+                                              id="narration-volume"
+                                              title="6. Volume per Translation (0% – 100%)"
+                                              icon={
+                                                <Volume2 className="h-3.5 w-3.5 text-primary" />
+                                              }
+                                              badge={
+                                                <span className="text-[10px] text-muted-foreground font-mono">
+                                                  Custom volume
+                                                </span>
+                                              }
+                                              defaultOpen={false}
+                                              autoTimeout={false}
+                                            >
+                                              <div
+                                                data-testid="stage-2-ingredient-volume-section"
+                                                className="space-y-1.5"
+                                              >
+                                                <div className="flex flex-col space-y-1.5">
+                                                  {orderedLearningCodes.map((langCode, idx) => {
+                                                    const meta =
+                                                      LANGS.find((l) => l.code === langCode) ||
+                                                      SUPPORTED_LANGUAGES_CATALOG.find(
+                                                        (l) => l.code === langCode,
+                                                      );
+                                                    const currentVolume = getLanguageTtsVolume(
+                                                      ttsVolumes,
+                                                      langCode,
+                                                    );
+                                                    const volumePercent = Math.round(
+                                                      currentVolume * 100,
+                                                    );
+                                                    const isMuted = volumePercent === 0;
+
+                                                    return (
+                                                      <div
+                                                        key={`volume-${langCode}-${idx}`}
+                                                        data-testid={`stage-2-volume-row-${langCode}`}
+                                                        className="p-2 rounded-md bg-background/80 border border-border/60 space-y-1.5"
+                                                      >
+                                                        <div
+                                                          data-testid={`stage-2-volume-slider-container-${langCode}`}
+                                                          className="space-y-1.5"
+                                                        >
+                                                          <div className="flex items-center justify-between text-xs">
+                                                            <div className="flex items-center gap-1.5 font-medium text-foreground">
+                                                              <Languages className="h-3.5 w-3.5 text-primary shrink-0" />
+                                                              <span>
+                                                                {meta?.name ||
+                                                                  langCode.toUpperCase()}
+                                                              </span>
+                                                              <span className="text-[10px] text-muted-foreground font-mono">
+                                                                ({langCode})
+                                                              </span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5">
+                                                              <span
+                                                                data-testid={`stage-2-volume-display-${langCode}`}
+                                                                className={`font-mono text-xs font-bold ${
+                                                                  isMuted
+                                                                    ? "text-destructive"
+                                                                    : "text-primary"
+                                                                }`}
+                                                              >
+                                                                {isMuted
+                                                                  ? "0% (Muted)"
+                                                                  : `${volumePercent}%`}
+                                                              </span>
+                                                              <Button
                                                                 type="button"
-                                                                data-testid={`stage-2-volume-btn-${langCode}-${Math.round(volVal * 100)}`}
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                data-testid={`stage-2-volume-mute-toggle-${langCode}`}
+                                                                aria-label={`Toggle mute for ${meta?.name || langCode}`}
+                                                                title={
+                                                                  isMuted
+                                                                    ? "Unmute (restore to 100%)"
+                                                                    : "Mute (set to 0%)"
+                                                                }
                                                                 onClick={() => {
+                                                                  const nextVol = isMuted
+                                                                    ? 1.0
+                                                                    : 0.0;
                                                                   const next = {
                                                                     ...ttsVolumes,
-                                                                    [langCode]: volVal,
+                                                                    [langCode]: nextVol,
                                                                   };
                                                                   setTtsVolumes(next);
                                                                   saveTtsVolumePreference(
                                                                     langCode,
-                                                                    volVal,
+                                                                    nextVol,
                                                                   );
                                                                   if (videoId) {
                                                                     saveVideoSettings(videoId, {
                                                                       ttsVolumes: {
-                                                                        [langCode]: volVal,
+                                                                        [langCode]: nextVol,
                                                                       },
                                                                     });
                                                                   }
                                                                 }}
-                                                                className={`px-1.5 py-0.2 rounded text-[9px] font-mono transition-colors cursor-pointer ${
-                                                                  isCurrent
-                                                                    ? "bg-primary text-primary-foreground font-bold shadow-xs"
-                                                                    : "text-muted-foreground/70 hover:text-foreground bg-muted/30"
-                                                                }`}
-                                                                title={`Set volume to ${pctLabel}`}
+                                                                className="h-5 w-5 rounded text-muted-foreground hover:text-foreground"
                                                               >
-                                                                {pctLabel}
-                                                              </button>
-                                                            );
-                                                          },
-                                                        )}
+                                                                {isMuted ? (
+                                                                  <VolumeX className="h-3 w-3 text-destructive" />
+                                                                ) : (
+                                                                  <Volume2 className="h-3 w-3 text-emerald-500" />
+                                                                )}
+                                                              </Button>
+                                                            </div>
+                                                          </div>
+
+                                                          <div className="flex items-center gap-1.5">
+                                                            <Button
+                                                              type="button"
+                                                              variant="ghost"
+                                                              size="icon"
+                                                              data-testid={`stage-2-volume-decrement-${langCode}`}
+                                                              aria-label={`Decrease volume for ${meta?.name || langCode}`}
+                                                              title="Decrease volume by 10%"
+                                                              disabled={currentVolume <= 0}
+                                                              onClick={() => {
+                                                                const nextVol = Math.max(
+                                                                  0,
+                                                                  Math.round(
+                                                                    (currentVolume - 0.1) * 100,
+                                                                  ) / 100,
+                                                                );
+                                                                const next = {
+                                                                  ...ttsVolumes,
+                                                                  [langCode]: nextVol,
+                                                                };
+                                                                setTtsVolumes(next);
+                                                                saveTtsVolumePreference(
+                                                                  langCode,
+                                                                  nextVol,
+                                                                );
+                                                                if (videoId) {
+                                                                  saveVideoSettings(videoId, {
+                                                                    ttsVolumes: {
+                                                                      [langCode]: nextVol,
+                                                                    },
+                                                                  });
+                                                                }
+                                                              }}
+                                                              className="h-6 w-6 rounded text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted"
+                                                            >
+                                                              <Minus className="h-3 w-3" />
+                                                            </Button>
+
+                                                            <input
+                                                              type="range"
+                                                              min={0}
+                                                              max={1}
+                                                              step={0.05}
+                                                              value={currentVolume}
+                                                              data-testid={`stage-2-volume-slider-${langCode}`}
+                                                              aria-label={`TTS volume slider for ${meta?.name || langCode}`}
+                                                              onChange={(e) => {
+                                                                const val = Math.max(
+                                                                  0,
+                                                                  Math.min(
+                                                                    1,
+                                                                    Math.round(
+                                                                      Number(e.target.value) * 100,
+                                                                    ) / 100,
+                                                                  ),
+                                                                );
+                                                                const next = {
+                                                                  ...ttsVolumes,
+                                                                  [langCode]: val,
+                                                                };
+                                                                setTtsVolumes(next);
+                                                                saveTtsVolumePreference(
+                                                                  langCode,
+                                                                  val,
+                                                                );
+                                                                if (videoId) {
+                                                                  saveVideoSettings(videoId, {
+                                                                    ttsVolumes: { [langCode]: val },
+                                                                  });
+                                                                }
+                                                              }}
+                                                              className="flex-1 h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                                                            />
+
+                                                            <Button
+                                                              type="button"
+                                                              variant="ghost"
+                                                              size="icon"
+                                                              data-testid={`stage-2-volume-increment-${langCode}`}
+                                                              aria-label={`Increase volume for ${meta?.name || langCode}`}
+                                                              title="Increase volume by 10%"
+                                                              disabled={currentVolume >= 1}
+                                                              onClick={() => {
+                                                                const nextVol = Math.min(
+                                                                  1,
+                                                                  Math.round(
+                                                                    (currentVolume + 0.1) * 100,
+                                                                  ) / 100,
+                                                                );
+                                                                const next = {
+                                                                  ...ttsVolumes,
+                                                                  [langCode]: nextVol,
+                                                                };
+                                                                setTtsVolumes(next);
+                                                                saveTtsVolumePreference(
+                                                                  langCode,
+                                                                  nextVol,
+                                                                );
+                                                                if (videoId) {
+                                                                  saveVideoSettings(videoId, {
+                                                                    ttsVolumes: {
+                                                                      [langCode]: nextVol,
+                                                                    },
+                                                                  });
+                                                                }
+                                                              }}
+                                                              className="h-6 w-6 rounded text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted"
+                                                            >
+                                                              <Plus className="h-3 w-3" />
+                                                            </Button>
+                                                          </div>
+
+                                                          {/* Quick Volume Presets */}
+                                                          <div className="flex items-center gap-1 pt-0.5 overflow-x-auto">
+                                                            <span className="text-[9px] text-muted-foreground">
+                                                              Presets:
+                                                            </span>
+                                                            {[0.0, 0.25, 0.5, 0.75, 1.0].map(
+                                                              (volVal) => {
+                                                                const pctLabel = `${Math.round(volVal * 100)}%`;
+                                                                const isCurrent =
+                                                                  Math.abs(currentVolume - volVal) <
+                                                                  0.03;
+                                                                return (
+                                                                  <button
+                                                                    key={volVal}
+                                                                    type="button"
+                                                                    data-testid={`stage-2-volume-btn-${langCode}-${Math.round(volVal * 100)}`}
+                                                                    onClick={() => {
+                                                                      const next = {
+                                                                        ...ttsVolumes,
+                                                                        [langCode]: volVal,
+                                                                      };
+                                                                      setTtsVolumes(next);
+                                                                      saveTtsVolumePreference(
+                                                                        langCode,
+                                                                        volVal,
+                                                                      );
+                                                                      if (videoId) {
+                                                                        saveVideoSettings(videoId, {
+                                                                          ttsVolumes: {
+                                                                            [langCode]: volVal,
+                                                                          },
+                                                                        });
+                                                                      }
+                                                                    }}
+                                                                    className={`px-1.5 py-0.2 rounded text-[9px] font-mono transition-colors cursor-pointer ${
+                                                                      isCurrent
+                                                                        ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                                                                        : "text-muted-foreground/70 hover:text-foreground bg-muted/30"
+                                                                    }`}
+                                                                    title={`Set volume to ${pctLabel}`}
+                                                                  >
+                                                                    {pctLabel}
+                                                                  </button>
+                                                                );
+                                                              },
+                                                            )}
+                                                          </div>
+                                                        </div>
                                                       </div>
-                                                    </div>
-                                                  </div>
-                                                );
-                                              })}
-                                            </div>
+                                                    );
+                                                  })}
+                                                </div>
+                                              </div>
+                                            </LearningGoalAccordion>
                                           </div>
-                                        </div>
-                                      );
-                                    })()}
+                                        );
+                                      })()}
+                                    </div>
                                   </div>
-                                </div>
+                                </LearningGoalAccordion>
 
                                 {/* 4. Subtitle Row Criteria & Filters (Category: row-criteria per language) */}
-                                <div
-                                  id="stage-2-ingredient-row-criteria-section"
-                                  data-testid="stage-2-ingredient-row-criteria-section"
-                                  className="p-2.5 rounded-lg bg-card/80 border border-border/80 space-y-2 shadow-xs w-full"
-                                >
-                                  <div className="flex items-center justify-between border-b border-border/40 pb-1.5">
-                                    <div className="flex items-center gap-1.5 font-semibold text-xs text-foreground uppercase tracking-wider">
-                                      <Filter className="h-3.5 w-3.5 text-primary" />
-                                      <span>4. Row Criteria & Filters (Per Language)</span>
-                                    </div>
+                                <LearningGoalAccordion
+                                  id="row-criteria"
+                                  title="4. Row Criteria & Filters (Per Language)"
+                                  icon={<Filter className="h-3.5 w-3.5 text-primary" />}
+                                  badge={
                                     <span className="text-primary font-mono text-[10px] font-bold bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20">
                                       {simpleParserConfig.maxWordsPerSentence}w max
                                     </span>
-                                  </div>
-                                  <div className="pt-0.5">
+                                  }
+                                  defaultOpen={false}
+                                  autoTimeout={false}
+                                >
+                                  <div
+                                    id="stage-2-ingredient-row-criteria-section"
+                                    data-testid="stage-2-ingredient-row-criteria-section"
+                                    className="space-y-2 w-full"
+                                  >
                                     <LearningGoalsFiltersPanel
                                       maxWords={simpleParserConfig.maxWordsPerSentence}
                                       onMaxWordsChange={(val) => {
@@ -13950,7 +14033,7 @@ function Index() {
                                       baseLanguage={baseLanguage}
                                     />
                                   </div>
-                                </div>
+                                </LearningGoalAccordion>
                               </div>
                             </div>
 

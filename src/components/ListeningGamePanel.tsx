@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Archive,
+  ArchiveRestore,
   ArrowDown,
   ArrowLeft,
   ArrowRight,
@@ -14,6 +16,7 @@ import {
   Play,
   Plus,
   RotateCcw,
+  Sparkles,
   Square,
   Type,
   Volume2,
@@ -29,11 +32,16 @@ import {
   getWordTranslationCacheKey,
 } from "@/utils/zeroKnowledgeWordManager";
 import {
+  archiveListeningWord,
   buildListeningLanguageOptions,
   clampListeningTtsRate,
+  clearArchivedListeningWords,
   extractListeningSentences,
   extractListeningWords,
+  filterArchivedListeningWords,
+  LISTENING_ARCHIVED_WORDS_UPDATED_EVENT,
   LISTENING_RATE_PRESETS,
+  loadArchivedListeningWords,
   loadListeningLanguagesConfig,
   loadListeningTtsRateOverride,
   loadListeningWordSortConfig,
@@ -41,12 +49,15 @@ import {
   MIN_LISTENING_TTS_RATE,
   moveListeningLanguage,
   reconcileListeningLanguagesConfig,
+  saveArchivedListeningWords,
   saveListeningLanguagesConfig,
   saveListeningTtsRateOverride,
   saveListeningWordSortConfig,
   sortListeningWords,
   splitSentenceHighlightParts,
   toggleListeningLanguageEnabled,
+  unquarantineListeningWord,
+  type ArchivedListeningWordEntry,
   type ListeningGameSentenceItem,
   type ListeningGameWordItem,
   type ListeningLanguageOption,
@@ -80,6 +91,7 @@ export interface ListeningGamePanelProps {
   onWithTranslationsChange?: (withTranslations: boolean) => void;
   initialMinLetters?: number;
   initialMaxWords?: number;
+  onCreateSentencesWithOpenRouter?: (words: string[]) => void;
   className?: string;
 }
 
@@ -99,6 +111,7 @@ export const ListeningGamePanel: React.FC<ListeningGamePanelProps> = ({
   onWithTranslationsChange,
   initialMinLetters = 4,
   initialMaxWords = 8,
+  onCreateSentencesWithOpenRouter,
   className = "",
 }) => {
   const [withTranslations, setWithTranslations] = useState<boolean>(initialWithTranslations);
@@ -126,6 +139,20 @@ export const ListeningGamePanel: React.FC<ListeningGamePanelProps> = ({
   } | null>(null);
   const [wordTranslations, setWordTranslations] = useState<Record<string, string>>({});
   const [loadingWordKeys, setLoadingWordKeys] = useState<Record<string, boolean>>({});
+  const [archivedWords, setArchivedWords] = useState<ArchivedListeningWordEntry[]>(() =>
+    loadArchivedListeningWords(),
+  );
+  const [showArchivedPanel, setShowArchivedPanel] = useState<boolean>(false);
+  const [swipeDragState, setSwipeDragState] = useState<{ itemId: string; dx: number } | null>(null);
+  const swipeGestureRef = useRef<{
+    itemId: string;
+    word: string;
+    pointerId: number;
+    startX: number;
+    startY: number;
+    dx: number;
+    swiping: boolean;
+  } | null>(null);
   const playbackRunIdRef = useRef<number>(0);
   const autoAdjustedRef = useRef<boolean>(false);
   const onStopSpeakingRef = useRef(onStopSpeaking);
@@ -330,6 +357,103 @@ export const ListeningGamePanel: React.FC<ListeningGamePanelProps> = ({
     }
   }, [ttsRateOverride, applyTtsRateOverride, lastCustomRate, configuredBaseRate]);
 
+  useEffect(() => {
+    const syncArchived = () => {
+      setArchivedWords(loadArchivedListeningWords());
+    };
+    window.addEventListener(LISTENING_ARCHIVED_WORDS_UPDATED_EVENT, syncArchived);
+    window.addEventListener("storage", syncArchived);
+    return () => {
+      window.removeEventListener(LISTENING_ARCHIVED_WORDS_UPDATED_EVENT, syncArchived);
+      window.removeEventListener("storage", syncArchived);
+    };
+  }, []);
+
+  const handleArchiveWord = useCallback((word: string) => {
+    setArchivedWords((prev) => {
+      const next = archiveListeningWord(prev, word);
+      saveArchivedListeningWords(next);
+      return next;
+    });
+  }, []);
+
+  const handleUnquarantineWord = useCallback((wordOrNormalized: string) => {
+    setArchivedWords((prev) => {
+      const next = unquarantineListeningWord(prev, wordOrNormalized);
+      saveArchivedListeningWords(next);
+      return next;
+    });
+  }, []);
+
+  const handleUnquarantineAll = useCallback(() => {
+    const next = clearArchivedListeningWords();
+    setArchivedWords(next);
+    saveArchivedListeningWords(next);
+  }, []);
+
+  const SWIPE_ARCHIVE_THRESHOLD_PX = 56;
+
+  const handleWordCardPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>, item: ListeningGameWordItem) => {
+      if (e.button !== 0 && e.pointerType === "mouse") return;
+      const targetEl = e.target as HTMLElement | null;
+      if (targetEl?.closest("button, input, select, a")) return;
+      swipeGestureRef.current = {
+        itemId: item.id,
+        word: item.word,
+        pointerId: e.pointerId,
+        startX: e.clientX,
+        startY: e.clientY,
+        dx: 0,
+        swiping: false,
+      };
+    },
+    [],
+  );
+
+  const handleWordCardPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const gesture = swipeGestureRef.current;
+    if (!gesture || gesture.pointerId !== e.pointerId) return;
+    const dx = e.clientX - gesture.startX;
+    const dy = e.clientY - gesture.startY;
+    if (!gesture.swiping) {
+      if (Math.abs(dx) < 10) return;
+      if (Math.abs(dy) > Math.abs(dx) * 1.1) {
+        swipeGestureRef.current = null;
+        setSwipeDragState(null);
+        return;
+      }
+      gesture.swiping = true;
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        // ignore pointer capture failures in synthetic test environments
+      }
+    }
+    gesture.dx = dx;
+    setSwipeDragState({ itemId: gesture.itemId, dx });
+  }, []);
+
+  const handleWordCardPointerFinish = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>, cancelled: boolean) => {
+      const gesture = swipeGestureRef.current;
+      if (!gesture || gesture.pointerId !== e.pointerId) return;
+      swipeGestureRef.current = null;
+      setSwipeDragState(null);
+      try {
+        if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
+          e.currentTarget.releasePointerCapture(e.pointerId);
+        }
+      } catch {
+        // ignore
+      }
+      if (!cancelled && gesture.swiping && Math.abs(gesture.dx) >= SWIPE_ARCHIVE_THRESHOLD_PX) {
+        handleArchiveWord(gesture.word);
+      }
+    },
+    [handleArchiveWord],
+  );
+
   const allAvailableWords = useMemo(
     () =>
       extractListeningWords(rows, {
@@ -354,7 +478,7 @@ export const ListeningGamePanel: React.FC<ListeningGamePanelProps> = ({
     [rows, baseLanguage, targetLanguage, currentSentence, targetTranslation],
   );
 
-  const filteredWords = useMemo(
+  const rawFilteredWords = useMemo(
     () =>
       extractListeningWords(rows, {
         baseLanguage,
@@ -364,6 +488,16 @@ export const ListeningGamePanel: React.FC<ListeningGamePanelProps> = ({
         fallbackTranslation: targetTranslation,
       }),
     [rows, baseLanguage, targetLanguage, minLetters, currentSentence, targetTranslation],
+  );
+
+  const filteredWords = useMemo(
+    () => filterArchivedListeningWords(rawFilteredWords, archivedWords),
+    [rawFilteredWords, archivedWords],
+  );
+
+  const nonArchivedAvailableWords = useMemo(
+    () => filterArchivedListeningWords(allAvailableWords, archivedWords),
+    [allAvailableWords, archivedWords],
   );
 
   const sortedWords = useMemo(
@@ -392,10 +526,10 @@ export const ListeningGamePanel: React.FC<ListeningGamePanelProps> = ({
     if (autoAdjustedRef.current) return;
 
     autoAdjustedRef.current = true;
-    if (filteredWords.length === 0 && allAvailableWords.length > 0) {
+    if (rawFilteredWords.length === 0 && nonArchivedAvailableWords.length > 0) {
       const bestThreshold = Math.max(
         1,
-        Math.min(minLetters, Math.max(...allAvailableWords.map((w) => w.letterCount))),
+        Math.min(minLetters, Math.max(...nonArchivedAvailableWords.map((w) => w.letterCount))),
       );
       if (bestThreshold !== minLetters) {
         setMinLetters(bestThreshold);
@@ -411,7 +545,8 @@ export const ListeningGamePanel: React.FC<ListeningGamePanelProps> = ({
   }, [
     allAvailableWords,
     allAvailableSentences,
-    filteredWords.length,
+    rawFilteredWords.length,
+    nonArchivedAvailableWords,
     filteredSentences.length,
     minLetters,
     maxWords,
@@ -1466,7 +1601,7 @@ export const ListeningGamePanel: React.FC<ListeningGamePanelProps> = ({
             className="rounded-xl border border-border bg-card/60 p-3.5 space-y-3 flex flex-col"
           >
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-2.5">
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <Type className="h-4 w-4 text-sky-500" />
                 <h3 className="text-xs font-bold uppercase tracking-wide text-foreground">
                   1. Subtitles&apos; Words
@@ -1477,6 +1612,23 @@ export const ListeningGamePanel: React.FC<ListeningGamePanelProps> = ({
                 >
                   {filteredWords.length}
                 </span>
+                {archivedWords.length > 0 && (
+                  <button
+                    type="button"
+                    data-testid="listening-archived-toggle-btn"
+                    aria-expanded={showArchivedPanel}
+                    onClick={() => setShowArchivedPanel((prev) => !prev)}
+                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold transition-colors cursor-pointer ${
+                      showArchivedPanel
+                        ? "border-amber-500 bg-amber-500/15 text-amber-700 dark:text-amber-300"
+                        : "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20"
+                    }`}
+                    title="View and unquarantine archived words"
+                  >
+                    <Archive className="h-3 w-3" />
+                    <span>Archived ({archivedWords.length})</span>
+                  </button>
+                )}
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
@@ -1600,6 +1752,96 @@ export const ListeningGamePanel: React.FC<ListeningGamePanelProps> = ({
               </div>
             </div>
 
+            <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-muted-foreground px-0.5">
+              <span>
+                Click Archive or swipe left / right on any word card to exclude it from the next
+                game.
+              </span>
+            </div>
+
+            {onCreateSentencesWithOpenRouter && (
+              <div
+                data-testid="listening-words-openrouter-section"
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-indigo-500/30 bg-indigo-500/5 px-3 py-2 text-xs"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <Sparkles className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
+                  <span className="font-medium text-foreground">
+                    Create more sentences from this words list ({Math.min(sortedWords.length, 30)}w)
+                    with OpenRouter
+                  </span>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  data-testid="listening-words-openrouter-btn"
+                  disabled={sortedWords.length === 0}
+                  onClick={() => {
+                    stopSequentialPlayback(true);
+                    onCreateSentencesWithOpenRouter(sortedWords.map((w) => w.word).slice(0, 30));
+                  }}
+                  className="h-7 px-2.5 text-[11px] gap-1.5 border-indigo-500/40 bg-background hover:bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 shrink-0 cursor-pointer"
+                  title="Use OpenRouter to create more practice sentences from this list of words"
+                >
+                  <Sparkles className="h-3 w-3" />
+                  <span>OpenRouter Sentences (5x)</span>
+                </Button>
+              </div>
+            )}
+
+            {archivedWords.length > 0 && showArchivedPanel && (
+              <div
+                data-testid="listening-archived-words-panel"
+                className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-2.5 space-y-2 text-xs"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 font-semibold text-amber-800 dark:text-amber-300 text-[11px]">
+                    <Archive className="h-3.5 w-3.5" />
+                    <span>Quarantined / Archived Words ({archivedWords.length})</span>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    data-testid="listening-unquarantine-all-btn"
+                    onClick={handleUnquarantineAll}
+                    className="h-6 px-2 text-[10px] gap-1 border-amber-500/40 hover:bg-amber-500/15"
+                  >
+                    <ArchiveRestore className="h-3 w-3" />
+                    <span>Unquarantine All</span>
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+                  {archivedWords.map((entry) => (
+                    <div
+                      key={entry.normalized}
+                      data-testid={`listening-archived-item-${entry.normalized}`}
+                      className="inline-flex items-center gap-1.5 rounded-md border border-amber-500/30 bg-background/90 px-2 py-1 text-[11px]"
+                    >
+                      <span
+                        dir={isBaseRtl ? "rtl" : "ltr"}
+                        className="font-semibold text-foreground"
+                      >
+                        {entry.word}
+                      </span>
+                      <button
+                        type="button"
+                        data-testid={`listening-unquarantine-word-${entry.normalized}`}
+                        data-unquarantine-word={entry.word}
+                        onClick={() => handleUnquarantineWord(entry.normalized)}
+                        className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 cursor-pointer"
+                        title={`Unquarantine "${entry.word}" back into Listening Game`}
+                      >
+                        <ArchiveRestore className="h-2.5 w-2.5" />
+                        <span>Unquarantine</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div
               ref={wordsListRef}
               data-testid="listening-words-list"
@@ -1611,10 +1853,24 @@ export const ListeningGamePanel: React.FC<ListeningGamePanelProps> = ({
                   className="text-xs text-muted-foreground py-6 text-center space-y-2"
                 >
                   <p className="italic">
-                    No subtitle words found with at least {minLetters} letter
-                    {minLetters === 1 ? "" : "s"}.
+                    {rawFilteredWords.length > 0 && filteredWords.length === 0
+                      ? `All ${rawFilteredWords.length} matching word${rawFilteredWords.length === 1 ? " is" : "s are"} currently archived.`
+                      : `No subtitle words found with at least ${minLetters} letter${minLetters === 1 ? "" : "s"}.`}
                   </p>
-                  {allAvailableWords.length > 0 && (
+                  {archivedWords.length > 0 && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      data-testid="listening-empty-unquarantine-btn"
+                      onClick={() => setShowArchivedPanel(true)}
+                      className="h-7 text-[11px] gap-1"
+                    >
+                      <ArchiveRestore className="h-3 w-3" />
+                      <span>Review &amp; Unquarantine ({archivedWords.length})</span>
+                    </Button>
+                  )}
+                  {nonArchivedAvailableWords.length > 0 && (
                     <Button
                       type="button"
                       size="sm"
@@ -1623,7 +1879,7 @@ export const ListeningGamePanel: React.FC<ListeningGamePanelProps> = ({
                       onClick={() => setMinLetters(1)}
                       className="h-7 text-[11px]"
                     >
-                      Show all {allAvailableWords.length} available words (min 1 letter)
+                      Show all {nonArchivedAvailableWords.length} available words (min 1 letter)
                     </Button>
                   )}
                 </div>
@@ -1633,6 +1889,8 @@ export const ListeningGamePanel: React.FC<ListeningGamePanelProps> = ({
                   const isWordActive = activeItemId === item.id;
                   const isSentenceActive = activeItemId === sentenceItemId;
                   const isActive = isWordActive || isSentenceActive;
+                  const dragDx = swipeDragState?.itemId === item.id ? swipeDragState.dx : 0;
+                  const isSwipingArchiveReady = Math.abs(dragDx) >= SWIPE_ARCHIVE_THRESHOLD_PX;
                   const cacheKey = getWordTranslationCacheKey(
                     item.word,
                     baseLanguage,
@@ -1654,13 +1912,27 @@ export const ListeningGamePanel: React.FC<ListeningGamePanelProps> = ({
                       key={item.id}
                       data-testid={`listening-word-item-${idx}`}
                       data-word-item={item.word}
-                      className={`rounded-lg border px-3 py-2.5 text-xs transition-colors space-y-2 ${
-                        isActive
-                          ? "border-indigo-500 bg-indigo-500/10"
-                          : "border-border/60 bg-background/70 hover:bg-muted/40"
+                      onPointerDown={(e) => handleWordCardPointerDown(e, item)}
+                      onPointerMove={handleWordCardPointerMove}
+                      onPointerUp={(e) => handleWordCardPointerFinish(e, false)}
+                      onPointerCancel={(e) => handleWordCardPointerFinish(e, true)}
+                      style={
+                        dragDx !== 0
+                          ? {
+                              transform: `translateX(${Math.max(-140, Math.min(140, dragDx))}px)`,
+                              opacity: Math.max(0.45, 1 - Math.abs(dragDx) / 220),
+                            }
+                          : undefined
+                      }
+                      className={`rounded-lg border px-3 py-2.5 text-xs transition-colors space-y-2 touch-pan-y select-none ${
+                        isSwipingArchiveReady
+                          ? "border-amber-500 bg-amber-500/15"
+                          : isActive
+                            ? "border-indigo-500 bg-indigo-500/10"
+                            : "border-border/60 bg-background/70 hover:bg-muted/40"
                       }`}
                     >
-                      {/* Band 1: Word + On-Demand Translations + Listen Rail */}
+                      {/* Band 1: Word + On-Demand Translations + Archive & Listen Rail */}
                       <div
                         data-testid={`listening-word-band-${idx}`}
                         className="flex items-start justify-between gap-2.5"
@@ -1722,24 +1994,41 @@ export const ListeningGamePanel: React.FC<ListeningGamePanelProps> = ({
                           )}
                         </div>
 
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant={isWordActive ? "default" : "outline"}
-                          data-testid={`listening-play-word-${idx}`}
-                          onClick={() => handlePlayWord(item)}
-                          className="h-7 min-w-[5.25rem] justify-center px-2.5 text-[11px] gap-1 shrink-0 whitespace-nowrap"
-                          title={
-                            withTranslations
-                              ? "Listen to word + on-demand translation"
-                              : "Listen to word only"
-                          }
-                        >
-                          <Volume2
-                            className={`h-3.5 w-3.5 ${isWordActive ? "" : "text-indigo-500"}`}
-                          />
-                          <span>Listen</span>
-                        </Button>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            data-testid={`listening-archive-word-${idx}`}
+                            data-archive-word={item.word}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleArchiveWord(item.word);
+                            }}
+                            className="inline-flex h-7 items-center gap-1 rounded-md border border-border/70 bg-background/80 px-2 text-[10px] font-medium text-muted-foreground hover:border-amber-500/60 hover:bg-amber-500/10 hover:text-amber-700 dark:hover:text-amber-300 transition-colors cursor-pointer whitespace-nowrap"
+                            title="Archive word (or swipe left/right) — filter out from next game & quarantine"
+                            aria-label={`Archive word ${item.word}`}
+                          >
+                            <Archive className="h-3 w-3" />
+                            <span className="hidden sm:inline">Archive</span>
+                          </button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={isWordActive ? "default" : "outline"}
+                            data-testid={`listening-play-word-${idx}`}
+                            onClick={() => handlePlayWord(item)}
+                            className="h-7 min-w-[5.25rem] justify-center px-2.5 text-[11px] gap-1 shrink-0 whitespace-nowrap"
+                            title={
+                              withTranslations
+                                ? "Listen to word + on-demand translation"
+                                : "Listen to word only"
+                            }
+                          >
+                            <Volume2
+                              className={`h-3.5 w-3.5 ${isWordActive ? "" : "text-indigo-500"}`}
+                            />
+                            <span>Listen</span>
+                          </Button>
+                        </div>
                       </div>
 
                       {/* Band 2: Derived Original Sentence + Translation + Sentence Rail */}

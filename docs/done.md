@@ -1,5 +1,73 @@
 # Done tasks
 
+### Task 432: Prompt 221 Chapter 3 — `AGENTS.md` Experimental Features Isolation & Undo/Cancel Rule
+
+- **Prompt**:
+  ```
+  3. AGENTS.md - prompting: if  prompt says to create expermental feature - allow to undone the feature using an undo/cancel request. experimental feature should not effect any existing component.
+  ```
+- **Changes**:
+  - `AGENTS.md`: Added the **Experimental features isolation & undo/cancel rule** under `## Code architecture, modularity, and standards`, requiring `[Experimental]` labeling, isolation in standalone module(s)/component(s) without affecting or breaking existing components, and clean undo/cancel removability (keeping `AGENTS.md` well under its size budget).
+  - `scripts/verify-agents-experimental-isolation-rule.ts`, `scripts/verify-agents-all.ts`, & `package.json`: Added contract check 24 (`test:agents-experimental-isolation`) verifying experimental isolation, `[Experimental]` tag, and undo/cancel reversibility rules inside `verify-agents-all.ts`.
+- **Verification**: `npm run test:agents-experimental-isolation`, `npm run test:agents-all` (24/24), `npm run test:lean-tokens`, `npx eslint`, `compile_applet`, and `lint_applet` — all **PASSED**; git commit/push attempted and logged in `docs/git.md` (skipped: no `.git` directory).
+
+### Task 431: Prompt 221 Chapter 2 — Present OpenRouter Sentence-Creation Option on Listening Words Section
+
+- **Prompt**:
+  ```
+  2. creating more sentences using the list of words using openrouter - the openrouter option should be presented on the relevant section
+  ```
+- **Changes**:
+  - `src/components/ListeningGamePanel.tsx`: Added `onCreateSentencesWithOpenRouter` prop and rendered the `listening-words-openrouter-section` banner + `listening-words-openrouter-btn` action directly inside `1. Subtitles' Words` (`listening-words-section`), passing the active sorted & non-archived words list (`sortedWords`) into OpenRouter sentence generation (and cleanly stopping any active sequential playback via `stopSequentialPlayback(true)`).
+  - `src/components/WordBalloonLearningView.tsx`: Added `customOpenRouterWords` state, `effectiveAiTargetWords` archived-word filtering, and `handleCreateSentencesWithOpenRouterFromWords` callback wiring `ListeningGamePanel` straight to `OpenRouterSentenceGamePanel` across both Advanced & Beginner modes.
+  - `src/components/ListeningGamePanel.stories.tsx`: Added `onCreateSentencesWithOpenRouter` callback and description coverage in Storybook.
+  - `scripts/verify-openrouter-words-section-option.ts` & `package.json`: Added unit/source contract + live Chromium E2E test (`test:openrouter-words-section-option`) verifying Advanced Mode and Beginner Mode transitions from Listening Words straight into `OpenRouterSentenceGamePanel` with the displayed words loaded.
+- **Verification**: `npm run test:openrouter-words-section-option`, `npm run test:game-openrouter-sentences`, `npm run test:listening-word-cards-ui-ux`, `npm run test:listening-word-archive-unquarantine`, `npm run test:same-components-parity-policy`, `npx eslint`, `compile_applet`, and `lint_applet` — all **PASSED**; git commit/push attempted and logged in `docs/git.md` (skipped: no `.git` directory).
+
+### Task 430: Prompt 221 Chapter 1 — Listening Game Word Archiving (Click or Swipe Left/Right) & Unquarantine
+
+- **Prompt**:
+  ```
+  1.
+  listening game:
+  allow to click or swap righ or left in order to archive a word - this will filter out the word for the next game.
+
+  also support unquarenine the archived words.
+  ```
+- **Changes**:
+  - `src/utils/listeningGame.ts`: Added `ArchivedListeningWordEntry`, `LISTENING_ARCHIVED_WORDS_STORAGE_KEY`, `LISTENING_ARCHIVED_WORDS_UPDATED_EVENT`, `normalizeArchivedWordKey`, `loadArchivedListeningWords`, `saveArchivedListeningWords`, `archiveListeningWord`, `unquarantineListeningWord`, `clearArchivedListeningWords`, `filterArchivedListeningWords`, and `filterArchivedWordStrings` so archived words persist across games/reloads and sync live via window events.
+  - `src/components/ListeningGamePanel.tsx`: Filtered `filteredWords` and `nonArchivedAvailableWords` by archived entries (excluding them from current and next games), added per-card Archive button (`listening-archive-word-*`) and bidirectional left/right pointer swipe-to-archive (`SWIPE_ARCHIVE_THRESHOLD_PX = 56`) with zero horizontal overflow or button misalignment, and added collapsible `Archived (N)` unquarantine drawer (`listening-archived-toggle-btn`, `listening-archived-words-panel`, `listening-unquarantine-word-*`, `listening-unquarantine-all-btn`, `listening-empty-unquarantine-btn`).
+  - `src/components/WordBalloonLearningView.tsx` & `src/components/ListeningGamePanel.stories.tsx`: Synced archived word filtering into `targetWordsForAiGame` and `availableWordsTotal` across Advanced & Beginner modes and documented archiving/unquarantine in Storybook.
+  - `scripts/verify-listening-word-archive-unquarantine.ts` & `package.json`: Added unit + live Chromium E2E test (`test:listening-word-archive-unquarantine`) covering click archive, right swipe, left swipe, next-game reload persistence, individual unquarantine, and unquarantine all.
+- **Verification**: `npm run test:listening-word-archive-unquarantine`, `npm run test:listening-word-cards-ui-ux`, `npm run test:listening-game-mode`, `npm run test:same-components-parity-policy`, `npm run test:agents-all` (23/23), `npx eslint`, `compile_applet`, and `lint_applet` — all **PASSED**; git commit/push attempted and logged in `docs/git.md` (skipped: no `.git` directory).
+
+### Task 429: Prompt 221 Chapter 0 — Use Accordions on Learning Goals to Clean the View
+
+- **Prompt**:
+  ```
+  0. use accordions on learning goals - this should help cleaning the view
+  ```
+- **Changes**:
+  - `src/components/LearningGoalAccordion.tsx`: Added `[overflow-anchor:none]` on the `<details>` container to prevent browser scroll-anchoring jumps when folding/unfolding, and refined pin button tooltip when `autoTimeout={false}` (`"Pin to keep open across reloads"`).
+  - `src/components/beginner/tabs/BeginnerPreferencesTab.tsx`: Wrapped all 6 Preferences / Learning Goals sections (`beginner-default-language`, `beginner-global-features`, `beginner-tts-speed-voice`, `beginner-favorite-languages`, `beginner-narration-ratios`, `beginner-row-criteria`) in `<LearningGoalAccordion defaultOpen={false} autoTimeout={false}>` while preserving all container IDs and `data-testid` hooks.
+  - `src/routes/index.tsx`: Wrapped all 4 Stage 1 Learning Goals sections inside `#stage-2-learning-goals-card` (`default-source-lang`, `approved-languages`, `narration-ratios` plus all 6 nested narration ingredient sections `narration-order`, `narration-ratios-slider`, `narration-blacklist`, `narration-granularity`, `narration-speed`, `narration-volume`, and `row-criteria`) in `<LearningGoalAccordion defaultOpen={false} autoTimeout={false}>`.
+  - `scripts/verify-learning-goals-folded-accordions.ts`, `scripts/verify-learning-goals-no-autoscroll.ts`, & `scripts/verify-learning-goals-persistent-visibility.ts`: Updated assertions to cover all Advanced (including `row-criteria` and `narration-*`) and Beginner accordions, unfold accordions before inspecting inside-body interactions in no-autoscroll tests, and compare semver versions numerically.
+- **Verification**: `npm run test:learning-goals-accordions`, `npm run test:learning-goals-no-autoscroll`, `npm run test:learning-goals-persistent-visibility`, `npm run test:learning-goals-component-design`, `npm run test:learning-goals-list-presentation-minimal-text`, `npm run test:learning-goals-language-ratios`, `npm run test:profile-name-on-top`, `npm run test:learning-goals-tts-speed-per-language`, `npm run test:learning-goals-unfold-eligible-records`, `npm run test:learning-goals-criteria-statistics`, `npm run test:same-components-parity-policy`, `npm run test:lean-tokens`, `npx tsc --noEmit`, `compile_applet`, and `lint_applet` — all **PASSED**; git commit/push attempted and logged in `docs/git.md` (skipped: no `.git` directory).
+
+### Task 428: Prompt 220 — Optimize `AGENTS.md`, `docs/tokens.md`, and Token-Tracking Docs
+
+- **Prompt**:
+  ```
+  AGENTS.md - improve any doc which help to optimize token usage
+  ```
+- **Changes**:
+  - `docs/tokens.md`: Removed 136 lines (~37.3 KB) of stale historical prompt summaries (Prompts 59–218, already archived in `docs/done.md` and `prompt_history.md`), restoring `docs/tokens.md` from 43,651 bytes (271 lines) down to 6,350 bytes (95 lines, well below `< 12 KB` and `< 200` lines), and added explicit rules for bounded slice-reading (`StartLine`/`EndLine`, `tail`, `grep`) and zero completed-history bloat.
+  - `current-sub-task.md` & `docs/todo.md`: Pruned 44 duplicated completed-task lines (~18.5 KB combined) already stored in `docs/done.md`, reducing both prompt-boot files to `< 0.3 KB` each when idle.
+  - `AGENTS.md`: Condensed verbose non-asserted prose from 19,460 bytes down to 12,403 bytes (12.11 KB, giving 12,173 bytes of headroom below the 24 KB limit) while keeping 100% of all 23 constitutional assertions and adding token-budget (`docs/tokens.md` < 12 KB, `current-sub-task.md` & `docs/todo.md` < 2 KB, `AGENTS.md` < 20 KB) and bounded slice-read directives.
+  - `docs/suggestions.md` & `docs/tasks-index.md`: Documented Step 6 (boot-doc pruning & slice-only reads of `docs/done.md`, `docs/files.md`, `prompt_history.md`), updated measured sizes/headroom, and aligned milestone range (`Tasks 123–428`).
+  - `scripts/verify-lean-tokens-economy.ts`: Extended with automated `< 4 KB` size guards for `current-sub-task.md` and `docs/todo.md`.
+- **Verification**: `npx tsx scripts/verify-lean-tokens-economy.ts`, `npx tsx scripts/verify-tokens-economy.ts`, `npx tsx scripts/verify-agents-all.ts` (23/23), `npx tsx scripts/verify-task-management-workflow.ts`, `npx tsx scripts/verify-hotfix-and-done-workflow.ts`, `npx tsx scripts/verify-no-duplicate-md-files.ts`, `npx tsx scripts/verify-doc-contracts.ts`, `npx tsx scripts/verify-md-links.ts`, `npm run check-version`, `compile_applet`, and `lint_applet` — all **PASSED**; git commit/push attempted and logged in `docs/git.md` (skipped: no `.git` directory).
+
 ### Task 415: Prompt 204 Chapter 2 — Fix Enabling "Auto-Scroll Subtitles" (`menu-option-auto-scroll`) Not Triggering Auto-Scroll on Subtitles Table Stage (`v2.1.130`)
 
 - **Prompt**:

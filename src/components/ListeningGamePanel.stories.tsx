@@ -34,7 +34,7 @@ const meta: Meta<typeof ListeningGamePanel> = {
     docs: {
       description: {
         component:
-          "Interactive Listening Game supporting With/Without Translations mode for subtitle words (min letters filter) and punctuation-based sentences (max X words filter).",
+          "Interactive Listening Game supporting With/Without Translations mode for subtitle words (min letters filter, click or swipe left/right to archive & unquarantine, OpenRouter sentence generation from the active words list) and punctuation-based sentences (max X words filter).",
       },
     },
   },
@@ -66,11 +66,14 @@ const StoryWrapper: React.FC<Partial<ListeningGamePanelProps>> = (props) => {
             `[${lang}${options?.rateOverride ? ` @ ${options.rateOverride}x` : ""}] ${text}`,
           )
         }
+        onCreateSentencesWithOpenRouter={(words) =>
+          setLastSpoken(`[OpenRouter] Generate 5x sentences for: ${words.slice(0, 6).join(", ")}`)
+        }
         {...props}
       />
       {lastSpoken && (
         <div className="text-xs font-mono text-muted-foreground border border-border rounded px-3 py-1.5 bg-muted/30">
-          Last spoken: {lastSpoken}
+          Last action: {lastSpoken}
         </div>
       )}
     </div>
