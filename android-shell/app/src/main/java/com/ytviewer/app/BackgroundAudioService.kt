@@ -64,19 +64,16 @@ class BackgroundAudioService : Service() {
 
     private val audioFocusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
         when (focusChange) {
-            AudioManager.AUDIOFOCUS_LOSS -> {
-                handlePause()
-            }
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
-                handlePause()
-            }
+            AudioManager.AUDIOFOCUS_LOSS,
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT,
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
-                // Background playback continues
+                // Do not call handlePause() here: WebView Chromium's internal AudioFocusDelegate
+                // and Android TextToSpeech share this process and reclaim focus whenever video
+                // or TTS playback starts/resumes, which previously caused self-eviction pauses
+                // ("Paused via system media controls"). Explicit pauses use ACTION_PAUSE / MediaSession.
             }
             AudioManager.AUDIOFOCUS_GAIN -> {
-                if (isPlaying) {
-                    handlePlay()
-                }
+                // Maintain current playback state without re-triggering spurious transport commands
             }
         }
     }
