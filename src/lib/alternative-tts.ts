@@ -451,6 +451,8 @@ export interface LovableTtsOptions {
   debug?: boolean;
   interrupt?: boolean;
   skipInternalWebSpeechFallback?: boolean;
+  timeoutMs?: number;
+  auditSource?: ExternalTtsAuditRecord["source"];
 }
 
 export interface LovableTtsRequestBody {
@@ -472,6 +474,7 @@ export interface LovableTtsJsonResponse {
   mime: string;
   text: string;
   lang: string;
+  provider?: string;
 }
 
 /**
@@ -868,11 +871,107 @@ export function buildLovableTtsRequestBody(
  * Synthesizes speech using the Lovable Speak API POST endpoint (application/json).
  * Supports both binary audio streams (creates blob URL) and JSON base64 payloads.
  */
+const DEFAULT_TTS_FETCH_TIMEOUT_MS = 4500;
+const MAX_TTS_AUDIO_CACHE_ENTRIES = 60;
+
+type CachedTtsAudioEntry = { kind: "dataUrl"; dataUrl: string } | { kind: "blob"; blob: Blob };
+
+const ttsAudioCache = new Map<string, CachedTtsAudioEntry>();
+const inFlightTtsSynthesisMap = new Map<string, Promise<CachedTtsAudioEntry | null>>();
+const activeSynthesisAbortControllers = new Set<AbortController>();
+
+function buildTtsAudioCacheKey(text: string, lang: string, options?: LovableTtsOptions): string {
+  const normalizedText = (text || "").slice(0, 5000);
+  const normalizedLang = normalizeLanguageCode(lang);
+  const provider = options?.provider || getLovableTtsProvider();
+  const format = options?.format || getLovableTtsFormat();
+  const targetLang = (options?.target_lang || "").trim().toLowerCase();
+  const isAnonymous = Boolean(options?.isAnonymous ?? getAlternativeTtsAnonymousMode());
+  const rawOptions = options?.options ?? getLovableTtsOptions();
+  const optionsStr =
+    typeof rawOptions === "string" ? rawOptions.trim() : JSON.stringify(rawOptions || "");
+  return JSON.stringify([
+    normalizedText,
+    normalizedLang,
+    provider,
+    format,
+    targetLang === normalizedLang.toLowerCase() ? "" : targetLang,
+    isAnonymous ? 1 : 0,
+    optionsStr,
+  ]);
+}
+
+function getCachedTtsAudioEntry(cacheKey: string): CachedTtsAudioEntry | null {
+  const entry = ttsAudioCache.get(cacheKey);
+  if (!entry) return null;
+  // Refresh LRU order
+  ttsAudioCache.delete(cacheKey);
+  ttsAudioCache.set(cacheKey, entry);
+  return entry;
+}
+
+function setCachedTtsAudioEntry(cacheKey: string, entry: CachedTtsAudioEntry): void {
+  if (ttsAudioCache.has(cacheKey)) {
+    ttsAudioCache.delete(cacheKey);
+  } else if (ttsAudioCache.size >= MAX_TTS_AUDIO_CACHE_ENTRIES) {
+    const oldestKey = ttsAudioCache.keys().next().value;
+    if (oldestKey !== undefined) {
+      ttsAudioCache.delete(oldestKey);
+    }
+  }
+  ttsAudioCache.set(cacheKey, entry);
+}
+
+function cachedEntryToPlayableResult(
+  entry: CachedTtsAudioEntry,
+): { url: string; revokeOnDone: boolean } | null {
+  if (entry.kind === "dataUrl") {
+    return { url: entry.dataUrl, revokeOnDone: false };
+  }
+  if (typeof URL !== "undefined" && typeof URL.createObjectURL === "function") {
+    return { url: URL.createObjectURL(entry.blob), revokeOnDone: true };
+  }
+  return null;
+}
+
+export function clearAlternativeTtsAudioCache(): void {
+  ttsAudioCache.clear();
+  inFlightTtsSynthesisMap.clear();
+}
+
+export async function prefetchAlternativeTtsAudio(
+  text: string,
+  lang: string,
+  options?: LovableTtsOptions,
+): Promise<boolean> {
+  if (!text || !text.trim() || typeof window === "undefined") {
+    return false;
+  }
+  const cacheKey = buildTtsAudioCacheKey(text, lang, options);
+  if (getCachedTtsAudioEntry(cacheKey)) {
+    return true;
+  }
+  try {
+    const res = await synthesizeLovableTtsAudio(text, lang, options, "playback", true);
+    if (res?.url && res.revokeOnDone) {
+      try {
+        URL.revokeObjectURL(res.url);
+      } catch {
+        // ignore
+      }
+    }
+    return Boolean(res?.url);
+  } catch {
+    return false;
+  }
+}
+
 export async function synthesizeLovableTtsPost(
   text: string,
   lang: string,
   options?: LovableTtsOptions,
   source: ExternalTtsAuditRecord["source"] = "playback",
+  isPrefetch: boolean = false,
 ): Promise<{ url: string; revokeOnDone?: boolean } | null> {
   if (!text) return null;
   const startTime = Date.now();
@@ -892,13 +991,22 @@ export async function synthesizeLovableTtsPost(
 
   const auditId = `tts-post-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
   const tracker = trackNetworkRequest(LOVABLE_TTS_ENDPOINT, "POST", "fetch");
+  const timeoutMs = options?.timeoutMs ?? DEFAULT_TTS_FETCH_TIMEOUT_MS;
+  const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+  if (controller && !isPrefetch) {
+    activeSynthesisAbortControllers.add(controller);
+  }
+  const timeoutId = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
 
   try {
     const res = await fetch(LOVABLE_TTS_ENDPOINT, {
       method: "POST",
       headers,
       body: JSON.stringify(body),
+      signal: controller?.signal,
     });
+    if (timeoutId) clearTimeout(timeoutId);
+    if (controller) activeSynthesisAbortControllers.delete(controller);
 
     const latencyMs = Date.now() - startTime;
     const resHeaders = extractResponseHeaders(res);
@@ -1005,9 +1113,22 @@ export async function synthesizeLovableTtsPost(
       tracker.complete(res.status, data);
 
       if (!data?.audio) return null;
-      return { url: `data:${mime};base64,${data.audio}`, revokeOnDone: false };
+      const dataUrl = `data:${mime};base64,${data.audio}`;
+      if (source === "playback") {
+        setCachedTtsAudioEntry(buildTtsAudioCacheKey(text, lang, options), {
+          kind: "dataUrl",
+          dataUrl,
+        });
+      }
+      return { url: dataUrl, revokeOnDone: false };
     } else {
       const blob = await res.blob();
+      if (source === "playback") {
+        setCachedTtsAudioEntry(buildTtsAudioCacheKey(text, lang, options), {
+          kind: "blob",
+          blob,
+        });
+      }
       const objectUrl = URL.createObjectURL(blob);
       const employedProvider = headerProvider || body.provider || "google";
       recordEmployedTtsProvider(employedProvider, headerProvider ? "header" : "requested");
@@ -1041,6 +1162,8 @@ export async function synthesizeLovableTtsPost(
       return { url: objectUrl, revokeOnDone: true };
     }
   } catch (err) {
+    if (timeoutId) clearTimeout(timeoutId);
+    if (controller) activeSynthesisAbortControllers.delete(controller);
     const errorMsg = (err as Error)?.message || String(err);
     const latencyMs = Date.now() - startTime;
     const record: ExternalTtsAuditRecord = {
@@ -1098,9 +1221,13 @@ export async function fetchLovableTtsJson(
   }
   const parsedUrl = new URL(url);
   const queryParams = Object.fromEntries(parsedUrl.searchParams.entries());
+  const timeoutMs = options?.timeoutMs ?? DEFAULT_TTS_FETCH_TIMEOUT_MS;
+  const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+  const timeoutId = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
 
   try {
-    const res = await fetch(url, { headers });
+    const res = await fetch(url, { headers, signal: controller?.signal });
+    if (timeoutId) clearTimeout(timeoutId);
     const latencyMs = Date.now() - startTime;
     const resHeaders = extractResponseHeaders(res);
 
@@ -1184,6 +1311,7 @@ export async function fetchLovableTtsJson(
     tracker.complete(res.status, data);
     return data;
   } catch (err) {
+    if (timeoutId) clearTimeout(timeoutId);
     const errorMsg = (err as Error)?.message || String(err);
     const latencyMs = Date.now() - startTime;
     const record: ExternalTtsAuditRecord = {
@@ -1241,9 +1369,13 @@ export async function fetchLovableTtsBinaryBlob(
   }
   const parsedUrl = new URL(url);
   const queryParams = Object.fromEntries(parsedUrl.searchParams.entries());
+  const timeoutMs = options?.timeoutMs ?? DEFAULT_TTS_FETCH_TIMEOUT_MS;
+  const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+  const timeoutId = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
 
   try {
-    const res = await fetch(url, { headers });
+    const res = await fetch(url, { headers, signal: controller?.signal });
+    if (timeoutId) clearTimeout(timeoutId);
     const latencyMs = Date.now() - startTime;
     const resHeaders = extractResponseHeaders(res);
     const contentType = res.headers.get("content-type") || "audio/mpeg";
@@ -1322,6 +1454,7 @@ export async function fetchLovableTtsBinaryBlob(
     tracker.complete(res.status, `Binary audio stream (${blob.size} bytes)`);
     return { url: objectUrl, revokeOnDone: true };
   } catch (err) {
+    if (timeoutId) clearTimeout(timeoutId);
     const errorMsg = (err as Error)?.message || String(err);
     const latencyMs = Date.now() - startTime;
     const record: ExternalTtsAuditRecord = {
@@ -1361,26 +1494,79 @@ export async function synthesizeLovableTtsAudio(
   lang: string,
   options?: LovableTtsOptions,
   source: ExternalTtsAuditRecord["source"] = "playback",
+  isPrefetch: boolean = false,
 ): Promise<{ url: string; revokeOnDone?: boolean } | null> {
+  if (!text) return null;
   const method = options?.method || getLovableTtsMethod();
   const format = options?.format || getLovableTtsFormat();
   const { speakApiToken, providerApiKey } = resolveTtsCredentials(options);
+  const canUseCache = source === "playback";
+  const cacheKey = canUseCache ? buildTtsAudioCacheKey(text, lang, options) : "";
 
-  // Always prefer POST, and strictly enforce POST whenever any authentication credential is present
-  if (method !== "get" || speakApiToken || providerApiKey) {
-    return synthesizeLovableTtsPost(text, lang, { ...options, format }, source);
+  if (canUseCache) {
+    const cached = getCachedTtsAudioEntry(cacheKey);
+    if (cached) {
+      return cachedEntryToPlayableResult(cached);
+    }
+    const existingInFlight = inFlightTtsSynthesisMap.get(cacheKey);
+    if (existingInFlight) {
+      const resolvedEntry = await existingInFlight;
+      return resolvedEntry ? cachedEntryToPlayableResult(resolvedEntry) : null;
+    }
   }
 
-  // Unauthenticated GET fallback only when explicitly requested
-  if (format === "json") {
-    const jsonRes = await fetchLovableTtsJson(text, lang, options, source);
-    if (!jsonRes?.audio) return null;
-    const mime = jsonRes.mime || "audio/mpeg";
-    return { url: `data:${mime};base64,${jsonRes.audio}`, revokeOnDone: false };
+  const runSynthesis = async (): Promise<{ url: string; revokeOnDone?: boolean } | null> => {
+    // Always prefer POST, and strictly enforce POST whenever any authentication credential is present
+    if (method !== "get" || speakApiToken || providerApiKey) {
+      return synthesizeLovableTtsPost(text, lang, { ...options, format }, source, isPrefetch);
+    }
+
+    // Unauthenticated GET fallback only when explicitly requested
+    if (format === "json") {
+      const jsonRes = await fetchLovableTtsJson(text, lang, options, source);
+      if (!jsonRes?.audio) return null;
+      const mime = jsonRes.mime || "audio/mpeg";
+      const dataUrl = `data:${mime};base64,${jsonRes.audio}`;
+      if (canUseCache) {
+        setCachedTtsAudioEntry(cacheKey, { kind: "dataUrl", dataUrl });
+      }
+      return { url: dataUrl, revokeOnDone: false };
+    }
+
+    // GET binary
+    const binRes = await fetchLovableTtsBinaryBlob(text, lang, options, source);
+    return binRes;
+  };
+
+  if (!canUseCache) {
+    return runSynthesis();
   }
 
-  // GET binary
-  return fetchLovableTtsBinaryBlob(text, lang, options, source);
+  const synthesisPromise: Promise<CachedTtsAudioEntry | null> = runSynthesis()
+    .then((result) => {
+      if (!result?.url) return null;
+      const cached = getCachedTtsAudioEntry(cacheKey);
+      if (cached) return cached;
+      if (result.url.startsWith("data:")) {
+        const entry: CachedTtsAudioEntry = { kind: "dataUrl", dataUrl: result.url };
+        setCachedTtsAudioEntry(cacheKey, entry);
+        return entry;
+      }
+      return null;
+    })
+    .finally(() => {
+      inFlightTtsSynthesisMap.delete(cacheKey);
+    });
+
+  inFlightTtsSynthesisMap.set(cacheKey, synthesisPromise);
+  const entry = await synthesisPromise;
+  if (entry) {
+    return cachedEntryToPlayableResult(entry);
+  }
+  // Fallback if result was non-dataUrl and wasn't stored in cache (e.g. GET binary)
+  return getCachedTtsAudioEntry(cacheKey)
+    ? cachedEntryToPlayableResult(getCachedTtsAudioEntry(cacheKey)!)
+    : null;
 }
 
 /**
@@ -2330,6 +2516,14 @@ export function waitForAllAlternativeTtsAudio(): Promise<void> {
 export function cancelAlternativeTtsAudio(): void {
   audioQueueGeneration++;
   isAudioPlaying = false;
+  for (const controller of activeSynthesisAbortControllers) {
+    try {
+      controller.abort();
+    } catch {
+      // ignore abort errors
+    }
+  }
+  activeSynthesisAbortControllers.clear();
   if (activeAudioCancel) {
     const cancelFn = activeAudioCancel;
     activeAudioCancel = null;
@@ -2431,7 +2625,7 @@ async function playSingleAlternativeTtsAudio(
       text,
       lang,
       mergedOptions,
-      optionsOverride ? "test_button" : "playback",
+      optionsOverride?.auditSource ?? (optionsOverride ? "test_button" : "playback"),
     );
     if (generation !== undefined && generation !== audioQueueGeneration) {
       if (synthesized?.url && synthesized.revokeOnDone) {
@@ -2679,6 +2873,7 @@ export async function executeTtsFallbackSequence(
           isAnonymous,
           volume,
           skipInternalWebSpeechFallback: true,
+          auditSource: "playback",
         });
         if (played) {
           return "tts3";
@@ -2696,12 +2891,34 @@ export async function executeTtsFallbackSequence(
         }
       } else if (typeof window !== "undefined" && "speechSynthesis" in window) {
         try {
+          const synth = window.speechSynthesis;
+          const voices = synth.getVoices?.() || [];
+          const normalizedTarget = normalizeLanguageCode(lang).toLowerCase();
+          const targetBase = normalizedTarget.split(/[-_]/)[0];
+          const hasMatchingVoice = voices.some((v) => {
+            const vLang = (v.lang || "").toLowerCase();
+            return (
+              vLang === normalizedTarget ||
+              vLang.startsWith(`${targetBase}-`) ||
+              vLang === targetBase
+            );
+          });
+          // If browser has voices loaded and none match the target language, skip stalling on native when tts3 is still available
+          if (voices.length > 0 && !hasMatchingVoice && steps.includes("tts3")) {
+            continue;
+          }
           const nativeOk = await new Promise<boolean>((resolve) => {
             let settled = false;
+            let hasStarted = false;
+            let startWatchdog: ReturnType<typeof setTimeout> | null = null;
             const finish = (ok: boolean) => {
               if (settled) return;
               settled = true;
               clearTimeout(timer);
+              if (startWatchdog) {
+                clearTimeout(startWatchdog);
+                startWatchdog = null;
+              }
               resolve(ok);
             };
             const effectiveRate = Math.max(0.3, Math.min(1.5, rate || 0.5));
@@ -2710,7 +2927,6 @@ export async function executeTtsFallbackSequence(
               Math.max(12000, (text.length / 3) * (1000 / effectiveRate) + 6000),
             );
             try {
-              const synth = window.speechSynthesis;
               const hadActive = Boolean(synth?.speaking || synth?.pending);
               if (hadActive) {
                 synth.cancel();
@@ -2722,8 +2938,34 @@ export async function executeTtsFallbackSequence(
                   u.lang = normalizeLanguageCode(lang);
                   u.rate = effectiveRate;
                   u.volume = volume;
-                  u.onend = () => finish(true);
+                  u.onstart = () => {
+                    hasStarted = true;
+                    if (startWatchdog) {
+                      clearTimeout(startWatchdog);
+                      startWatchdog = null;
+                    }
+                  };
+                  u.onboundary = () => {
+                    hasStarted = true;
+                    if (startWatchdog) {
+                      clearTimeout(startWatchdog);
+                      startWatchdog = null;
+                    }
+                  };
+                  u.onend = () => finish(hasStarted || !steps.includes("tts3"));
                   u.onerror = () => finish(false);
+                  if (steps.includes("tts3")) {
+                    startWatchdog = setTimeout(() => {
+                      if (!hasStarted && !settled) {
+                        try {
+                          synth.cancel();
+                        } catch {
+                          // ignore
+                        }
+                        finish(false);
+                      }
+                    }, 1200);
+                  }
                   synth.speak(u);
                 } catch {
                   finish(false);

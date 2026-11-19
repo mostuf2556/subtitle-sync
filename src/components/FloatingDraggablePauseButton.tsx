@@ -255,26 +255,35 @@ export const FloatingDraggablePauseButton: React.FC<FloatingDraggablePauseButton
         const dx = e.clientX - dragStartRef.current.clientX;
         const dy = e.clientY - dragStartRef.current.clientY;
 
-        if (Math.hypot(dx, dy) > 10) {
+        if (!hasMovedRef.current && Math.hypot(dx, dy) > 10) {
           hasMovedRef.current = true;
         }
 
-        const nextX = startPosRef.current.x + dx;
-        const nextY = startPosRef.current.y + dy;
-        setPosition(clampPosition(nextX, nextY));
+        if (hasMovedRef.current) {
+          const nextX = startPosRef.current.x + dx;
+          const nextY = startPosRef.current.y + dy;
+          setPosition(clampPosition(nextX, nextY));
+        }
       };
 
       const handleMouseUp = () => {
         setIsDragging(false);
         dragStartRef.current = null;
+        if (hasMovedRef.current) {
+          setTimeout(() => {
+            hasMovedRef.current = false;
+          }, 0);
+        }
       };
 
       window.addEventListener("mousemove", handleMouseMove);
       window.addEventListener("mouseup", handleMouseUp);
+      window.addEventListener("blur", handleMouseUp);
 
       return () => {
         window.removeEventListener("mousemove", handleMouseMove);
         window.removeEventListener("mouseup", handleMouseUp);
+        window.removeEventListener("blur", handleMouseUp);
       };
     }, [isDragging, clampPosition]);
 
@@ -304,7 +313,7 @@ export const FloatingDraggablePauseButton: React.FC<FloatingDraggablePauseButton
       const dx = touch.clientX - dragStartRef.current.clientX;
       const dy = touch.clientY - dragStartRef.current.clientY;
 
-      if (Math.hypot(dx, dy) > 10) {
+      if (!hasMovedRef.current && Math.hypot(dx, dy) > 10) {
         hasMovedRef.current = true;
         if (longPressTimerRef.current) {
           clearTimeout(longPressTimerRef.current);
@@ -312,9 +321,11 @@ export const FloatingDraggablePauseButton: React.FC<FloatingDraggablePauseButton
         }
       }
 
-      const nextX = startPosRef.current.x + dx;
-      const nextY = startPosRef.current.y + dy;
-      setPosition(clampPosition(nextX, nextY));
+      if (hasMovedRef.current) {
+        const nextX = startPosRef.current.x + dx;
+        const nextY = startPosRef.current.y + dy;
+        setPosition(clampPosition(nextX, nextY));
+      }
     };
 
     const handleTouchEnd = () => {
@@ -323,6 +334,11 @@ export const FloatingDraggablePauseButton: React.FC<FloatingDraggablePauseButton
       if (longPressTimerRef.current) {
         clearTimeout(longPressTimerRef.current);
         longPressTimerRef.current = null;
+      }
+      if (hasMovedRef.current) {
+        setTimeout(() => {
+          hasMovedRef.current = false;
+        }, 0);
       }
     };
 
@@ -506,6 +522,7 @@ export const FloatingDraggablePauseButton: React.FC<FloatingDraggablePauseButton
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >

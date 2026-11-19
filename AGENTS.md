@@ -110,5 +110,5 @@ Sequential subtitle pipeline:
 
 ## Last raw prompt
 ```
-never pass speed to the audio generation tts-service (speed is only part of the playback speed in case of audio files)
+go on
 ```

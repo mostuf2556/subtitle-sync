@@ -12091,3 +12091,29 @@
 - **Verification**:
   - `npx tsx scripts/verify-tts-post-and-provider-display.ts` — PASS
   - `compile_applet` & `lint_applet` — PASS (0 errors)
+
+### Task 449 — Reduce `tts-play` Latency (Cache, Lookahead Prefetch, Fetch Timeouts & Fast Native Watchdog)
+- **Changes**:
+  - Added bounded in-memory synthesized TTS audio cache (`MAX_TTS_AUDIO_CACHE_ENTRIES = 60`, excluding `speed`/`voice` from cache keys so playback speed remains strictly client-side), in-flight synthesis deduplication (`inFlightTtsSynthesisMap`), `prefetchAlternativeTtsAudio`, `clearAlternativeTtsAudioCache`, and `AbortController` fetch timeouts (`4500ms` default) across `synthesizeLovableTtsPost`, `fetchLovableTtsJson`, and `fetchLovableTtsBinaryBlob` in `src/lib/alternative-tts.ts`.
+  - Forwarded `auditSource: "playback"` from `executeTtsFallbackSequence` and `src/routes/index.tsx` so playback cache hits work regardless of `optionsOverride`, added `provider?: string` to `LovableTtsJsonResponse`, skipped missing-language native speech stalls when `tts3` fallback is available, and tightened native start watchdog to `1200ms`.
+  - Added lookahead prefetching (`prefetchRowTtsAudio`) for current and upcoming rows (`idx`, `idx + 1`, `idx + 2`) and parallel secondary languages inside `src/routes/index.tsx`.
+- **Verification**:
+  - `npx tsc --noEmit` — PASS
+  - `npx tsx scripts/verify-tts-play-latency-and-floating-single-press.ts` — PASS
+  - `npx tsx scripts/verify-floating-tts-play-active-during-video.ts` — PASS
+  - `npx tsx scripts/verify-tts-playback-coordination.ts` — PASS
+  - `npx tsx scripts/verify-tts-post-and-provider-display.ts` — PASS
+  - `npx tsx scripts/verify-suppress-voice-to-tts-service.ts` — PASS
+
+### Task 450 — Fix Floating Play/Pause Button Double-Press Bug (`v2.1.131`)
+- **Changes**:
+  - Fixed `src/components/FloatingDraggablePauseButton.tsx` so minor mouse/touch jitter (`<= 10px`) does not call `setPosition`, resets `hasMovedRef.current` asynchronously after gesture end, and listens for `touchcancel` and `window` `blur`.
+  - Updated `src/routes/index.tsx` with `isPrimaryPlayerReadyRef` (so `pendingPlayRequestedRef` is not consumed before `onReady`), a `1800ms` post-play startup/buffering grace window protecting `isVideoPlaying`, and `userExplicitlyPausedRef` / `st.current.isSetupPaused` guards + cancellation on scheduled play kick retries (`playKickTimersRef`).
+  - Added HTML5 `<video>.pause()` and YouTube `pauseVideo` postMessage fallback in `pauseBothVideoAndTts`, registered `test:tts-play-latency-and-floating-single-press` in `package.json`, and synced `v2.1.131` (`code 20231`).
+- **Verification**:
+  - `npx tsx scripts/verify-tts-play-latency-and-floating-single-press.ts` — PASS
+  - `npx tsx scripts/verify-floating-play-pause-button-state-and-action.ts` — PASS
+  - `npx tsx scripts/verify-floating-pause-button-reaction-and-reason.ts` — PASS
+  - `npx tsx scripts/verify-single-icon-floating-button.ts` — PASS
+  - `npx tsx scripts/verify-agents-all.ts` — PASS (24/24)
+  - `npm run check-version` — PASS (`v2.1.131`)

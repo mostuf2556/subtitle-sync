@@ -239,6 +239,7 @@ import {
   getServerOpenRouterApiKey,
   hasCustomOpenRouterApiKey,
   playAlternativeTtsAudio,
+  prefetchAlternativeTtsAudio,
   cancelAlternativeTtsAudio,
   unlockTtsAudioPlayback,
   LOVABLE_TTS_DOCS_URL,
@@ -816,6 +817,7 @@ function executeSingleSpeech(
                         speed: altSpeed,
                         volume: normalizedVolume,
                         skipInternalWebSpeechFallback: true,
+                        auditSource: "playback",
                       },
                     );
                   } catch (fallbackErr) {
@@ -863,6 +865,7 @@ function executeSingleSpeech(
                   speed: altSpeed,
                   volume: normalizedVolume,
                   skipInternalWebSpeechFallback: true,
+                  auditSource: "playback",
                 },
               );
               if (played || isCancelled()) {
@@ -908,6 +911,7 @@ function executeSingleSpeech(
                 speed: altSpeed,
                 volume: normalizedVolume,
                 skipInternalWebSpeechFallback: true,
+                auditSource: "playback",
               },
             );
             if (played) {
@@ -980,7 +984,7 @@ function executeSingleSpeech(
             if (!hasStarted && !resolved && !isCancelled()) {
               void done(true, "native-start-timeout");
             }
-          }, 2200);
+          }, 1200);
         };
 
         const createSpeechUtterance = () => {
@@ -3544,6 +3548,15 @@ function Index() {
   };
   const [isSetupPaused, setIsSetupPaused] = useState(false);
   const setupPauseActivatedAtRef = useRef<number>(0);
+  const isPrimaryPlayerReadyRef = useRef<boolean>(false);
+  const lastPlayRequestAtRef = useRef<number>(0);
+  const playKickTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const clearPlayKickTimers = useCallback(() => {
+    for (const tid of playKickTimersRef.current) {
+      clearTimeout(tid);
+    }
+    playKickTimersRef.current = [];
+  }, []);
   const [pauseReason, setPauseReason] = useState<string | null>(null);
   const toggleSetupPause = useCallback(() => {
     setIsSetupPaused((prev) => {
@@ -3553,6 +3566,9 @@ function Index() {
       }
       if (next) {
         setupPauseActivatedAtRef.current = Date.now();
+        clearPlayKickTimers();
+        lastPlayRequestAtRef.current = 0;
+        pendingPlayRequestedRef.current = false;
         try {
           multiVideoPlayerRegistry.pauseAllExcept();
           player.current?.pauseVideo?.();
@@ -3567,7 +3583,7 @@ function Index() {
       }
       return next;
     });
-  }, []);
+  }, [clearPlayKickTimers]);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const isVideoPlayingRef = useRef(isVideoPlaying);
   isVideoPlayingRef.current = isVideoPlaying;
@@ -4442,6 +4458,8 @@ function Index() {
   const pendingPlayRequestedRef = useRef<boolean>(false);
 
   const pauseBothVideoAndTts = useCallback(() => {
+    clearPlayKickTimers();
+    lastPlayRequestAtRef.current = 0;
     pendingPlayRequestedRef.current = false;
     logStateMachineAction("PLAYBACK_PAUSE_REQUESTED", {
       videoId,
@@ -4453,6 +4471,22 @@ function Index() {
     } catch {
       // ignore
     }
+    const iframe = player.current?.getIframe?.() || playerEl.current?.querySelector("iframe");
+    if (iframe?.contentWindow) {
+      try {
+        iframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', "*");
+      } catch {
+        // ignore
+      }
+    }
+    const htmlVideo = playerEl.current?.querySelector("video");
+    if (htmlVideo && !htmlVideo.paused) {
+      try {
+        htmlVideo.pause();
+      } catch {
+        // ignore
+      }
+    }
     cancelSpeech();
     busy.current = false;
     isPausedForTtsRef.current = false;
@@ -4462,10 +4496,12 @@ function Index() {
     setSpeechProgress(null);
     setIsVideoPlaying(false);
     setPauseReason("Paused by user");
-  }, [videoId]);
+  }, [clearPlayKickTimers, videoId]);
 
   const handlePlayVideo = useCallback(() => {
     unlockTtsAudioPlayback();
+    clearPlayKickTimers();
+    lastPlayRequestAtRef.current = Date.now();
     setIsSetupPaused(false);
     if (st.current) {
       st.current.isSetupPaused = false;
@@ -4530,24 +4566,35 @@ function Index() {
         });
         console.warn("Play video error:", e);
       }
-      setTimeout(() => {
+      const kick1 = setTimeout(() => {
         try {
-          if (!busy.current && p.getPlayerState?.() !== 1) {
+          if (
+            !busy.current &&
+            !userExplicitlyPausedRef.current &&
+            !st.current?.isSetupPaused &&
+            p.getPlayerState?.() !== 1
+          ) {
             p.playVideo?.();
           }
         } catch {
           // ignore
         }
       }, 100);
-      setTimeout(() => {
+      const kick2 = setTimeout(() => {
         try {
-          if (!busy.current && p.getPlayerState?.() !== 1) {
+          if (
+            !busy.current &&
+            !userExplicitlyPausedRef.current &&
+            !st.current?.isSetupPaused &&
+            p.getPlayerState?.() !== 1
+          ) {
             p.playVideo?.();
           }
         } catch {
           // ignore
         }
       }, 300);
+      playKickTimersRef.current.push(kick1, kick2);
     }
 
     const iframe = p?.getIframe?.() || playerEl.current?.querySelector("iframe");
@@ -4562,7 +4609,7 @@ function Index() {
     if (htmlVideo) {
       htmlVideo.play().catch(() => {});
     }
-  }, [videoId, workflowMode, currentAccordionStage, openPanels.player]);
+  }, [clearPlayKickTimers, videoId, workflowMode, currentAccordionStage, openPanels.player]);
 
   const handlePauseVideo = useCallback(() => {
     pauseBothVideoAndTts();
@@ -6583,6 +6630,7 @@ function Index() {
       playerEl.current.appendChild(host);
       activePlayerVideoIdRef.current = videoId;
       activePlayerHostElRef.current = playerEl.current;
+      isPrimaryPlayerReadyRef.current = false;
       const restoreSnapshot = playerRestoreSnapshot.current;
       playerRestoreSnapshot.current = null;
       // Ensure interceptor queue and bridges are active before creating player iframe
@@ -6609,6 +6657,7 @@ function Index() {
         },
         events: {
           onReady: () => {
+            isPrimaryPlayerReadyRef.current = true;
             if (player.current) {
               multiVideoPlayerRegistry.register("primary", player.current);
               try {
@@ -6657,6 +6706,7 @@ function Index() {
               playerState: event.data,
             });
             if (event.data === 1) {
+              lastPlayRequestAtRef.current = 0;
               userExplicitlyPausedRef.current = false;
               isPausedForTtsRef.current = false;
               if (st.current.isSetupPaused && Date.now() - setupPauseActivatedAtRef.current > 400) {
@@ -6666,6 +6716,7 @@ function Index() {
               setIsVideoPlaying(true);
               setPauseReason(null);
             } else if (event.data === 2) {
+              lastPlayRequestAtRef.current = 0;
               setIsVideoPlaying(false);
               const isRecentProgrammaticPause =
                 Date.now() - programmaticPauseTimestampRef.current < 1500;
@@ -6678,6 +6729,7 @@ function Index() {
                 setSpeechProgress(null);
               }
             } else if (event.data === 0) {
+              lastPlayRequestAtRef.current = 0;
               userExplicitlyPausedRef.current = true;
               setIsVideoPlaying(false);
               setPauseReason("Video playback completed");
@@ -6687,8 +6739,15 @@ function Index() {
               setSpeakingRow(-1);
               setSpeechProgress(null);
             } else if (event.data === -1) {
-              // Unstarted / buffering state: do NOT mark userExplicitlyPausedRef as true
-              setIsVideoPlaying(false);
+              // Unstarted / buffering state: do NOT mark userExplicitlyPausedRef as true,
+              // and preserve optimistic playing state briefly after a user play request.
+              const isWithinStartupGrace =
+                !userExplicitlyPausedRef.current &&
+                !st.current.isSetupPaused &&
+                Date.now() - lastPlayRequestAtRef.current < 1800;
+              if (!isWithinStartupGrace) {
+                setIsVideoPlaying(false);
+              }
             }
           },
           onApiChange: () => {
@@ -6737,7 +6796,7 @@ function Index() {
         init();
       }
       const p = player.current;
-      if (pendingPlayRequestedRef.current && p?.playVideo) {
+      if (pendingPlayRequestedRef.current && isPrimaryPlayerReadyRef.current && p?.playVideo) {
         pendingPlayRequestedRef.current = false;
         try {
           p.playVideo();
@@ -6825,7 +6884,14 @@ function Index() {
       try {
         const curState = p.getPlayerState?.();
         const curPlaying = curState === 1;
-        setIsVideoPlaying((prev) => (prev !== curPlaying ? curPlaying : prev));
+        const isWithinStartupGrace =
+          !userExplicitlyPausedRef.current &&
+          !st.current.isSetupPaused &&
+          ((Date.now() - lastPlayRequestAtRef.current < 1800 && curState !== 2 && curState !== 0) ||
+            (curState === 3 && isVideoPlayingRef.current));
+        if (curPlaying || !isWithinStartupGrace) {
+          setIsVideoPlaying((prev) => (prev !== curPlaying ? curPlaying : prev));
+        }
         const dur = p.getDuration?.() ?? 0;
         if (dur > 0) {
           setPlaybackDuration((prev) => (prev !== dur ? dur : prev));
@@ -6982,11 +7048,57 @@ function Index() {
         return requestedOrder === "tts-first" ? orderGroups.ttsFirst : orderGroups.videoFirst;
       };
 
+      const prefetchRowTtsAudio = (targetRowIdx: number) => {
+        if (!st.current.isTtsPlayEnabled || st.current.audioTrackMode) return;
+        const useAlt = typeof window !== "undefined" && getUseAlternativeTts();
+        const order = typeof window !== "undefined" ? getTtsFallbackOrder() : "tts3_native";
+        if (!useAlt && order !== "tts3_native") return;
+        if (targetRowIdx < 0 || targetRowIdx >= rows.length) return;
+        const candidateLangs = getEligibleLangs(targetRowIdx);
+        if (candidateLangs.length === 0) return;
+        const provider = typeof window !== "undefined" ? getLovableTtsProvider() : "auto";
+        const isAnonymous =
+          typeof window !== "undefined" ? getAlternativeTtsAnonymousMode() : false;
+        for (const l of candidateLangs) {
+          if (getZeroKnowledgeInLang(l.code)) continue;
+          const text = rows[targetRowIdx]?.texts?.[l.code]?.trim();
+          if (!text) continue;
+          void prefetchAlternativeTtsAudio(text, l.tts, {
+            provider: provider || "auto",
+            isAnonymous,
+            auditSource: "playback",
+          });
+        }
+      };
+
       const speakRow = async (rowIdx: number, requestedOrder: SectionOrder, runEpoch: number) => {
         const targetRow = rowIdx >= 0 ? rows[rowIdx] : undefined;
         if (!targetRow || playedTtsRecords.current.has(getPlaybackSectionId(targetRow))) return;
         const langs = getEligibleLangs(rowIdx, requestedOrder);
         if (langs.length === 0) return;
+        // Prefetch any additional languages in this row and the next 2 rows while speaking starts
+        if (!isAudioTrackMode) {
+          const useAlt = typeof window !== "undefined" && getUseAlternativeTts();
+          const order = typeof window !== "undefined" ? getTtsFallbackOrder() : "tts3_native";
+          if (useAlt || order === "tts3_native") {
+            const provider = typeof window !== "undefined" ? getLovableTtsProvider() : "auto";
+            const isAnonymous =
+              typeof window !== "undefined" ? getAlternativeTtsAnonymousMode() : false;
+            for (const extraLang of langs.slice(1)) {
+              if (getZeroKnowledgeInLang(extraLang.code)) continue;
+              const extraText = rows[rowIdx]?.texts?.[extraLang.code]?.trim();
+              if (extraText) {
+                void prefetchAlternativeTtsAudio(extraText, extraLang.tts, {
+                  provider: provider || "auto",
+                  isAnonymous,
+                  auditSource: "playback",
+                });
+              }
+            }
+          }
+          prefetchRowTtsAudio(rowIdx + 1);
+          prefetchRowTtsAudio(rowIdx + 2);
+        }
         const sectionId = getPlaybackSectionId(targetRow);
         const spokenLanguages =
           playedTtsLanguageRecords.current.get(sectionId) ?? new Set<string>();
@@ -7221,6 +7333,8 @@ function Index() {
       };
       const isPlaying = p.getPlayerState() === 1;
       const safelyResumePrimaryVideo = (resumeTargetSec?: number) => {
+        clearPlayKickTimers();
+        lastPlayRequestAtRef.current = Date.now();
         multiVideoPlayerRegistry.unmuteOnly("primary");
         userExplicitlyPausedRef.current = false;
         isPausedForTtsRef.current = false;
@@ -7240,9 +7354,14 @@ function Index() {
           console.warn("[PlaybackCoordinator] playVideo error:", err);
         }
         // First kick at 80ms: Ensure player actually resumed
-        setTimeout(() => {
+        const resumeKick1 = setTimeout(() => {
           try {
-            if (!busy.current && p.getPlayerState?.() !== 1) {
+            if (
+              !busy.current &&
+              !userExplicitlyPausedRef.current &&
+              !st.current?.isSetupPaused &&
+              p.getPlayerState?.() !== 1
+            ) {
               p.playVideo?.();
               setIsVideoPlaying(true);
             }
@@ -7251,9 +7370,14 @@ function Index() {
           }
         }, 80);
         // Second kick at 240ms: In case of delay or state transition
-        setTimeout(() => {
+        const resumeKick2 = setTimeout(() => {
           try {
-            if (!busy.current && p.getPlayerState?.() !== 1) {
+            if (
+              !busy.current &&
+              !userExplicitlyPausedRef.current &&
+              !st.current?.isSetupPaused &&
+              p.getPlayerState?.() !== 1
+            ) {
               p.playVideo?.();
               setIsVideoPlaying(true);
             }
@@ -7261,9 +7385,15 @@ function Index() {
             // ignore
           }
         }, 240);
+        playKickTimersRef.current.push(resumeKick1, resumeKick2);
       };
 
       if (pauseMode && st.current.isTtsPlayEnabled) {
+        if (idx >= 0) {
+          prefetchRowTtsAudio(idx);
+          prefetchRowTtsAudio(idx + 1);
+          prefetchRowTtsAudio(idx + 2);
+        }
         // 1. Before Video (tts-first): check if active row has speech-first languages to speak on arrival
         const activeRowObj = idx >= 0 ? rows[idx] : undefined;
         const sectionId = activeRowObj ? getPlaybackSectionId(activeRowObj) : "";
@@ -7421,6 +7551,8 @@ function Index() {
     }, 150);
     return () => {
       initPlayerRef.current = null;
+      isPrimaryPlayerReadyRef.current = false;
+      clearPlayKickTimers();
       clearInterval(iv);
       cancelSpeech();
       multiVideoPlayerRegistry.unregister("primary");
