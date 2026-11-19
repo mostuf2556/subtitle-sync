@@ -83,6 +83,7 @@ export const TtsFallbackOrderSwitch: React.FC<TtsFallbackOrderSwitchProps> = ({
 
   const activeOption =
     TTS_FALLBACK_ORDER_OPTIONS.find((opt) => opt.id === internalOrder) ||
+    TTS_FALLBACK_ORDER_OPTIONS.find((opt) => opt.id === DEFAULT_TTS_FALLBACK_ORDER) ||
     TTS_FALLBACK_ORDER_OPTIONS[0];
 
   const renderStepBadge = (step: { label: string; type: "tts3" | "native" }, index: number) => {

@@ -72,7 +72,7 @@ async function runUnitAndStaticChecks() {
     "executeSingleSpeech must skip guaranteed-failing Web Speech when 0 local voices exist under tts3_native",
   );
   assert.ok(
-    indexSrc.includes("const recovered = await fallbackToAlternative();") &&
+    indexSrc.includes("const recovered = await fallbackToAlternative(") &&
       indexSrc.includes("if (recovered) {\n              return;\n            }"),
     "executeSingleSpeech must run fallbackToAlternative() BEFORE logging 'Native speech synthesis failed'",
   );

@@ -2844,4 +2844,20 @@ go on
 2. the app pauses without justified reason - fix it
 ```
 
+---
 
+### Prompt 225: Add Relevant Tests for TTS Delay Diagnostics & Unjustified Pause Fixes
+```
+add relevant tests
+```
+
+---
+
+### Prompt 226: Go On, Default Native TTS, & On-Demand TTS Service Requests (X=7)
+```
+go on.
+
+by default use native tts
+
+on tts-service usage use on-demand request (x=7)
+```

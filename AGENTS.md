@@ -110,6 +110,10 @@ Sequential subtitle pipeline:
 
 ## Last raw prompt
 ```
-add relevant tests
+go on.
+
+by default use native tts
+
+on tts-service usage use on-demand request (x=7)
 ```
 

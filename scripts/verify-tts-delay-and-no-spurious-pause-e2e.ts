@@ -14,7 +14,10 @@ async function installYouTubeAndSpeechMocks(
   options: {
     mode: "expert" | "beginner";
     useAndroidShell?: boolean;
+    useAlt?: boolean;
     altMode?: "always" | "fallback_only";
+    fallbackOrder?: "tts3_native" | "native_tts3" | "native_only";
+    subtitlesFixtures?: { en?: string; es?: string };
   },
 ) {
   await page.route("**/youtube.com/iframe_api*", (route) => {
@@ -28,11 +31,20 @@ async function installYouTubeAndSpeechMocks(
   await page.addInitScript(`((opts) => {
     var mode = opts.mode;
     var useAndroidShell = Boolean(opts.useAndroidShell);
+    var useAlt = opts.useAlt;
     var altMode = opts.altMode;
+    var fallbackOrder = opts.fallbackOrder;
+    var subtitlesFixtures = opts.subtitlesFixtures || {};
 
     window.localStorage.setItem("app_workflow_mode", mode);
+    if (typeof useAlt === "boolean") {
+      window.localStorage.setItem("yt_use_alternative_tts_v1", useAlt ? "true" : "false");
+    }
     if (altMode) {
       window.localStorage.setItem("yt_alternative_tts_mode_v1", altMode);
+    }
+    if (fallbackOrder) {
+      window.localStorage.setItem("yt_tts_fallback_order_v1", fallbackOrder);
     }
 
     var capturedMediaHandlers = {};
@@ -89,6 +101,9 @@ async function installYouTubeAndSpeechMocks(
       window.__nativeSpeakCount = 0;
       window.__nativeStopCount = 0;
       window.AndroidNativeShell = {
+        isNativeShell: function () {
+          return true;
+        },
         speak: function () {
           window.__nativeSpeakCount = Number(window.__nativeSpeakCount || 0) + 1;
           // Intentionally omit window.onNativeTTSStart / onNativeTTSDone to test stall watchdog
@@ -96,6 +111,26 @@ async function installYouTubeAndSpeechMocks(
         },
         stopSpeaking: function () {
           window.__nativeStopCount = Number(window.__nativeStopCount || 0) + 1;
+        },
+        getLastObservedTimedTextUrl: function () {
+          return subtitlesFixtures.en
+            ? "https://www.youtube.com/api/timedtext?v=L2Ryrr6txwA&lang=en&fmt=json3"
+            : "";
+        },
+        fetchTranslatedCaptionsWithUrl: function (_url, lang) {
+          var normalized = String(lang || "").toLowerCase();
+          if (normalized === "es" && subtitlesFixtures.es) return subtitlesFixtures.es;
+          if (normalized === "en" && subtitlesFixtures.en) return subtitlesFixtures.en;
+          return "";
+        },
+        fetchTimedTextExact: function (url) {
+          var u = String(url || "");
+          var isEs = u.includes("tlang=es") || u.includes("lang=es");
+          var body = isEs ? subtitlesFixtures.es : subtitlesFixtures.en;
+          if (!body) {
+            return JSON.stringify({ status: 404, body: "", sentUrl: url });
+          }
+          return JSON.stringify({ status: 200, body: body, sentUrl: url });
         },
         setBackgroundAudioEnabled: function () { return true; },
         updateMediaMetadata: function () {},
@@ -234,7 +269,12 @@ async function runLiveE2E() {
         });
       });
 
-      await installYouTubeAndSpeechMocks(page, { mode: "expert" });
+      await installYouTubeAndSpeechMocks(page, {
+        mode: "expert",
+        useAlt: true,
+        altMode: "always",
+        fallbackOrder: "tts3_native",
+      });
       await page.goto(`${APP_URL}/?v=L2Ryrr6txwA&mode=expert&stage=3&debug=true`, {
         waitUntil: "domcontentloaded",
       });
@@ -291,6 +331,20 @@ async function runLiveE2E() {
       const pageErrors: string[] = [];
       page.on("pageerror", (e) => pageErrors.push(e.message));
 
+      const enFixture = fs.readFileSync("public/fixtures/L2Ryrr6txwA/en.json", "utf8");
+      const esFixture = fs.readFileSync("public/fixtures/L2Ryrr6txwA/es.json", "utf8");
+      await page.route("**/youtube.com/api/timedtext*", (route) => {
+        const reqUrl = new URL(route.request().url());
+        const tlang = reqUrl.searchParams.get("tlang") || "";
+        const lang = reqUrl.searchParams.get("lang") || "";
+        const isEs = tlang === "es" || lang === "es";
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: isEs ? esFixture : enFixture,
+        });
+      });
+
       let fallbackTts3Hits = 0;
       await page.route("**/tts3.lovable.app/**", (route) => {
         fallbackTts3Hits += 1;
@@ -305,17 +359,30 @@ async function runLiveE2E() {
         mode: "expert",
         useAndroidShell: true,
         altMode: "fallback_only",
+        subtitlesFixtures: { en: enFixture, es: esFixture },
       });
-      await page.goto(`${APP_URL}/?v=L2Ryrr6txwA&mode=expert&stage=3&android=true&debug=true`, {
-        waitUntil: "domcontentloaded",
-      });
+      const subUrl = encodeURIComponent(
+        "https://www.youtube.com/api/timedtext?v=L2Ryrr6txwA&lang=en&fmt=json3",
+      );
+      const timedtextLoaded = page
+        .waitForResponse((res) => res.url().includes("timedtext") && res.status() === 200, {
+          timeout: 15000,
+        })
+        .catch(() => null);
+      await page.goto(
+        `${APP_URL}/?v=L2Ryrr6txwA&mode=expert&stage=3&android=true&debug=true&target_lang=es&subtitles_url=${subUrl}`,
+        {
+          waitUntil: "domcontentloaded",
+        },
+      );
       await page.waitForSelector('[data-testid="floating-pause-button"]', { timeout: 15000 });
-      await page.waitForTimeout(700);
+      await timedtextLoaded;
+      await page.waitForTimeout(900);
 
       await page.getByTestId("floating-pause-button").click();
       await page.waitForTimeout(200);
 
-      for (let step = 0; step < 12; step++) {
+      for (let step = 0; step < 15; step++) {
         await page.evaluate(() => {
           const s = (window as unknown as { __mockYtState: { currentTime: number } }).__mockYtState;
           s.currentTime += 0.85;
@@ -385,21 +452,26 @@ async function runLiveE2E() {
       await page.getByTestId("menu-option-tts-play").click();
       await page.getByTestId("floating-menu-toggle-btn").click();
 
-      // Start playback cleanly
-      await page.getByTestId("floating-pause-button").click();
-      await page.waitForTimeout(300);
-
-      // Scenario 4: Simulate an immediate YouTube iframe pause bounce (event.data === 2) 300ms after play
-      const playCallsBeforeBounce = await page.evaluate(() => {
-        const win = window as unknown as {
-          __mockYtPlayer: { onStateChange?: (e: { data: number }) => void };
-          __mockYtState: { playerState: number; playCalls: number };
-        };
-        const before = win.__mockYtState.playCalls;
-        win.__mockYtState.playerState = 2;
-        win.__mockYtPlayer.onStateChange?.({ data: 2 });
-        return before;
-      });
+      // Start playback cleanly & simulate an immediate YouTube iframe pause bounce (~150ms after play, within <650ms guard)
+      const playCallsBeforeBounce = await page.evaluate(
+        () =>
+          new Promise<number>((resolve) => {
+            const btn = document.querySelector(
+              '[data-testid="floating-pause-button"]',
+            ) as HTMLButtonElement | null;
+            btn?.click();
+            setTimeout(() => {
+              const win = window as unknown as {
+                __mockYtPlayer: { onStateChange?: (e: { data: number }) => void };
+                __mockYtState: { playerState: number; playCalls: number };
+              };
+              const before = win.__mockYtState.playCalls;
+              win.__mockYtState.playerState = 2;
+              win.__mockYtPlayer.onStateChange?.({ data: 2 });
+              resolve(before);
+            }, 150);
+          }),
+      );
       await page.waitForTimeout(250);
 
       const afterBounce = await page.evaluate(() => {
@@ -453,7 +525,7 @@ async function runLiveE2E() {
       );
       assert.ok(
         diagReport.includes("UNEXPECTED_PLAYER_PAUSE") &&
-          diagReport.includes('"autoRecovered": true'),
+          /"autoRecovered":\s*true/.test(diagReport),
         "Scenario 4: Copied log must record UNEXPECTED_PLAYER_PAUSE with autoRecovered: true",
       );
 
