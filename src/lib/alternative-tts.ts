@@ -735,11 +735,9 @@ export function buildLovableTtsUrl(
     url.searchParams.set("voices", JSON.stringify(options.voices));
   }
 
-  const speed = options?.speed ?? getLovableTtsSpeed();
-  if (typeof speed === "number" && !isNaN(speed) && speed !== 1) {
-    const clampedSpeed = Math.max(0.25, Math.min(4, Math.round(speed * 100) / 100));
-    url.searchParams.set("speed", String(clampedSpeed));
-  }
+  // Speed is never passed to the remote audio generation TTS service
+  // (it is only applied client-side as audio playback speed via playbackRate).
+  url.searchParams.delete("speed");
 
   const rawOptions = options?.options ?? getLovableTtsOptions();
   if (rawOptions) {
@@ -762,22 +760,29 @@ export function buildLovableTtsUrl(
     url.searchParams.set("target_lang", targetLang.trim());
   }
 
-  const { speakApiToken, providerApiKey } = resolveTtsCredentials(options);
-
-  // Keyed providers only accept api_key query param (never Google or Auto)
-  if (providerApiKey && provider !== "google" && provider !== "auto") {
-    url.searchParams.set("api_key", providerApiKey);
-  }
-
-  // If speakApiToken is present, provide token query param for direct GET requests
-  if (speakApiToken) {
-    url.searchParams.set("token", speakApiToken);
-  }
-
+  // Never pass authentication tokens (token / api_key) in GET query parameters.
+  // Authenticated requests must use POST with Authorization: Bearer header.
   const format = options?.format || getLovableTtsFormat();
   url.searchParams.set("format", format);
 
   return url.toString();
+}
+
+function extractEmployedProviderFromHeaders(resHeaders: Record<string, string>): string | null {
+  for (const [key, value] of Object.entries(resHeaders)) {
+    const k = key.toLowerCase();
+    if (
+      (k === "x-tts-provider" ||
+        k === "x-provider" ||
+        k === "x-employed-provider" ||
+        k === "x-audio-provider") &&
+      value &&
+      value.trim()
+    ) {
+      return value.trim();
+    }
+  }
+  return null;
 }
 
 /**
@@ -791,7 +796,6 @@ export function buildLovableTtsRequestBody(
   const normalizedText = (text || "").slice(0, 5000);
   const normalizedLang = normalizeLanguageCode(lang);
   const provider = options?.provider || getLovableTtsProvider();
-  const speed = options?.speed ?? getLovableTtsSpeed();
   const rawOptions = options?.options ?? getLovableTtsOptions();
   // Only set target_lang when explicitly requested and different from text language
   const targetLang = options?.target_lang;
@@ -821,9 +825,8 @@ export function buildLovableTtsRequestBody(
     body.voices = options.voices;
   }
 
-  if (typeof speed === "number" && !isNaN(speed) && speed !== 1) {
-    body.speed = Math.max(0.25, Math.min(4, Math.round(speed * 100) / 100));
-  }
+  // Speed is never passed to the remote audio generation TTS service
+  // (it is only applied client-side as audio playback speed via playbackRate).
   if (rawOptions) {
     if (typeof rawOptions === "string" && rawOptions.trim()) {
       try {
@@ -955,11 +958,25 @@ export async function synthesizeLovableTtsPost(
       return null;
     }
 
+    const headerProvider = extractEmployedProviderFromHeaders(resHeaders);
     const format = body.format || "binary";
     if (format === "json") {
       const data = (await res.json()) as LovableTtsJsonResponse;
       const mime = data?.mime || "audio/mpeg";
       const audioBytes = data?.audio ? Math.round((data.audio.length * 3) / 4) : 0;
+      const employedProvider =
+        (typeof data?.provider === "string" && data.provider.trim()) ||
+        headerProvider ||
+        body.provider ||
+        "google";
+      recordEmployedTtsProvider(
+        employedProvider,
+        typeof data?.provider === "string" && data.provider.trim()
+          ? "response"
+          : headerProvider
+            ? "header"
+            : "requested",
+      );
       const record: ExternalTtsAuditRecord = {
         id: auditId,
         timestamp: Date.now(),
@@ -968,7 +985,7 @@ export async function synthesizeLovableTtsPost(
         endpoint: LOVABLE_TTS_ENDPOINT,
         requestHeaders: headers,
         requestBody: body,
-        provider: body.provider || "google",
+        provider: employedProvider,
         voice: body.voice,
         lang: body.lang,
         text: body.text,
@@ -992,6 +1009,8 @@ export async function synthesizeLovableTtsPost(
     } else {
       const blob = await res.blob();
       const objectUrl = URL.createObjectURL(blob);
+      const employedProvider = headerProvider || body.provider || "google";
+      recordEmployedTtsProvider(employedProvider, headerProvider ? "header" : "requested");
       const record: ExternalTtsAuditRecord = {
         id: auditId,
         timestamp: Date.now(),
@@ -1000,7 +1019,7 @@ export async function synthesizeLovableTtsPost(
         endpoint: LOVABLE_TTS_ENDPOINT,
         requestHeaders: headers,
         requestBody: body,
-        provider: body.provider || "google",
+        provider: employedProvider,
         voice: body.voice,
         lang: body.lang,
         text: body.text,
@@ -1127,6 +1146,17 @@ export async function fetchLovableTtsJson(
       return null;
     }
     const data = (await res.json()) as LovableTtsJsonResponse;
+    const headerProvider = extractEmployedProviderFromHeaders(resHeaders);
+    const employedProvider =
+      (typeof data?.provider === "string" && data.provider.trim()) || headerProvider || provider;
+    recordEmployedTtsProvider(
+      employedProvider,
+      typeof data?.provider === "string" && data.provider.trim()
+        ? "response"
+        : headerProvider
+          ? "header"
+          : "requested",
+    );
     const audioBytes = data?.audio ? Math.round((data.audio.length * 3) / 4) : 0;
     const record: ExternalTtsAuditRecord = {
       id: auditId,
@@ -1136,7 +1166,7 @@ export async function fetchLovableTtsJson(
       endpoint: LOVABLE_TTS_ENDPOINT,
       requestHeaders: headers,
       queryParams,
-      provider,
+      provider: employedProvider,
       voice: undefined,
       lang,
       text,
@@ -1262,6 +1292,9 @@ export async function fetchLovableTtsBinaryBlob(
 
     const blob = await res.blob();
     const objectUrl = URL.createObjectURL(blob);
+    const headerProvider = extractEmployedProviderFromHeaders(resHeaders);
+    const employedProvider = headerProvider || options?.provider || getLovableTtsProvider();
+    recordEmployedTtsProvider(employedProvider, headerProvider ? "header" : "requested");
     const record: ExternalTtsAuditRecord = {
       id: auditId,
       timestamp: Date.now(),
@@ -1270,7 +1303,7 @@ export async function fetchLovableTtsBinaryBlob(
       endpoint: LOVABLE_TTS_ENDPOINT,
       requestHeaders: headers,
       queryParams,
-      provider: options?.provider || getLovableTtsProvider(),
+      provider: employedProvider,
       voice: options?.voice,
       lang,
       text,
@@ -1331,12 +1364,14 @@ export async function synthesizeLovableTtsAudio(
 ): Promise<{ url: string; revokeOnDone?: boolean } | null> {
   const method = options?.method || getLovableTtsMethod();
   const format = options?.format || getLovableTtsFormat();
+  const { speakApiToken, providerApiKey } = resolveTtsCredentials(options);
 
-  if (method === "post") {
+  // Always prefer POST, and strictly enforce POST whenever any authentication credential is present
+  if (method !== "get" || speakApiToken || providerApiKey) {
     return synthesizeLovableTtsPost(text, lang, { ...options, format }, source);
   }
 
-  // GET method
+  // Unauthenticated GET fallback only when explicitly requested
   if (format === "json") {
     const jsonRes = await fetchLovableTtsJson(text, lang, options, source);
     if (!jsonRes?.audio) return null;
@@ -2065,19 +2100,19 @@ export function setLovableTtsOptions(options: string): void {
 }
 
 /**
- * Retrieves the configured Lovable TTS HTTP Method: "get" (default) or "post".
+ * Retrieves the configured Lovable TTS HTTP Method: "post" (default) or "get".
  */
 export function getLovableTtsMethod(): LovableTtsMethod {
-  if (typeof window === "undefined") return "get";
+  if (typeof window === "undefined") return "post";
   try {
     const stored = localStorage.getItem(STORAGE_KEY_ALTERNATIVE_TTS_LOVABLE_METHOD);
-    if (stored === "get" || stored === "post") {
+    if (stored === "post" || stored === "get") {
       return stored;
     }
   } catch {
     // ignore
   }
-  return "get";
+  return "post";
 }
 
 /**
@@ -2712,4 +2747,99 @@ export async function executeTtsFallbackSequence(
   }
 
   return "none";
+}
+
+export interface EmployedTtsProviderInfo {
+  provider: string;
+  timestamp: number;
+  source: "requested" | "header" | "response";
+}
+
+let lastEmployedTtsProvider: EmployedTtsProviderInfo | null = null;
+const employedTtsProviderListeners = new Set<(info: EmployedTtsProviderInfo | null) => void>();
+
+export function recordEmployedTtsProvider(
+  provider: string,
+  source: EmployedTtsProviderInfo["source"] = "requested",
+): void {
+  if (!provider) return;
+  lastEmployedTtsProvider = { provider, timestamp: Date.now(), source };
+  employedTtsProviderListeners.forEach((cb) => cb(lastEmployedTtsProvider));
+}
+
+export function getLastEmployedTtsProvider(): EmployedTtsProviderInfo | null {
+  return lastEmployedTtsProvider;
+}
+
+export function subscribeEmployedTtsProvider(
+  listener: (info: EmployedTtsProviderInfo | null) => void,
+): () => void {
+  employedTtsProviderListeners.add(listener);
+  return () => {
+    employedTtsProviderListeners.delete(listener);
+  };
+}
+
+/**
+ * Extracts provider enum names from an OpenAPI 3.x specification JSON object.
+ */
+export function parseOpenApiProviders(spec: unknown): LovableTtsProvider[] {
+  const found = new Set<string>();
+  const walk = (node: unknown) => {
+    if (!node || typeof node !== "object") return;
+    const obj = node as Record<string, unknown>;
+    if (Array.isArray(obj.enum)) {
+      for (const item of obj.enum) {
+        if (
+          typeof item === "string" &&
+          (SELECTABLE_AUTO_PROVIDERS as readonly string[]).includes(item)
+        ) {
+          found.add(item);
+        }
+      }
+    }
+    for (const val of Object.values(obj)) {
+      if (val && typeof val === "object") walk(val);
+    }
+  };
+  walk(spec);
+  return found.size > 0
+    ? (Array.from(found) as LovableTtsProvider[])
+    : [...SELECTABLE_AUTO_PROVIDERS];
+}
+
+/**
+ * Fetches the live openapi.json from the TTS service to discover available providers.
+ */
+export async function fetchOpenApiProviders(
+  timeoutMs: number = 5000,
+): Promise<{ providers: LovableTtsProvider[]; fromLiveSpec: boolean }> {
+  const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+  const timeoutId = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+  try {
+    const res = await fetch(LOVABLE_TTS_OPENAPI_URL, {
+      method: "GET",
+      signal: controller?.signal,
+    });
+    if (timeoutId) clearTimeout(timeoutId);
+    if (res.ok) {
+      const spec = (await res.json()) as unknown;
+      return { providers: parseOpenApiProviders(spec), fromLiveSpec: true };
+    }
+  } catch {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+  return { providers: [...SELECTABLE_AUTO_PROVIDERS], fromLiveSpec: false };
+}
+
+/**
+ * Disables (excludes) a specific provider from the custom auto-synthesis pool.
+ * Returns the updated list of enabled providers.
+ */
+export function disableAutoProvider(provider: string): LovableTtsProvider[] {
+  const current = getCustomAutoProviders();
+  const next = current.filter((p) => p !== provider);
+  const finalized = next.length > 0 ? next : current;
+  setCustomAutoProviders(finalized);
+  return finalized;
 }

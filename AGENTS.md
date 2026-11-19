@@ -110,22 +110,5 @@ Sequential subtitle pipeline:
 
 ## Last raw prompt
 ```
-0. use accordions on learning goals - this should help cleaning the view
-
-1.
-listening game:
-allow to click or swap righ or left in order to archive a word - this will filter out the word for the next game.
-
-also support unquarenine the archived words.
-
-2. creating more sentences using the list of words using openrouter - the openrouter option should be presented on the relevant section
-
-3. AGENTS.md - prompting: if  prompt says to create expermental feature - allow to undone the feature using an undo/cancel request. experimental feature should not effect any existing component.
-
-4. upon feching subtitles success - tts-play what what fetched and on which method (via server? anonymously? )
-
-5.experminental:  
-add controls around the video :
-- add an experimental feature (): test-id=automate_clicking_on_subtitles content:
-allow switching to another subtitles language using a list of languages: russian/spanish/arabic/hebrew/english. add experimental tag and ensure it doenst conflict with existing features
+never pass speed to the audio generation tts-service (speed is only part of the playback speed in case of audio files)
 ```

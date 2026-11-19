@@ -1,5 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ChevronDown, ChevronUp, Columns2, Pin, PinOff, Hourglass } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Columns2,
+  Pin,
+  PinOff,
+  Hourglass,
+  Maximize2,
+  Minimize2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { type PanelId, ACCORDION_THEMES } from "@/config/accordionThemes";
 
@@ -67,8 +76,36 @@ export const AccordionSection = React.memo(function AccordionSection({
     setTimeLeft(ACCORDION_AUTO_FOLD_SECONDS);
   };
 
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const toggleFullscreen = () => {
+    setIsFullscreen((prev) => {
+      const next = !prev;
+      if (next && !open) {
+        onOpenChange(true);
+      }
+      return next;
+    });
+  };
+
   useEffect(() => {
-    if (!open || pinned || !isTimeoutActive) return;
+    if (!isFullscreen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsFullscreen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isFullscreen]);
+
+  useEffect(() => {
+    if (!open || pinned || isFullscreen || !isTimeoutActive) return;
 
     startTimeRef.current = Date.now();
     setTimeLeft(ACCORDION_AUTO_FOLD_SECONDS);
@@ -85,7 +122,7 @@ export const AccordionSection = React.memo(function AccordionSection({
     }, 100);
 
     return () => window.clearInterval(interval);
-  }, [open, pinned, isTimeoutActive, onOpenChange]);
+  }, [open, pinned, isFullscreen, isTimeoutActive, onOpenChange]);
 
   const togglePinned = () => {
     setPinned((p) => {
@@ -106,16 +143,27 @@ export const AccordionSection = React.memo(function AccordionSection({
       data-accordion-color={theme.tagColor}
       data-accordion-bg={theme.panelBg}
       data-video-id={videoId}
-      open={open}
+      data-fullscreen={isFullscreen ? "true" : "false"}
+      open={isFullscreen ? true : open}
       onPointerDown={markActivity}
       onKeyDown={markActivity}
       onFocus={markActivity}
-      onToggle={(event) => onOpenChange(event.currentTarget.open)}
-      className={`overflow-hidden rounded-xl border text-sm shadow-xs transition-all ${theme.panelBg || "bg-card border-border"} ${theme.borderLeft} ${wide ? "lg:col-span-2" : ""}`}
+      onToggle={(event) => {
+        if (!isFullscreen) {
+          onOpenChange(event.currentTarget.open);
+        }
+      }}
+      className={
+        isFullscreen
+          ? `fixed inset-0 z-50 m-0 flex h-dvh w-screen max-w-none flex-col overflow-hidden rounded-none border-0 bg-background/98 text-sm shadow-2xl backdrop-blur-md ${theme.borderLeft}`
+          : `overflow-hidden rounded-xl border text-sm shadow-xs transition-all ${theme.panelBg || "bg-card border-border"} ${theme.borderLeft} ${wide ? "lg:col-span-2" : ""}`
+      }
     >
       <summary
         data-testid={`accordion-bar-${id}`}
-        className={`flex cursor-pointer list-none items-center gap-1.5 px-3.5 py-1.5 marker:hidden transition-all duration-150 select-none ${theme.summaryBg}`}
+        className={`flex cursor-pointer list-none items-center gap-1.5 px-3.5 py-1.5 marker:hidden transition-all duration-150 select-none ${
+          isFullscreen ? "sticky top-0 z-20 shrink-0 border-b border-border/70 px-3 sm:px-5 py-2.5" : ""
+        } ${theme.summaryBg}`}
       >
         <ChevronDown
           aria-hidden="true"
@@ -173,7 +221,35 @@ export const AccordionSection = React.memo(function AccordionSection({
         >
           {pinned ? <Pin aria-hidden="true" /> : <PinOff aria-hidden="true" />}
         </Button>
-        {onToggleWide && (
+        <Button
+          type="button"
+          variant={isFullscreen ? "default" : "ghost"}
+          size={isFullscreen ? "sm" : "icon"}
+          data-testid={`accordion-fullscreen-${id}`}
+          aria-pressed={isFullscreen}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            toggleFullscreen();
+          }}
+          aria-label={isFullscreen ? `Exit full screen for ${title}` : `Enter full screen for ${title}`}
+          title={isFullscreen ? "Exit full screen (Esc)" : `Open ${title} in full screen`}
+          className={
+            isFullscreen
+              ? "h-7 gap-1.5 px-2.5 text-xs font-medium"
+              : "text-muted-foreground hover:text-foreground"
+          }
+        >
+          {isFullscreen ? (
+            <>
+              <Minimize2 className="size-3.5" aria-hidden="true" />
+              <span className="hidden sm:inline">Exit Full Screen</span>
+            </>
+          ) : (
+            <Maximize2 className="size-4" aria-hidden="true" />
+          )}
+        </Button>
+        {!isFullscreen && onToggleWide && (
           <Button
             type="button"
             variant="ghost"
@@ -218,7 +294,15 @@ export const AccordionSection = React.memo(function AccordionSection({
           <ChevronDown aria-hidden="true" />
         </Button>
       </summary>
-      <div className="border-t border-border p-2 sm:p-3">{children}</div>
+      <div
+        className={
+          isFullscreen
+            ? "flex-1 overflow-y-auto overscroll-contain p-3 sm:p-5 md:p-6"
+            : "border-t border-border p-2 sm:p-3"
+        }
+      >
+        {isFullscreen ? <div className="mx-auto w-full max-w-7xl">{children}</div> : children}
+      </div>
     </details>
   );
 });

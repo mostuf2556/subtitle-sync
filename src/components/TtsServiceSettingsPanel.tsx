@@ -30,6 +30,12 @@ import {
   setCustomAutoProviders,
   testAllOpenApiProviders,
   playAlternativeTtsAudio,
+  fetchOpenApiProviders,
+  recordEmployedTtsProvider,
+  getLastEmployedTtsProvider,
+  subscribeEmployedTtsProvider,
+  disableAutoProvider,
+  type EmployedTtsProviderInfo,
 } from "@/lib/alternative-tts";
 import { ExternalTtsDebuggerPanel } from "@/components/ExternalTtsDebuggerPanel";
 import { useIsElementEnabled } from "@/utils/performanceModeManager";
@@ -54,7 +60,7 @@ export interface TtsServiceSettingsPanelProps {
   onSaveKey?: (key: string) => void;
   onClearKey?: () => void;
   onValidateService: () => Promise<void> | void;
-  onTestAudio: () => Promise<void> | void;
+  onTestAudio: () => Promise<boolean | void> | boolean | void;
   isValidating?: boolean;
   isTestingAudio?: boolean;
   validationResult?: RemoteTtsValidationResult | null;
@@ -119,6 +125,61 @@ export const TtsServiceSettingsPanel: React.FC<TtsServiceSettingsPanelProps> = R
       null,
     );
     const [activePlayingProvider, setActivePlayingProvider] = useState<string | null>(null);
+    const [testAudioError, setTestAudioError] = useState<string | null>(null);
+    const [testAudioSuccess, setTestAudioSuccess] = useState<boolean>(false);
+    const [discoveredOpenApiProviders, setDiscoveredOpenApiProviders] = useState<
+      LovableTtsProvider[]
+    >(() => [...SELECTABLE_AUTO_PROVIDERS]);
+    const [isSyncingOpenApi, setIsSyncingOpenApi] = useState<boolean>(false);
+    const [openApiSyncNote, setOpenApiSyncNote] = useState<string | null>(null);
+    const [employedProvider, setEmployedProvider] = useState<EmployedTtsProviderInfo | null>(() =>
+      getLastEmployedTtsProvider(),
+    );
+
+    React.useEffect(() => {
+      return subscribeEmployedTtsProvider((info) => {
+        setEmployedProvider(info);
+      });
+    }, []);
+
+    const handleSyncOpenApiProviders = async () => {
+      if (isSyncingOpenApi) return;
+      setIsSyncingOpenApi(true);
+      setOpenApiSyncNote(null);
+      try {
+        const res = await fetchOpenApiProviders();
+        setDiscoveredOpenApiProviders(res.providers);
+        setOpenApiSyncNote(
+          res.fromLiveSpec
+            ? `Synced ${res.providers.length} providers from openapi.json`
+            : `Using ${res.providers.length} built-in OpenAPI providers`,
+        );
+      } finally {
+        setIsSyncingOpenApi(false);
+      }
+    };
+
+    const handleTestAudioClick = async () => {
+      setTestAudioError(null);
+      setTestAudioSuccess(false);
+      recordEmployedTtsProvider(
+        provider === "auto" ? autoProviders.join(", ") || "auto" : provider,
+        "requested",
+      );
+      try {
+        const result = await onTestAudio();
+        if (result === false) {
+          setTestAudioError(
+            `Audio playback failed for TTS3 (${provider}). Check provider status, token, or browser audio permissions.`,
+          );
+        } else {
+          setTestAudioSuccess(true);
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err || "Unknown playback error");
+        setTestAudioError(`Audio playback failed: ${msg}`);
+      }
+    };
 
     const handleToggleAutoProvider = (p: LovableTtsProvider) => {
       setAutoProviders((prev) => {
@@ -157,8 +218,10 @@ export const TtsServiceSettingsPanel: React.FC<TtsServiceSettingsPanelProps> = R
     const handlePlayProviderAudio = async (result: ProviderTestResult) => {
       if (!result.audioUrl || activePlayingProvider) return;
       setActivePlayingProvider(result.provider);
+      setTestAudioError(null);
+      recordEmployedTtsProvider(result.provider, "requested");
       try {
-        await playAlternativeTtsAudio(
+        const played = await playAlternativeTtsAudio(
           "OpenAPI test",
           baseLanguage || "en",
           speechRate || 1.0,
@@ -169,8 +232,12 @@ export const TtsServiceSettingsPanel: React.FC<TtsServiceSettingsPanelProps> = R
             interrupt: true,
           },
         );
+        if (played === false) {
+          setTestAudioError(`Failed to play audio clip for provider "${result.provider}".`);
+        }
       } catch (err) {
-        console.warn("Failed playing provider test audio:", err);
+        const msg = err instanceof Error ? err.message : String(err || "Unknown playback error");
+        setTestAudioError(`Failed playing "${result.provider}" audio: ${msg}`);
       } finally {
         setActivePlayingProvider(null);
       }
@@ -361,6 +428,49 @@ export const TtsServiceSettingsPanel: React.FC<TtsServiceSettingsPanelProps> = R
               </div>
             </div>
 
+            {/* Active / Employed Provider Indicator & Disable Button + OpenAPI Sync */}
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded border border-border/50 bg-background/50 px-2.5 py-1.5 text-[11px]">
+              <button
+                type="button"
+                data-testid="tts-employed-provider-badge"
+                onClick={() => {
+                  const target = employedProvider?.provider || (provider !== "auto" ? provider : "");
+                  if (!target) return;
+                  const updated = disableAutoProvider(target);
+                  setAutoProviders(updated);
+                }}
+                className="inline-flex items-center gap-1.5 rounded border border-border/70 bg-background hover:border-destructive/50 hover:bg-destructive/10 hover:text-destructive px-2 py-0.5 text-muted-foreground cursor-pointer transition-colors"
+                title="Click to disable the currently employed provider from the auto pool"
+              >
+                <Volume2 className="h-3.5 w-3.5 text-primary" />
+                <span>Employed provider:</span>
+                <strong className="font-mono text-foreground">
+                  {employedProvider?.provider ||
+                    (provider === "auto"
+                      ? `auto (${autoProviders.join(", ")})`
+                      : provider)}
+                </strong>
+                <span className="text-[10px] underline ml-1">Disable</span>
+              </button>
+              <div className="flex items-center gap-1.5">
+                {openApiSyncNote && (
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
+                    {openApiSyncNote}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  data-testid="btn-sync-openapi-providers"
+                  disabled={isSyncingOpenApi}
+                  onClick={() => void handleSyncOpenApiProviders()}
+                  className="px-2 py-0.5 rounded border border-border bg-background hover:bg-muted text-[10.5px] font-mono text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-60"
+                  title="Refresh available providers from openapi.json"
+                >
+                  {isSyncingOpenApi ? "Syncing…" : "Sync openapi.json"}
+                </button>
+              </div>
+            </div>
+
             {/* Custom Auto Provider Selection: Shown when provider is "auto" to customize /api/public/auto pool */}
             {provider === "auto" && (
               <div
@@ -373,11 +483,11 @@ export const TtsServiceSettingsPanel: React.FC<TtsServiceSettingsPanelProps> = R
                     <span>Custom Auto Provider Pool:</span>
                   </span>
                   <span className="text-[10px] text-muted-foreground">
-                    Selected providers included in auto synthesis fallback
+                    Uncheck providers with unpleasant audio to exclude them
                   </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
-                  {SELECTABLE_AUTO_PROVIDERS.map((p) => {
+                  {discoveredOpenApiProviders.map((p) => {
                     const isChecked = autoProviders.includes(p);
                     return (
                       <label
@@ -645,7 +755,7 @@ export const TtsServiceSettingsPanel: React.FC<TtsServiceSettingsPanelProps> = R
                 type="button"
                 data-testid="test-alternative-tts-btn"
                 disabled={isTestingAudio}
-                onClick={() => onTestAudio()}
+                onClick={() => void handleTestAudioClick()}
                 className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-mono inline-flex items-center gap-1.5 disabled:opacity-60 cursor-pointer font-semibold shadow-xs"
               >
                 {isTestingAudio ? (
@@ -701,6 +811,27 @@ export const TtsServiceSettingsPanel: React.FC<TtsServiceSettingsPanelProps> = R
               </>
             )}
           </button>
+
+          {testAudioError && (
+            <div
+              role="alert"
+              data-testid="tts-test-audio-error"
+              className="w-full flex items-start gap-1.5 rounded border border-destructive/40 bg-destructive/10 px-2.5 py-1.5 text-[11px] text-destructive"
+            >
+              <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+              <span>{testAudioError}</span>
+            </div>
+          )}
+
+          {testAudioSuccess && !testAudioError && !isTestingAudio && (
+            <div
+              data-testid="tts-test-audio-success"
+              className="w-full flex items-center gap-1.5 rounded border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] text-emerald-600 dark:text-emerald-400"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+              <span>Test audio played successfully ({provider}).</span>
+            </div>
+          )}
         </div>
 
         {/* Multi-Provider Test Results Card & Live Audio Playback */}
