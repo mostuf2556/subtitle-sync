@@ -1,0 +1,249 @@
+# Bug Report & Troubleshooting Prompt for AI Developer
+
+## User Complaint / Reported Issue
+> [No specific complaint text entered — complete runtime diagnostic state requested]
+
+## Diagnostic Metadata
+- **Current URL**: https://appassets.androidplatform.net/?v=vBURridJXZ0&android=true&target_lang=he&tts=1&subtitles_url=https%3A%2F%2Fwww.youtube.com%2Fapi%2Ftimedtext%3Fv%3DvBURridJXZ0%26ei%3DPe7-aqqZGvj7xN8Pqce7sQo%26caps%3Dasr%26opi%3D112496729%26xoaf%3D5%26xowf%3D1%26xospf%3D1%26hl%3Diw%26ip%3D0.0.0.0%26ipbits%3D0%26expire%3D1795117229%26sparams%3Dip%252Cipbits%252Cexpire%252Cv%252Cei%252Ccaps%252Copi%252Cxoaf%26signature%3D27D12D994BE6378FEF8B17CC0EED632912DD2301.406B8BFF13CC129DE275CAB46FF7AE3FC999A612%26key%3Dyt8%26kind%3Dasr%26lang%3Diw%26fmt%3Djson3%26xorb%3D2%26xobt%3D3%26xovt%3D3%26cbrand%3Dxiaomi%26cbr%3DChrome%2520Mobile%2520Webview%26cbrver%3D157.0.8103.50%26c%3DWEB_EMBEDDED_PLAYER%26cver%3D2.20261118.01.00%26cplayer%3DUNIPLAYER%26cmodel%3D23124ra7eo%26cos%3DAndroid%26cosver%3D15%26cplatform%3DMOBILE
+- **User Agent**: Mozilla/5.0 (Linux; Android 15; 23124RA7EO Build/AQ3A.240829.003) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/157.0.8103.50 Mobile Safari/537.36
+- **Recorded Log Count**: 125 events (Ring Buffer, max 500)
+
+## 0. Active Errors & Failures (0 recorded)
+*No active application errors recorded.*
+
+## 1. Live Application State Snapshot
+```json
+{
+  "videoId": "vBURridJXZ0",
+  "mode": "expert",
+  "stage": 3,
+  "isVideoPlaying": false,
+  "pauseReason": "Paused via system media controls",
+  "playerState": 2,
+  "currentTime": 7.002701,
+  "baseLanguage": "iw",
+  "targetLanguages": [
+    "he",
+    "it"
+  ],
+  "favoriteLanguages": [
+    "iw",
+    "he",
+    "it"
+  ],
+  "loadedTracks": [
+    "iw"
+  ],
+  "rowsCount": 386,
+  "speakingRow": -1,
+  "speakingLang": null,
+  "isZeroKnowledgeActive": false,
+  "zeroKnowledgeLanguages": [],
+  "isAudioTrackMode": false,
+  "timestamp": "2026-11-19T12:42:09.000Z"
+}
+```
+
+## 2. Network Activity & TimedText Requests (72 requests)
+| Time | Category | Status | Duration | Response (15 chars) | URL |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 14:40:27.178 | Network | 200 | 100ms | `{"sentUrl":"htt` | `https://www.youtube.com/api/timedtext?type=list&v=vBURridJXZ0` |
+| 14:40:27.489 | Network | 500 | 310ms | `Failed to fetch` | `https://www.youtube.com/api/timedtext?type=list&v=vBURridJXZ0` |
+| 14:40:31.287 | Interception | 200 | 1ms | `{   "wireMagic"` | `https://www.youtube.com/api/timedtext?v=vBURridJXZ0&ei=Pe7-aqqZGvj7xN8Pqce7sQo&caps=asr&opi=112496729&xoaf=5&xowf=1&xospf=1&hl=iw&ip=0.0.0.0&ipbits=0&expire=1795117229&sparams=ip%2Cipbits%2Cexpire%2Cv%2Cei%2Ccaps%2Copi%2Cxoaf&signature=27D12D994BE6378FEF8B17CC0EED632912DD2301.406B8BFF13CC129DE275CAB46FF7AE3FC999A612&key=yt8&kind=asr&lang=iw&fmt=json3&xorb=2&xobt=3&xovt=3&cbrand=xiaomi&cbr=Chrome%20Mobile%20Webview&cbrver=157.0.8103.50&c=WEB_EMBEDDED_PLAYER&cver=2.20261118.01.00&cplayer=UNIPLAYER&cmodel=23124ra7eo&cos=Android&cosver=15&cplatform=MOBILE` |
+| 14:40:31.810 | Network | 404 | 133ms | `<!DOCTYPE html>` | `https://www.youtube.com/api/timedtext?v=vBURridJXZ0&ei=Pe7-aqqZGvj7xN8Pqce7sQo&caps=asr&opi=112496729&xoaf=5&xowf=1&xospf=1&hl=iw&ip=0.0.0.0&ipbits=0&expire=1795117229&sparams=ip%2Cipbits%2Cexpire%2Cv%2Cei%2Ccaps%2Copi%2Cxoaf&signature=27D12D994BE6378FEF8B17CC0EED632912DD2301.406B8BFF13CC129DE275CAB46FF7AE3FC999A612&key=yt8&kind=asr&lang=he&fmt=json3&xorb=2&xobt=3&xovt=3&cbrand=xiaomi&cbr=Chrome+Mobile+Webview&cbrver=157.0.8103.50&c=WEB_EMBEDDED_PLAYER&cver=2.20261118.01.00&cplayer=UNIPLAYER&cmodel=23124ra7eo&cos=Android&cosver=15&cplatform=MOBILE` |
+| 14:40:32.466 | Network | 404 | 655ms | `<!DOCTYPE html>` | `https://www.youtube.com/api/timedtext?v=vBURridJXZ0&ei=Pe7-aqqZGvj7xN8Pqce7sQo&caps=asr&opi=112496729&xoaf=5&xowf=1&xospf=1&hl=iw&ip=0.0.0.0&ipbits=0&expire=1795117229&sparams=ip%2Cipbits%2Cexpire%2Cv%2Cei%2Ccaps%2Copi%2Cxoaf&signature=27D12D994BE6378FEF8B17CC0EED632912DD2301.406B8BFF13CC129DE275CAB46FF7AE3FC999A612&key=yt8&kind=asr&lang=he&fmt=json3&xorb=2&xobt=3&xovt=3&cbrand=xiaomi&cbr=Chrome+Mobile+Webview&cbrver=157.0.8103.50&c=WEB_EMBEDDED_PLAYER&cver=2.20261118.01.00&cplayer=UNIPLAYER&cmodel=23124ra7eo&cos=Android&cosver=15&cplatform=MOBILE` |
+| 14:40:32.765 | Network | 429 | 298ms | `<html><head><me` | `https://www.youtube.com/api/timedtext?v=vBURridJXZ0&ei=Pe7-aqqZGvj7xN8Pqce7sQo&caps=asr&opi=112496729&xoaf=5&xowf=1&xospf=1&hl=iw&ip=0.0.0.0&ipbits=0&expire=1795117229&sparams=ip%2Cipbits%2Cexpire%2Cv%2Cei%2Ccaps%2Copi%2Cxoaf&signature=27D12D994BE6378FEF8B17CC0EED632912DD2301.406B8BFF13CC129DE275CAB46FF7AE3FC999A612&key=yt8&kind=asr&lang=iw&fmt=json3&xorb=2&xobt=3&xovt=3&cbrand=xiaomi&cbr=Chrome+Mobile+Webview&cbrver=157.0.8103.50&c=WEB_EMBEDDED_PLAYER&cver=2.20261118.01.00&cplayer=UNIPLAYER&cmodel=23124ra7eo&cos=Android&cosver=15&cplatform=MOBILE&tlang=he` |
+| 14:40:33.369 | Network | 429 | 603ms | `<html><head><me` | `https://www.youtube.com/api/timedtext?v=vBURridJXZ0&ei=Pe7-aqqZGvj7xN8Pqce7sQo&caps=asr&opi=112496729&xoaf=5&xowf=1&xospf=1&hl=iw&ip=0.0.0.0&ipbits=0&expire=1795117229&sparams=ip%2Cipbits%2Cexpire%2Cv%2Cei%2Ccaps%2Copi%2Cxoaf&signature=27D12D994BE6378FEF8B17CC0EED632912DD2301.406B8BFF13CC129DE275CAB46FF7AE3FC999A612&key=yt8&kind=asr&lang=iw&fmt=json3&xorb=2&xobt=3&xovt=3&cbrand=xiaomi&cbr=Chrome+Mobile+Webview&cbrver=157.0.8103.50&c=WEB_EMBEDDED_PLAYER&cver=2.20261118.01.00&cplayer=UNIPLAYER&cmodel=23124ra7eo&cos=Android&cosver=15&cplatform=MOBILE&tlang=he` |
+| 14:40:33.617 | Interception | 200 | 0ms | `{   "wireMagic"` | `https://www.youtube.com/api/timedtext?v=vBURridJXZ0&ei=Pe7-aqqZGvj7xN8Pqce7sQo&caps=asr&opi=112496729&xoaf=5&xowf=1&xospf=1&hl=iw&ip=0.0.0.0&ipbits=0&expire=1795117229&sparams=ip%2Cipbits%2Cexpire%2Cv%2Cei%2Ccaps%2Copi%2Cxoaf&signature=27D12D994BE6378FEF8B17CC0EED632912DD2301.406B8BFF13CC129DE275CAB46FF7AE3FC999A612&key=yt8&kind=asr&lang=iw&fmt=json3&xorb=2&xobt=3&xovt=3&cbrand=xiaomi&cbr=Chrome%20Mobile%20Webview&cbrver=157.0.8103.50&c=WEB_EMBEDDED_PLAYER&cver=2.20261118.01.00&cplayer=UNIPLAYER&cmodel=23124ra7eo&cos=Android&cosver=15&cplatform=MOBILE` |
+| 14:40:40.371 | Network | 200 | 213ms | `HTTP 200` | `https://www.youtube.com/api/timedtext?v=vBURridJXZ0&ei=Pe7-aqqZGvj7xN8Pqce7sQo&caps=asr&opi=112496729&xoaf=5&xowf=1&xospf=1&hl=iw&ip=0.0.0.0&ipbits=0&expire=1795117229&sparams=ip%2Cipbits%2Cexpire%2Cv%2Cei%2Ccaps%2Copi%2Cxoaf&signature=27D12D994BE6378FEF8B17CC0EED632912DD2301.406B8BFF13CC129DE275CAB46FF7AE3FC999A612&key=yt8&kind=asr&lang=it&fmt=json3&xorb=2&xobt=3&xovt=3&cbrand=xiaomi&cbr=Chrome+Mobile+Webview&cbrver=157.0.8103.50&c=WEB_EMBEDDED_PLAYER&cver=2.20261118.01.00&cplayer=UNIPLAYER&cmodel=23124ra7eo&cos=Android&cosver=15&cplatform=MOBILE` |
+| 14:40:40.514 | Network | 200 | 143ms | `HTTP 200` | `https://www.youtube.com/api/timedtext?v=vBURridJXZ0&ei=Pe7-aqqZGvj7xN8Pqce7sQo&caps=asr&opi=112496729&xoaf=5&xowf=1&xospf=1&hl=iw&ip=0.0.0.0&ipbits=0&expire=1795117229&sparams=ip%2Cipbits%2Cexpire%2Cv%2Cei%2Ccaps%2Copi%2Cxoaf&signature=27D12D994BE6378FEF8B17CC0EED632912DD2301.406B8BFF13CC129DE275CAB46FF7AE3FC999A612&key=yt8&kind=asr&lang=it&fmt=json3&xorb=2&xobt=3&xovt=3&cbrand=xiaomi&cbr=Chrome+Mobile+Webview&cbrver=157.0.8103.50&c=WEB_EMBEDDED_PLAYER&cver=2.20261118.01.00&cplayer=UNIPLAYER&cmodel=23124ra7eo&cos=Android&cosver=15&cplatform=MOBILE` |
+| 14:40:40.851 | Network | 429 | 337ms | `<html><head><me` | `https://www.youtube.com/api/timedtext?v=vBURridJXZ0&ei=Pe7-aqqZGvj7xN8Pqce7sQo&caps=asr&opi=112496729&xoaf=5&xowf=1&xospf=1&hl=iw&ip=0.0.0.0&ipbits=0&expire=1795117229&sparams=ip%2Cipbits%2Cexpire%2Cv%2Cei%2Ccaps%2Copi%2Cxoaf&signature=27D12D994BE6378FEF8B17CC0EED632912DD2301.406B8BFF13CC129DE275CAB46FF7AE3FC999A612&key=yt8&kind=asr&lang=iw&fmt=json3&xorb=2&xobt=3&xovt=3&cbrand=xiaomi&cbr=Chrome+Mobile+Webview&cbrver=157.0.8103.50&c=WEB_EMBEDDED_PLAYER&cver=2.20261118.01.00&cplayer=UNIPLAYER&cmodel=23124ra7eo&cos=Android&cosver=15&cplatform=MOBILE&tlang=it` |
+| 14:40:41.361 | Network | 429 | 509ms | `<html><head><me` | `https://www.youtube.com/api/timedtext?v=vBURridJXZ0&ei=Pe7-aqqZGvj7xN8Pqce7sQo&caps=asr&opi=112496729&xoaf=5&xowf=1&xospf=1&hl=iw&ip=0.0.0.0&ipbits=0&expire=1795117229&sparams=ip%2Cipbits%2Cexpire%2Cv%2Cei%2Ccaps%2Copi%2Cxoaf&signature=27D12D994BE6378FEF8B17CC0EED632912DD2301.406B8BFF13CC129DE275CAB46FF7AE3FC999A612&key=yt8&kind=asr&lang=iw&fmt=json3&xorb=2&xobt=3&xovt=3&cbrand=xiaomi&cbr=Chrome+Mobile+Webview&cbrver=157.0.8103.50&c=WEB_EMBEDDED_PLAYER&cver=2.20261118.01.00&cplayer=UNIPLAYER&cmodel=23124ra7eo&cos=Android&cosver=15&cplatform=MOBILE&tlang=it` |
+| 14:40:48.221 | Network | 500 | 818ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:40:48.246 | Network | 500 | 846ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:40:48.263 | Network | 500 | 858ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:40:48.388 | Network | 500 | 90ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:40:48.402 | Network | 500 | 100ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:40:48.428 | Network | 500 | 128ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:40:48.528 | Network | 500 | 78ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:40:48.542 | Network | 500 | 90ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:40:48.657 | Network | 500 | 209ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:40:48.713 | Network | 500 | 113ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:40:49.059 | Network | 500 | 460ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:15.984 | Network | 500 | 83ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:16.007 | Network | 500 | 108ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:16.028 | Network | 500 | 130ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:16.115 | Network | 500 | 63ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:16.144 | Network | 500 | 93ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:16.169 | Network | 500 | 115ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:16.339 | Network | 500 | 139ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:16.362 | Network | 500 | 160ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:16.432 | Network | 500 | 234ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:16.483 | Network | 500 | 99ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:16.522 | Network | 500 | 140ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:16.563 | Network | 500 | 66ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:16.786 | Network | 500 | 134ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:16.802 | Network | 500 | 303ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:16.823 | Network | 500 | 172ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:16.943 | Network | 500 | 105ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:16.958 | Network | 500 | 119ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:16.973 | Network | 500 | 136ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:17.110 | Network | 500 | 121ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:17.139 | Network | 500 | 151ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:17.181 | Network | 500 | 195ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:17.359 | Network | 500 | 109ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:17.437 | Network | 500 | 189ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:17.547 | Network | 500 | 298ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:34.035 | Network | 500 | 121ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:34.056 | Network | 500 | 141ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:34.069 | Network | 500 | 152ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:34.216 | Network | 500 | 131ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:34.229 | Network | 500 | 142ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:34.373 | Network | 500 | 285ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:34.440 | Network | 500 | 89ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:34.460 | Network | 500 | 113ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:34.620 | Network | 500 | 121ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:34.637 | Network | 500 | 140ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:34.919 | Network | 500 | 259ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:34.936 | Network | 500 | 277ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:34.950 | Network | 500 | 450ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:35.089 | Network | 500 | 113ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:35.105 | Network | 500 | 132ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:35.150 | Network | 500 | 175ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:35.174 | Network | 500 | 52ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:35.196 | Network | 500 | 72ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:35.329 | Network | 500 | 67ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:35.355 | Network | 500 | 90ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:35.369 | Network | 500 | 100ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:35.541 | Network | 500 | 133ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:35.607 | Network | 500 | 198ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:35.620 | Network | 500 | 207ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+| 14:41:35.632 | Network | 500 | 221ms | `Failed to fetch` | `https://tts3.lovable.app/api/public/tts` |
+
+## 2.5 State Machine Actions Sequence for Reproduction (34 actions)
+1. [14:40:27.328] (ts: 1795092027328) [Interception] Initializing YouTube Player iframe element | Details: {"videoId":"vBURridJXZ0","isInterceptorReady":true}
+2. [14:40:29.131] (ts: 1795092029131) [Interception] Programmatically triggered caption track before alert fallback | Details: {"videoId":"vBURridJXZ0","targetLang":"he"}
+3. [14:40:29.800] (ts: 1795092029800) [Interception] Programmatically triggered caption track before alert fallback | Details: {"videoId":"vBURridJXZ0","targetLang":"iw"}
+4. [14:40:31.283] (ts: 1795092031283) [Interception] Intercepted caption payload arrived from bridge | Details: {"url":"https://www.youtube.com/api/timedtext?v=vBURridJXZ0&ei=Pe7-aqqZGvj7xN8Pqce7sQo&caps=asr&opi=112496729&xoaf=5&xowf=1&xospf=1&hl=iw&ip=0.0.0.0&ipbits=0&expire=1795117229&sparams=ip%2Cipbits%2Cexpire%2Cv%2Cei%2Ccaps%2Copi%2Cxoaf&signature=27D12D994BE6378FEF8B17CC0EED632912DD2301.406B8BFF13CC129DE275CAB46FF7AE3FC999A612&key=yt8&kind=asr&lang=iw&fmt=json3&xorb=2&xobt=3&xovt=3&cbrand=xiaomi&cbr=Chrome%20Mobile%20Webview&cbrver=157.0.8103.50&c=WEB_EMBEDDED_PLAYER&cver=2.20261118.01.00&cplayer=UNIPLAYER&cmodel=23124ra7eo&cos=Android&cosver=15&cplatform=MOBILE","byteLength":210800}
+5. [14:40:33.375] (ts: 1795092033375) [Interception] Programmatically triggered caption track before alert fallback | Details: {"videoId":"vBURridJXZ0","targetLang":"iw"}
+6. [14:40:33.459] (ts: 1795092033459) [Interception] Programmatically triggered caption track before alert fallback | Details: {"videoId":"vBURridJXZ0","targetLang":"iw"}
+7. [14:40:33.614] (ts: 1795092033614) [Interception] Intercepted caption payload arrived from bridge | Details: {"url":"https://www.youtube.com/api/timedtext?v=vBURridJXZ0&ei=Pe7-aqqZGvj7xN8Pqce7sQo&caps=asr&opi=112496729&xoaf=5&xowf=1&xospf=1&hl=iw&ip=0.0.0.0&ipbits=0&expire=1795117229&sparams=ip%2Cipbits%2Cexpire%2Cv%2Cei%2Ccaps%2Copi%2Cxoaf&signature=27D12D994BE6378FEF8B17CC0EED632912DD2301.406B8BFF13CC129DE275CAB46FF7AE3FC999A612&key=yt8&kind=asr&lang=iw&fmt=json3&xorb=2&xobt=3&xovt=3&cbrand=xiaomi&cbr=Chrome%20Mobile%20Webview&cbrver=157.0.8103.50&c=WEB_EMBEDDED_PLAYER&cver=2.20261118.01.00&cplayer=UNIPLAYER&cmodel=23124ra7eo&cos=Android&cosver=15&cplatform=MOBILE","byteLength":210800}
+8. [14:40:33.912] (ts: 1795092033912) [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":1}
+9. [14:40:34.387] (ts: 1795092034387) [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":2}
+10. [14:40:46.764] (ts: 1795092046764) [State Machine] PLAYBACK_RESUME_REQUESTED | Details: {"videoId":"vBURridJXZ0","fromPlayerState":2}
+11. [14:40:46.800] (ts: 1795092046800) [Interception] Programmatically triggered caption track before alert fallback | Details: {"videoId":"vBURridJXZ0","targetLang":"iw"}
+12. [14:40:47.120] (ts: 1795092047120) [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":3}
+13. [14:40:47.314] (ts: 1795092047314) [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":1}
+14. [14:40:48.604] (ts: 1795092048604) [State Machine] TTS_SECTION_STARTED | Details: {"videoId":"vBURridJXZ0","sectionId":"120:4040","rowIndex":0,"languages":["he","it"]}
+15. [14:40:48.700] (ts: 1795092048700) [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":2}
+16. [14:40:55.330] (ts: 1795092055330) [State Machine] TTS_SECTION_FINISHED | Details: {"videoId":"vBURridJXZ0","sectionId":"120:4040","rowIndex":0,"cancelled":false}
+17. [14:40:55.479] (ts: 1795092055479) [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":3}
+18. [14:40:56.722] (ts: 1795092056722) [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":2}
+19. [14:41:14.946] (ts: 1795092074946) [State Machine] PLAYBACK_RESUME_REQUESTED | Details: {"videoId":"vBURridJXZ0","fromPlayerState":2}
+20. [14:41:15.063] (ts: 1795092075063) [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":3}
+21. [14:41:15.822] (ts: 1795092075822) [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":1}
+22. [14:41:17.252] (ts: 1795092077252) [State Machine] TTS_SECTION_STARTED | Details: {"videoId":"vBURridJXZ0","sectionId":"4040:5406","rowIndex":1,"languages":["he","it"]}
+23. [14:41:17.333] (ts: 1795092077333) [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":2}
+24. [14:41:20.132] (ts: 1795092080132) [State Machine] TTS_SECTION_FINISHED | Details: {"videoId":"vBURridJXZ0","sectionId":"4040:5406","rowIndex":1,"cancelled":false}
+25. [14:41:20.211] (ts: 1795092080211) [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":3}
+26. [14:41:21.010] (ts: 1795092081010) [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":2}
+27. [14:41:33.497] (ts: 1795092093497) [State Machine] PLAYBACK_RESUME_REQUESTED | Details: {"videoId":"vBURridJXZ0","fromPlayerState":2}
+28. [14:41:33.566] (ts: 1795092093566) [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":3}
+29. [14:41:33.822] (ts: 1795092093822) [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":1}
+30. [14:41:35.415] (ts: 1795092095415) [State Machine] TTS_SECTION_STARTED | Details: {"videoId":"vBURridJXZ0","sectionId":"5406:7000","rowIndex":2,"languages":["he","it"]}
+31. [14:41:35.645] (ts: 1795092095645) [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":2}
+32. [14:41:38.488] (ts: 1795092098488) [State Machine] TTS_SECTION_FINISHED | Details: {"videoId":"vBURridJXZ0","sectionId":"5406:7000","rowIndex":2,"cancelled":false}
+33. [14:41:38.584] (ts: 1795092098584) [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":3}
+34. [14:41:39.337] (ts: 1795092099337) [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":2}
+
+## 3. Chronological Event & Network Logs (125 records)
+```log
+[14:40:27.178] (ts: 1795092027178) [NETWORK] [Network] GET https://www.youtube.com/api/timedtext?type=list&v=vBURridJXZ0 FAILED: Non-transcript_list XML response from Android bridge | URL: https://www.youtube.com/api/timedtext?type=list&v=vBURridJXZ0 (status=200, 100ms) | body_preview(X=15 chars): "{"sentUrl":"htt"
+[14:40:27.328] (ts: 1795092027328) [ACTION] [Interception] Initializing YouTube Player iframe element | Details: {"videoId":"vBURridJXZ0","isInterceptorReady":true}
+[14:40:27.489] (ts: 1795092027489) [NETWORK] [Network] GET https://www.youtube.com/api/timedtext?type=list&v=vBURridJXZ0 FAILED: Failed to fetch | URL: https://www.youtube.com/api/timedtext?type=list&v=vBURridJXZ0 (status=500, 310ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:40:29.131] (ts: 1795092029131) [ACTION] [Interception] Programmatically triggered caption track before alert fallback | Details: {"videoId":"vBURridJXZ0","targetLang":"he"}
+[14:40:29.800] (ts: 1795092029800) [ACTION] [Interception] Programmatically triggered caption track before alert fallback | Details: {"videoId":"vBURridJXZ0","targetLang":"iw"}
+[14:40:31.283] (ts: 1795092031283) [ACTION] [Interception] Intercepted caption payload arrived from bridge | Details: {"url":"https://www.youtube.com/api/timedtext?v=vBURridJXZ0&ei=Pe7-aqqZGvj7xN8Pqce7sQo&caps=asr&opi=112496729&xoaf=5&xowf=1&xospf=1&hl=iw&ip=0.0.0.0&ipbits=0&expire=1795117229&sparams=ip%2Cipbits%2Cexpire%2Cv%2Cei%2Ccaps%2Copi%2Cxoaf&signature=27D12D994BE6378FEF8B17CC0EED632912DD2301.406B8BFF13CC129DE275CAB46FF7AE3FC999A612&key=yt8&kind=asr&lang=iw&fmt=json3&xorb=2&xobt=3&xovt=3&cbrand=xiaomi&cbr=Chrome%20Mobile%20Webview&cbrver=157.0.8103.50&c=WEB_EMBEDDED_PLAYER&cver=2.20261118.01.00&cplayer=UNIPLAYER&cmodel=23124ra7eo&cos=Android&cosver=15&cplatform=MOBILE","byteLength":210800}
+[14:40:31.287] (ts: 1795092031287) [NETWORK] [Interception] GET https://www.youtube.com/api/timedtext?v=vBURridJXZ0&ei=Pe7-aqqZGvj7xN8Pqce7sQo&caps=asr&opi=112496729&xoaf=5&xowf=1&xospf=1&hl=iw&ip=0.0.0.0&ipbits=0&expire=1795117229&sparams=ip%2Cipbits%2Cexpire%2Cv%2Cei%2Ccaps%2Copi%2Cxoaf&signature=27D12D994BE6378FEF8B17CC0EED632912DD2301.406B8BFF13CC129DE275CAB46FF7AE3FC999A612&key=yt8&kind=asr&lang=iw&fmt=json3&xorb=2&xobt=3&xovt=3&cbrand=xiaomi&cbr=Chrome%20Mobile%20Webview&cbrver=157.0.8103.50&c=WEB_EMBEDDED_PLAYER&cver=2.20261118.01.00&cplayer=UNIPLAYER&cmodel=23124ra7eo&cos=Android&cosver=15&cplatform=MOBILE (200) | URL: https://www.youtube.com/api/timedtext?v=vBURridJXZ0&ei=Pe7-aqqZGvj7xN8Pqce7sQo&caps=asr&opi=112496729&xoaf=5&xowf=1&xospf=1&hl=iw&ip=0.0.0.0&ipbits=0&expire=1795117229&sparams=ip%2Cipbits%2Cexpire%2Cv%2Cei%2Ccaps%2Copi%2Cxoaf&signature=27D12D994BE6378FEF8B17CC0EED632912DD2301.406B8BFF13CC129DE275CAB46FF7AE3FC999A612&key=yt8&kind=asr&lang=iw&fmt=json3&xorb=2&xobt=3&xovt=3&cbrand=xiaomi&cbr=Chrome%20Mobile%20Webview&cbrver=157.0.8103.50&c=WEB_EMBEDDED_PLAYER&cver=2.20261118.01.00&cplayer=UNIPLAYER&cmodel=23124ra7eo&cos=Android&cosver=15&cplatform=MOBILE (status=200, 1ms) | body_preview(X=15 chars): "{   "wireMagic""
+[14:40:31.299] (ts: 1795092031299) [SUBTITLES] [SubtitlesViewer] Interception populated tracks state | Details: {"lang":"iw","isTarget":false,"cues":548}
+[14:40:31.810] (ts: 1795092031810) [NETWORK] [Network] GET https://www.youtube.com/api/timedtext?v=vBURridJXZ0&ei=Pe7-aqqZGvj7xN8Pqce7sQo&caps=asr&opi=112496729&xoaf=5&xowf=1&xospf=1&hl=iw&ip=0.0.0.0&ipbits=0&expire=1795117229&sparams=ip%2Cipbits%2Cexpire%2Cv%2Cei%2Ccaps%2Copi%2Cxoaf&signature=27D12D994BE6378FEF8B17CC0EED632912DD2301.406B8BFF13CC129DE275CAB46FF7AE3FC999A612&key=yt8&kind=asr&lang=he&fmt=json3&xorb=2&xobt=3&xovt=3&cbrand=xiaomi&cbr=Chrome+Mobile+Webview&cbrver=157.0.8103.50&c=WEB_EMBEDDED_PLAYER&cver=2.20261118.01.00&cplayer=UNIPLAYER&cmodel=23124ra7eo&cos=Android&cosver=15&cplatform=MOBILE FAILED: HTTP 404 | URL: https://www.youtube.com/api/timedtext?v=vBURridJXZ0&ei=Pe7-aqqZGvj7xN8Pqce7sQo&caps=asr&opi=112496729&xoaf=5&xowf=1&xospf=1&hl=iw&ip=0.0.0.0&ipbits=0&expire=1795117229&sparams=ip%2Cipbits%2Cexpire%2Cv%2Cei%2Ccaps%2Copi%2Cxoaf&signature=27D12D994BE6378FEF8B17CC0EED632912DD2301.406B8BFF13CC129DE275CAB46FF7AE3FC999A612&key=yt8&kind=asr&lang=he&fmt=json3&xorb=2&xobt=3&xovt=3&cbrand=xiaomi&cbr=Chrome+Mobile+Webview&cbrver=157.0.8103.50&c=WEB_EMBEDDED_PLAYER&cver=2.20261118.01.00&cplayer=UNIPLAYER&cmodel=23124ra7eo&cos=Android&cosver=15&cplatform=MOBILE (status=404, 133ms) | body_preview(X=15 chars): "<!DOCTYPE html>"
+[14:40:32.466] (ts: 1795092032466) [NETWORK] [Network] GET https://www.youtube.com/api/timedtext?v=vBURridJXZ0&ei=Pe7-aqqZGvj7xN8Pqce7sQo&caps=asr&opi=112496729&xoaf=5&xowf=1&xospf=1&hl=iw&ip=0.0.0.0&ipbits=0&expire=1795117229&sparams=ip%2Cipbits%2Cexpire%2Cv%2Cei%2Ccaps%2Copi%2Cxoaf&signature=27D12D994BE6378FEF8B17CC0EED632912DD2301.406B8BFF13CC129DE275CAB46FF7AE3FC999A612&key=yt8&kind=asr&lang=he&fmt=json3&xorb=2&xobt=3&xovt=3&cbrand=xiaomi&cbr=Chrome+Mobile+Webview&cbrver=157.0.8103.50&c=WEB_EMBEDDED_PLAYER&cver=2.20261118.01.00&cplayer=UNIPLAYER&cmodel=23124ra7eo&cos=Android&cosver=15&cplatform=MOBILE FAILED: HTTP 404 | URL: https://www.youtube.com/api/timedtext?v=vBURridJXZ0&ei=Pe7-aqqZGvj7xN8Pqce7sQo&caps=asr&opi=112496729&xoaf=5&xowf=1&xospf=1&hl=iw&ip=0.0.0.0&ipbits=0&expire=1795117229&sparams=ip%2Cipbits%2Cexpire%2Cv%2Cei%2Ccaps%2Copi%2Cxoaf&signature=27D12D994BE6378FEF8B17CC0EED632912DD2301.406B8BFF13CC129DE275CAB46FF7AE3FC999A612&key=yt8&kind=asr&lang=he&fmt=json3&xorb=2&xobt=3&xovt=3&cbrand=xiaomi&cbr=Chrome+Mobile+Webview&cbrver=157.0.8103.50&c=WEB_EMBEDDED_PLAYER&cver=2.20261118.01.00&cplayer=UNIPLAYER&cmodel=23124ra7eo&cos=Android&cosver=15&cplatform=MOBILE (status=404, 655ms) | body_preview(X=15 chars): "<!DOCTYPE html>"
+... [45 earlier log records omitted for brevity] ...
+[14:40:55.479] (ts: 1795092055479) [ACTION] [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":3}
+[14:40:56.722] (ts: 1795092056722) [ACTION] [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":2}
+[14:40:56.827] (ts: 1795092056827) [INFO] [ForeignSubtitles] [it] on_demand_translated | Details: {"fromLang":"iw","index":11}
+[14:41:14.946] (ts: 1795092074946) [ACTION] [State Machine] PLAYBACK_RESUME_REQUESTED | Details: {"videoId":"vBURridJXZ0","fromPlayerState":2}
+[14:41:15.063] (ts: 1795092075063) [ACTION] [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":3}
+[14:41:15.822] (ts: 1795092075822) [ACTION] [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":1}
+[14:41:15.984] (ts: 1795092075984) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 83ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:16.007] (ts: 1795092076007) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 108ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:16.028] (ts: 1795092076028) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 130ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:16.115] (ts: 1795092076115) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 63ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:16.144] (ts: 1795092076144) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 93ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:16.169] (ts: 1795092076169) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 115ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:16.339] (ts: 1795092076339) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 139ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:16.362] (ts: 1795092076362) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 160ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:16.432] (ts: 1795092076432) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 234ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:16.483] (ts: 1795092076483) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 99ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:16.522] (ts: 1795092076522) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 140ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:16.563] (ts: 1795092076563) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 66ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:16.786] (ts: 1795092076786) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 134ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:16.802] (ts: 1795092076802) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 303ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:16.823] (ts: 1795092076823) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 172ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:16.943] (ts: 1795092076943) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 105ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:16.958] (ts: 1795092076958) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 119ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:16.973] (ts: 1795092076973) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 136ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:17.110] (ts: 1795092077110) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 121ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:17.139] (ts: 1795092077139) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 151ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:17.181] (ts: 1795092077181) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 195ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:17.252] (ts: 1795092077252) [ACTION] [State Machine] TTS_SECTION_STARTED | Details: {"videoId":"vBURridJXZ0","sectionId":"4040:5406","rowIndex":1,"languages":["he","it"]}
+[14:41:17.333] (ts: 1795092077333) [ACTION] [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":2}
+[14:41:17.359] (ts: 1795092077359) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 109ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:17.437] (ts: 1795092077437) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 189ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:17.547] (ts: 1795092077547) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 298ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:20.132] (ts: 1795092080132) [ACTION] [State Machine] TTS_SECTION_FINISHED | Details: {"videoId":"vBURridJXZ0","sectionId":"4040:5406","rowIndex":1,"cancelled":false}
+[14:41:20.211] (ts: 1795092080211) [ACTION] [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":3}
+[14:41:21.010] (ts: 1795092081010) [ACTION] [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":2}
+[14:41:22.019] (ts: 1795092082019) [INFO] [ForeignSubtitles] [it] on_demand_translated | Details: {"fromLang":"iw","index":12}
+[14:41:33.497] (ts: 1795092093497) [ACTION] [State Machine] PLAYBACK_RESUME_REQUESTED | Details: {"videoId":"vBURridJXZ0","fromPlayerState":2}
+[14:41:33.566] (ts: 1795092093566) [ACTION] [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":3}
+[14:41:33.822] (ts: 1795092093822) [ACTION] [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":1}
+[14:41:34.035] (ts: 1795092094035) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 121ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:34.056] (ts: 1795092094056) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 141ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:34.069] (ts: 1795092094069) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 152ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:34.216] (ts: 1795092094216) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 131ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:34.229] (ts: 1795092094229) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 142ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:34.373] (ts: 1795092094373) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 285ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:34.440] (ts: 1795092094440) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 89ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:34.460] (ts: 1795092094460) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 113ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:34.620] (ts: 1795092094620) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 121ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:34.637] (ts: 1795092094637) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 140ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:34.919] (ts: 1795092094919) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 259ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:34.936] (ts: 1795092094936) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 277ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:34.950] (ts: 1795092094950) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 450ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:35.089] (ts: 1795092095089) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 113ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:35.105] (ts: 1795092095105) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 132ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:35.150] (ts: 1795092095150) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 175ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:35.174] (ts: 1795092095174) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 52ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:35.196] (ts: 1795092095196) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 72ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:35.329] (ts: 1795092095329) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 67ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:35.355] (ts: 1795092095355) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 90ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:35.369] (ts: 1795092095369) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 100ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:35.415] (ts: 1795092095415) [ACTION] [State Machine] TTS_SECTION_STARTED | Details: {"videoId":"vBURridJXZ0","sectionId":"5406:7000","rowIndex":2,"languages":["he","it"]}
+[14:41:35.541] (ts: 1795092095541) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 133ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:35.607] (ts: 1795092095607) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 198ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:35.620] (ts: 1795092095620) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 207ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:35.632] (ts: 1795092095632) [NETWORK] [Network] POST https://tts3.lovable.app/api/public/tts FAILED: Failed to fetch | URL: https://tts3.lovable.app/api/public/tts (status=500, 221ms) | body_preview(X=15 chars): "Failed to fetch"
+[14:41:35.645] (ts: 1795092095645) [ACTION] [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":2}
+[14:41:35.704] (ts: 1795092095704) [INFO] [ForeignSubtitles] [it] on_demand_translated | Details: {"fromLang":"iw","index":13}
+[14:41:38.488] (ts: 1795092098488) [ACTION] [State Machine] TTS_SECTION_FINISHED | Details: {"videoId":"vBURridJXZ0","sectionId":"5406:7000","rowIndex":2,"cancelled":false}
+[14:41:38.584] (ts: 1795092098584) [ACTION] [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":3}
+[14:41:39.337] (ts: 1795092099337) [ACTION] [State Machine] PLAYER_STATE_CHANGED | Details: {"videoId":"vBURridJXZ0","playerState":2}
+```
+
+## 4. Instructions for Troubleshooting
+Please analyze the live application state, network requests, and chronological logs above to:
+1. Identify the root cause of the reported user complaint or state abnormality.
+2. Verify if spoken TTS matched the presented on-screen subtitles.
+3. Check for any redundant network calls or failed caption fetches.
+4. Implement a precise surgical fix in accordance with `AGENTS.md` guidelines.
