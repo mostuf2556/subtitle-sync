@@ -12152,3 +12152,42 @@
   - `npx tsx scripts/verify-lean-tokens-economy.ts` — PASS
   - `npm run check-version` — PASS (`v2.1.132`)
 
+
+
+### Task 453 (Prompt 225/226): Add Comprehensive Unit, Integration, and Live E2E Tests for TTS Delay Diagnostics & Unjustified Pause Fixes
+- **Changes**:
+  - `scripts/verify-tts-delay-logging-and-no-spurious-pause.ts`: Verified TTS3 prefetch negative cache & cooldown gating, runtime `TTS_UNJUSTIFIED_DELAY` emission on slow remote TTS, `logBuffer` Section 0.5 promotion & state snapshot reproducibility, `backgroundMediaManager` command source tracking (`web_media_session` vs `native_media_command`), and `BackgroundAudioService.kt` + `src/routes/index.tsx` pause guards.
+  - `scripts/verify-tts-delay-and-no-spurious-pause-e2e.ts` (registered as `test:tts-delay-and-no-spurious-pause-e2e` in `package.json` and indexed in `docs/files.md`): Added live Playwright Chromium E2E checks against `localhost:3000` covering: (1) slow TTS3 (`>1500ms`) `TTS_UNJUSTIFIED_DELAY`, `TTS_STEP_*`, & `ttsConfig` snapshot diagnostics, (2) Android native TTS stall (`onNativeTTSStart` omitted > 1800ms) watchdog `stopSpeaking()` + TTS3 fallback recovery & `android-native-start-timeout` telemetry, (3a/3b) spurious `web_media_session` pause suppression (`SPURIOUS_MEDIA_PAUSE_IGNORED`) vs explicit native `pause` command, (3c) Beginner Mode parity for spurious pause suppression, and (4) immediate post-play `onStateChange({ data: 2 })` bounce auto-recovery (`UNEXPECTED_PLAYER_PAUSE`, `"autoRecovered":true`).
+- **Verification**:
+  - `npm run test:tts-delay-logging-and-no-spurious-pause` — PASS
+  - `npm run test:tts-delay-and-no-spurious-pause-e2e` — PASS
+
+### Task 454 (Prompt 226): By Default Use Native TTS
+- **Changes**:
+  - `src/lib/alternative-tts.ts`: Changed `DEFAULT_TTS_FALLBACK_ORDER` from `"tts3_native"` to `"native_tts3"` so native device TTS runs first out of the box without hitting `tts3.lovable.app` unless native fails or the user explicitly enables/selects TTS3 service.
+  - `src/components/TtsFallbackOrderSwitch.tsx` & `src/routes/index.tsx`: Imported and used `DEFAULT_TTS_FALLBACK_ORDER` for SSR/initial state and playback fallbacks (`speak()`, `ttsFallbackOrderState`, `registerAppStateProvider`, `prefetchRowTtsAudio`, `speakRow`).
+  - `scripts/verify-tts-fallback-order-switch.ts`, `scripts/verify-listening-words-tts-playback.ts`, `scripts/verify-floating-tts-play-active-during-video.ts`, `scripts/verify-tts-delay-and-no-spurious-pause-e2e.ts`: Updated default fallback order assertions and explicitly set `tts3_native` / `altMode: "always"` in scenarios designed to exercise immediate TTS3 routing.
+- **Verification**:
+  - `npx tsx scripts/verify-tts-fallback-order-switch.ts` — PASS
+  - `npx tsx scripts/verify-remove-direct-google-tts-client-option.ts` — PASS
+  - `npx tsx scripts/verify-default-external-tts-validated.ts` — PASS
+  - `npx tsx scripts/verify-listening-words-tts-playback.ts` — PASS
+  - `npx tsx scripts/verify-floating-tts-play-active-during-video.ts` — PASS
+  - `npm run test:tts-delay-and-no-spurious-pause-e2e` — PASS
+
+### Task 455 (Prompt 226): On TTS-Service Usage Use On-Demand Request (`X=7`, `v2.1.134`)
+- **Changes**:
+  - `src/lib/alternative-tts.ts`: Added `TTS_SERVICE_ON_DEMAND_AHEAD_COUNT = 7`, `isTtsServiceActivelyUsed()`, `markTtsServiceSessionActive()`, and bounded 2-worker `requestTtsServiceOnDemandBatch(items, 7)` with queued deduplication (`queuedOnDemandKeys`), audio cache/in-flight deduplication, negative cache, and cooldown gating so items 3..7 are never dropped.
+  - `src/utils/appSettings.ts`: Added `ttsOnDemandAheadCount: number` (`7` in `DEFAULT_APP_SETTINGS`).
+  - `src/routes/index.tsx`: Wired `prefetchTtsServiceOnDemandAhead(startRowIdx, TTS_SERVICE_ON_DEMAND_AHEAD_COUNT)` in `speakRow` and `playRow`, marked active TTS-service session on TTS3/fallback usage (resetting on `videoId` switch), and exposed `ttsOnDemandAheadCount: 7` in `registerAppStateProvider` `ttsConfig`.
+  - `scripts/verify-default-native-tts-and-ondemand-x7.ts` (registered as `test:default-native-tts-and-ondemand-x7` in `package.json` & indexed in `docs/files.md`): Added unit & live Playwright Chromium E2E verification for native-by-default playback (0 TTS3 calls) and bounded `X=7` on-demand TTS-service batching across Expert and Beginner modes.
+  - `package.json` & `android-shell/app/build.gradle.kts`: Synced `v2.1.134` (`code 20234`) via `npm run sync-version`.
+- **Verification**:
+  - `npx tsc --noEmit` — PASS
+  - `npm run test:default-native-tts-and-ondemand-x7` — PASS (Expert + Beginner E2E + unit)
+  - `npm run test:tts-play-latency-and-floating-single-press` — PASS
+  - `npm run test:tts-delay-logging-and-no-spurious-pause` — PASS
+  - `npm run test:tts-delay-and-no-spurious-pause-e2e` — PASS
+  - `npm run test:same-components-parity-policy` — PASS
+  - `npm run test:agents-all` — PASS (24/24)
+  - `npm run check-version` — PASS (`v2.1.134`)

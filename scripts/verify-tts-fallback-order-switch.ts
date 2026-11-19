@@ -40,13 +40,13 @@ assert(storiesContent.includes("NativeOnly"), "Stories must include NativeOnly s
 console.log("✓ Storybook stories file verified with complete coverage");
 
 // 3. Fallback order state persistence & default provider
-assert(DEFAULT_TTS_FALLBACK_ORDER === "tts3_native", "DEFAULT_TTS_FALLBACK_ORDER must default to tts3_native");
-
-setTtsFallbackOrder("native_tts3");
-assert(getTtsFallbackOrder() === "native_tts3", "getTtsFallbackOrder must return persisted order");
+assert(DEFAULT_TTS_FALLBACK_ORDER === "native_tts3", "DEFAULT_TTS_FALLBACK_ORDER must default to native_tts3");
 
 setTtsFallbackOrder("tts3_native");
-assert(getTtsFallbackOrder() === "tts3_native", "getTtsFallbackOrder restored to default");
+assert(getTtsFallbackOrder() === "tts3_native", "getTtsFallbackOrder must return persisted order");
+
+setTtsFallbackOrder("native_tts3");
+assert(getTtsFallbackOrder() === "native_tts3", "getTtsFallbackOrder restored to default");
 
 // Provider default to "auto"
 setLovableTtsProvider("auto");

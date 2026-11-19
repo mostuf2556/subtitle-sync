@@ -114,6 +114,7 @@ export interface AppSettings {
 
   // Limits
   onDemandCount: number; // Limited to next X=4 subtitles (Step 4.4)
+  ttsOnDemandAheadCount: number; // On TTS-service usage use on-demand request (X=7)
   maxRetries: number; // Max retry limit to X=2 (Step 2.3)
 }
 
@@ -272,6 +273,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   openRouterPunctuationStyle: "conversational",
   aiPunctuateAutoApply: false,
   onDemandCount: 4,
+  ttsOnDemandAheadCount: 7,
   maxRetries: 2,
 
   // Default Mode: Advanced Studio (Beginner mode quarantined)

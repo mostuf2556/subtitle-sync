@@ -253,11 +253,17 @@ import {
   getLastValidationResult,
   getAlternativeTtsAnonymousMode,
   setAlternativeTtsAnonymousMode,
+  DEFAULT_TTS_FALLBACK_ORDER,
   getTtsFallbackOrder,
   setTtsFallbackOrder,
   executeTtsFallbackSequence,
+  TTS_SERVICE_ON_DEMAND_AHEAD_COUNT,
+  isTtsServiceActivelyUsed,
+  markTtsServiceSessionActive,
+  requestTtsServiceOnDemandBatch,
   TTS_UNJUSTIFIED_DELAY_THRESHOLD_MS,
   getLastAlternativeTtsAttemptMeta,
+  type TtsServiceOnDemandRequestItem,
   type RemoteTtsValidationResult,
   type AlternativeTtsMode,
   type AlternativeTtsEngine,
@@ -718,7 +724,8 @@ function executeSingleSpeech(
           : 1.0;
       const useAltTts = typeof window !== "undefined" && getUseAlternativeTts();
       const altTtsMode = typeof window !== "undefined" ? getAlternativeTtsMode() : "fallback_only";
-      const fallbackOrder = typeof window !== "undefined" ? getTtsFallbackOrder() : "tts3_native";
+      const fallbackOrder =
+        typeof window !== "undefined" ? getTtsFallbackOrder() : DEFAULT_TTS_FALLBACK_ORDER;
       const canFallbackToTts3 = useAltTts || fallbackOrder !== "native_only";
       const altEngine = typeof window !== "undefined" ? getAlternativeTtsEngine() : "lovable";
       // Use the native speech rate setting directly (no separate extra speed rate)
@@ -807,6 +814,7 @@ function executeSingleSpeech(
 
       // 1. If alternative TTS service is enabled as preferred / always, speak using configured fallback sequence
       if (useAltTts && altTtsMode === "always") {
+        markTtsServiceSessionActive(true);
         try {
           safeProgress({
             lang: lang.slice(0, 2),
@@ -923,6 +931,7 @@ function executeSingleSpeech(
                 console.warn("Android native TTS error, falling back to Google TTS audio:", err);
                 stallReason = err || "android-native-error";
                 void (async () => {
+                  markTtsServiceSessionActive(true);
                   try {
                     const played = await playAlternativeTtsAudio(
                       text,
@@ -982,6 +991,7 @@ function executeSingleSpeech(
                   // ignore stop error
                 }
                 void (async () => {
+                  markTtsServiceSessionActive(true);
                   try {
                     const played = await playAlternativeTtsAudio(
                       text,
@@ -1030,6 +1040,7 @@ function executeSingleSpeech(
             return;
           } else {
             stallReason = "android-native-not-ready";
+            markTtsServiceSessionActive(true);
             console.warn(
               "Android native TTS unhandled/not ready, falling back to Google TTS audio",
             );
@@ -1087,6 +1098,7 @@ function executeSingleSpeech(
         altFallbackAttempted = true;
         if (reason) stallReason = reason;
         if (canFallbackToTts3) {
+          markTtsServiceSessionActive(true);
           try {
             safeProgress({
               lang: lang.slice(0, 2),
@@ -1856,7 +1868,7 @@ function Index() {
     typeof window !== "undefined" ? getAlternativeTtsAnonymousMode() : false,
   );
   const [ttsFallbackOrderState, setTtsFallbackOrderState] = useState<TtsFallbackOrder>(() =>
-    typeof window !== "undefined" ? getTtsFallbackOrder() : "tts3_native",
+    typeof window !== "undefined" ? getTtsFallbackOrder() : DEFAULT_TTS_FALLBACK_ORDER,
   );
 
   const handleNavigateToTtsSetup = useCallback(() => {
@@ -4582,6 +4594,7 @@ function Index() {
       cancelSpeech();
       setManualBaseOverrideVideoId("");
       lastAutoKingSyncRef.current = "";
+      markTtsServiceSessionActive(false);
       startSubtitlesTransition(() => {
         setTracks(null);
         setSubtitlesPage(1);
@@ -6166,7 +6179,9 @@ function Index() {
           useAlternativeTts: typeof window !== "undefined" ? getUseAlternativeTts() : false,
           alternativeTtsMode:
             typeof window !== "undefined" ? getAlternativeTtsMode() : "fallback_only",
-          ttsFallbackOrder: typeof window !== "undefined" ? getTtsFallbackOrder() : "tts3_native",
+          ttsFallbackOrder:
+            typeof window !== "undefined" ? getTtsFallbackOrder() : DEFAULT_TTS_FALLBACK_ORDER,
+          ttsOnDemandAheadCount: TTS_SERVICE_ON_DEMAND_AHEAD_COUNT,
           lovableTtsProvider: typeof window !== "undefined" ? getLovableTtsProvider() : "auto",
           alternativeTtsAnonymous:
             typeof window !== "undefined" ? getAlternativeTtsAnonymousMode() : false,
@@ -7420,9 +7435,7 @@ function Index() {
 
       const prefetchRowTtsAudio = (targetRowIdx: number) => {
         if (!st.current.isTtsPlayEnabled || st.current.audioTrackMode) return;
-        const useAlt = typeof window !== "undefined" && getUseAlternativeTts();
-        const order = typeof window !== "undefined" ? getTtsFallbackOrder() : "tts3_native";
-        if (!useAlt && order !== "tts3_native") return;
+        if (!isTtsServiceActivelyUsed()) return;
         if (targetRowIdx < 0 || targetRowIdx >= rows.length) return;
         const candidateLangs = getEligibleLangs(targetRowIdx);
         if (candidateLangs.length === 0) return;
@@ -7441,33 +7454,52 @@ function Index() {
         }
       };
 
+      const prefetchTtsServiceOnDemandAhead = (
+        startRowIdx: number,
+        maxSentences: number = TTS_SERVICE_ON_DEMAND_AHEAD_COUNT,
+      ) => {
+        if (!st.current.isTtsPlayEnabled || st.current.audioTrackMode) return;
+        if (!isTtsServiceActivelyUsed()) return;
+        if (startRowIdx < 0 || startRowIdx >= rows.length) return;
+        if (maxSentences <= 1) {
+          prefetchRowTtsAudio(startRowIdx);
+          return;
+        }
+        const provider = typeof window !== "undefined" ? getLovableTtsProvider() : "auto";
+        const isAnonymous =
+          typeof window !== "undefined" ? getAlternativeTtsAnonymousMode() : false;
+        const items: TtsServiceOnDemandRequestItem[] = [];
+        for (let r = startRowIdx; r < rows.length && items.length < maxSentences; r += 1) {
+          const candidateLangs = getEligibleLangs(r);
+          for (const l of candidateLangs) {
+            if (items.length >= maxSentences) break;
+            if (getZeroKnowledgeInLang(l.code)) continue;
+            const text = rows[r]?.texts?.[l.code]?.trim();
+            if (!text) continue;
+            items.push({
+              text,
+              lang: l.tts,
+              options: {
+                provider: provider || "auto",
+                isAnonymous,
+                auditSource: "playback",
+              },
+            });
+          }
+        }
+        if (items.length > 0) {
+          void requestTtsServiceOnDemandBatch(items, maxSentences);
+        }
+      };
+
       const speakRow = async (rowIdx: number, requestedOrder: SectionOrder, runEpoch: number) => {
         const targetRow = rowIdx >= 0 ? rows[rowIdx] : undefined;
         if (!targetRow || playedTtsRecords.current.has(getPlaybackSectionId(targetRow))) return;
         const langs = getEligibleLangs(rowIdx, requestedOrder);
         if (langs.length === 0) return;
-        // Prefetch any additional languages in this row and the next 2 rows while speaking starts
-        if (!isAudioTrackMode) {
-          const useAlt = typeof window !== "undefined" && getUseAlternativeTts();
-          const order = typeof window !== "undefined" ? getTtsFallbackOrder() : "tts3_native";
-          if (useAlt || order === "tts3_native") {
-            const provider = typeof window !== "undefined" ? getLovableTtsProvider() : "auto";
-            const isAnonymous =
-              typeof window !== "undefined" ? getAlternativeTtsAnonymousMode() : false;
-            for (const extraLang of langs.slice(1)) {
-              if (getZeroKnowledgeInLang(extraLang.code)) continue;
-              const extraText = rows[rowIdx]?.texts?.[extraLang.code]?.trim();
-              if (extraText) {
-                void prefetchAlternativeTtsAudio(extraText, extraLang.tts, {
-                  provider: provider || "auto",
-                  isAnonymous,
-                  auditSource: "playback",
-                });
-              }
-            }
-          }
-          prefetchRowTtsAudio(rowIdx + 1);
-          prefetchRowTtsAudio(rowIdx + 2);
+        // On active TTS service usage, prefetch up to X=7 upcoming eligible sentences on demand
+        if (!isAudioTrackMode && isTtsServiceActivelyUsed()) {
+          prefetchTtsServiceOnDemandAhead(rowIdx, TTS_SERVICE_ON_DEMAND_AHEAD_COUNT);
         }
         const sectionId = getPlaybackSectionId(targetRow);
         const spokenLanguages =
@@ -7479,7 +7511,8 @@ function Index() {
           sectionId,
           rowIndex: rowIdx,
           languages: langs.map((language) => language.code),
-          fallbackOrder: typeof window !== "undefined" ? getTtsFallbackOrder() : "tts3_native",
+          fallbackOrder:
+            typeof window !== "undefined" ? getTtsFallbackOrder() : DEFAULT_TTS_FALLBACK_ORDER,
           useAltTts: typeof window !== "undefined" ? getUseAlternativeTts() : false,
         });
         try {
@@ -7771,9 +7804,7 @@ function Index() {
 
       if (pauseMode && st.current.isTtsPlayEnabled) {
         if (idx >= 0) {
-          prefetchRowTtsAudio(idx);
-          prefetchRowTtsAudio(idx + 1);
-          prefetchRowTtsAudio(idx + 2);
+          prefetchTtsServiceOnDemandAhead(idx, TTS_SERVICE_ON_DEMAND_AHEAD_COUNT);
         }
         // 1. Before Video (tts-first): check if active row has speech-first languages to speak on arrival
         const activeRowObj = idx >= 0 ? rows[idx] : undefined;

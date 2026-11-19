@@ -88,6 +88,7 @@ async function runLiveE2E() {
 
       await page.addInitScript(`(() => {
         window.localStorage.setItem("app_workflow_mode", "expert");
+        window.localStorage.setItem("yt_tts_fallback_order_v1", "tts3_native");
         window.__nativeSpeakCount = 0;
 
         // Browser has 1 English voice ONLY (voices.length === 1 > 0) - typical real Chrome without he/es/it packs

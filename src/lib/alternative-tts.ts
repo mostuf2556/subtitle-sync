@@ -51,7 +51,7 @@ export type LovableTtsFormat = "binary" | "json";
 
 export type TtsFallbackOrder = "tts3_native" | "native_tts3" | "native_only";
 
-export const DEFAULT_TTS_FALLBACK_ORDER: TtsFallbackOrder = "tts3_native";
+export const DEFAULT_TTS_FALLBACK_ORDER: TtsFallbackOrder = "native_tts3";
 
 /**
  * Standard list of concrete providers selectable for the "auto" custom provider pool.
@@ -877,7 +877,20 @@ const MAX_TTS_AUDIO_CACHE_ENTRIES = 60;
 const FAILED_PREFETCH_TTL_MS = 15000;
 const ENDPOINT_PREFETCH_COOLDOWN_MS = 15000;
 const MAX_CONCURRENT_PREFETCHES = 2;
+export const TTS_SERVICE_ON_DEMAND_AHEAD_COUNT = 7;
 export const TTS_UNJUSTIFIED_DELAY_THRESHOLD_MS = 1500;
+
+export interface TtsServiceOnDemandRequestItem {
+  text: string;
+  lang: string;
+  options?: LovableTtsOptions;
+}
+
+export interface TtsServiceOnDemandBatchResult {
+  requestedCount: number;
+  succeededCount: number;
+  skippedCount: number;
+}
 
 export interface AlternativeTtsAttemptMeta {
   lang: string;
@@ -897,13 +910,30 @@ type CachedTtsAudioEntry = { kind: "dataUrl"; dataUrl: string } | { kind: "blob"
 
 const ttsAudioCache = new Map<string, CachedTtsAudioEntry>();
 const inFlightTtsSynthesisMap = new Map<string, Promise<CachedTtsAudioEntry | null>>();
+const queuedOnDemandKeys = new Set<string>();
 const activeSynthesisAbortControllers = new Set<AbortController>();
 const failedPrefetchCache = new Map<string, number>();
 let consecutiveRemoteTtsFailures = 0;
 let remoteTtsPrefetchCooldownUntil = 0;
 let lastRemoteTtsCooldownWarnAt = 0;
 let activePrefetchCount = 0;
+let ttsServiceSessionActive = false;
 let lastAlternativeTtsAttemptMeta: AlternativeTtsAttemptMeta | null = null;
+
+export function markTtsServiceSessionActive(active: boolean = true): void {
+  ttsServiceSessionActive = active;
+}
+
+export function isTtsServiceActivelyUsed(): boolean {
+  const order = getTtsFallbackOrder();
+  if (order === "native_only") return false;
+  const useAlt = getUseAlternativeTts();
+  const altMode = getAlternativeTtsMode();
+  if (order === "tts3_native" || (useAlt && altMode === "always")) {
+    return true;
+  }
+  return ttsServiceSessionActive;
+}
 
 export function getLastAlternativeTtsAttemptMeta(): AlternativeTtsAttemptMeta | null {
   return lastAlternativeTtsAttemptMeta;
@@ -1002,11 +1032,13 @@ function cachedEntryToPlayableResult(
 export function clearAlternativeTtsAudioCache(): void {
   ttsAudioCache.clear();
   inFlightTtsSynthesisMap.clear();
+  queuedOnDemandKeys.clear();
   failedPrefetchCache.clear();
   consecutiveRemoteTtsFailures = 0;
   remoteTtsPrefetchCooldownUntil = 0;
   lastRemoteTtsCooldownWarnAt = 0;
   activePrefetchCount = 0;
+  ttsServiceSessionActive = false;
   lastAlternativeTtsAttemptMeta = null;
 }
 
@@ -1057,6 +1089,134 @@ export async function prefetchAlternativeTtsAudio(
   } finally {
     activePrefetchCount = Math.max(0, activePrefetchCount - 1);
   }
+}
+
+/**
+ * Queues up to `maxCount` (default X=7) on-demand TTS-service synthesis requests
+ * across a bounded worker pool (`MAX_CONCURRENT_PREFETCHES`), preventing items 3..7
+ * from being dropped while honoring cache hits, in-flight deduplication, and cooldowns.
+ */
+export async function requestTtsServiceOnDemandBatch(
+  items: TtsServiceOnDemandRequestItem[],
+  maxCount: number = TTS_SERVICE_ON_DEMAND_AHEAD_COUNT,
+): Promise<TtsServiceOnDemandBatchResult> {
+  const limit = Math.max(1, Math.floor(maxCount));
+  if (typeof window === "undefined" || !Array.isArray(items) || items.length === 0) {
+    return { requestedCount: 0, succeededCount: 0, skippedCount: 0 };
+  }
+  const now = Date.now();
+  if (remoteTtsPrefetchCooldownUntil > now) {
+    return { requestedCount: 0, succeededCount: 0, skippedCount: items.length };
+  }
+
+  const seenKeys = new Set<string>();
+  const pending: Array<{ item: TtsServiceOnDemandRequestItem; cacheKey: string }> = [];
+  let skippedCount = 0;
+
+  for (const item of items) {
+    if (pending.length + skippedCount >= limit && pending.length >= limit) break;
+    if (pending.length >= limit) break;
+    const cleanText = item?.text?.trim();
+    if (!cleanText || !item.lang) {
+      skippedCount += 1;
+      continue;
+    }
+    const cacheKey = buildTtsAudioCacheKey(cleanText, item.lang, item.options);
+    if (seenKeys.has(cacheKey)) {
+      skippedCount += 1;
+      continue;
+    }
+    seenKeys.add(cacheKey);
+    if (
+      getCachedTtsAudioEntry(cacheKey) ||
+      inFlightTtsSynthesisMap.has(cacheKey) ||
+      queuedOnDemandKeys.has(cacheKey)
+    ) {
+      skippedCount += 1;
+      continue;
+    }
+    const failedUntil = failedPrefetchCache.get(cacheKey);
+    if (failedUntil && failedUntil > Date.now()) {
+      skippedCount += 1;
+      continue;
+    }
+    if (failedUntil) {
+      failedPrefetchCache.delete(cacheKey);
+    }
+    queuedOnDemandKeys.add(cacheKey);
+    pending.push({ item: { ...item, text: cleanText }, cacheKey });
+  }
+
+  if (pending.length === 0) {
+    return { requestedCount: 0, succeededCount: 0, skippedCount };
+  }
+
+  let requestedCount = 0;
+  let succeededCount = 0;
+  let cursor = 0;
+
+  const workerCount = Math.min(MAX_CONCURRENT_PREFETCHES, pending.length);
+  const runWorker = async () => {
+    while (cursor < pending.length) {
+      const current = pending[cursor++];
+      if (!current) break;
+      try {
+        if (remoteTtsPrefetchCooldownUntil > Date.now()) {
+          skippedCount += 1;
+          continue;
+        }
+        if (getCachedTtsAudioEntry(current.cacheKey)) {
+          succeededCount += 1;
+          continue;
+        }
+        const failedUntil = failedPrefetchCache.get(current.cacheKey);
+        if (failedUntil && failedUntil > Date.now()) {
+          skippedCount += 1;
+          continue;
+        }
+        while (activePrefetchCount >= MAX_CONCURRENT_PREFETCHES) {
+          if (remoteTtsPrefetchCooldownUntil > Date.now()) break;
+          await new Promise<void>((r) => setTimeout(r, 20));
+        }
+        if (remoteTtsPrefetchCooldownUntil > Date.now()) {
+          skippedCount += 1;
+          continue;
+        }
+        requestedCount += 1;
+        activePrefetchCount += 1;
+        try {
+          const res = await synthesizeLovableTtsAudio(
+            current.item.text,
+            current.item.lang,
+            current.item.options,
+            "playback",
+            true,
+          );
+          if (res?.url && res.revokeOnDone) {
+            try {
+              URL.revokeObjectURL(res.url);
+            } catch {
+              // ignore
+            }
+          }
+          if (res?.url) {
+            succeededCount += 1;
+          } else {
+            failedPrefetchCache.set(current.cacheKey, Date.now() + FAILED_PREFETCH_TTL_MS);
+          }
+        } catch {
+          failedPrefetchCache.set(current.cacheKey, Date.now() + FAILED_PREFETCH_TTL_MS);
+        } finally {
+          activePrefetchCount = Math.max(0, activePrefetchCount - 1);
+        }
+      } finally {
+        queuedOnDemandKeys.delete(current.cacheKey);
+      }
+    }
+  };
+
+  await Promise.all(Array.from({ length: workerCount }, () => runWorker()));
+  return { requestedCount, succeededCount, skippedCount };
 }
 
 export async function synthesizeLovableTtsPost(
