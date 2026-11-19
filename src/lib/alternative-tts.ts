@@ -11,6 +11,7 @@
 
 import { useSyncExternalStore } from "react";
 import { trackNetworkRequest } from "@/utils/networkTracker";
+import { logStateMachineAction, logWarn } from "@/utils/logBuffer";
 
 export const LOVABLE_TTS_BASE_URL = "https://tts3.lovable.app";
 export const LOVABLE_TTS_ENDPOINT = "https://tts3.lovable.app/api/public/tts";
@@ -873,12 +874,76 @@ export function buildLovableTtsRequestBody(
  */
 const DEFAULT_TTS_FETCH_TIMEOUT_MS = 4500;
 const MAX_TTS_AUDIO_CACHE_ENTRIES = 60;
+const FAILED_PREFETCH_TTL_MS = 15000;
+const ENDPOINT_PREFETCH_COOLDOWN_MS = 15000;
+const MAX_CONCURRENT_PREFETCHES = 2;
+export const TTS_UNJUSTIFIED_DELAY_THRESHOLD_MS = 1500;
+
+export interface AlternativeTtsAttemptMeta {
+  lang: string;
+  provider: string;
+  engine: string;
+  cacheHit: boolean;
+  synthMs: number;
+  audioStartDelayMs: number;
+  totalPreSpeechDelayMs: number;
+  failed: boolean;
+  timedOut: boolean;
+  reason?: string;
+  timestamp: number;
+}
 
 type CachedTtsAudioEntry = { kind: "dataUrl"; dataUrl: string } | { kind: "blob"; blob: Blob };
 
 const ttsAudioCache = new Map<string, CachedTtsAudioEntry>();
 const inFlightTtsSynthesisMap = new Map<string, Promise<CachedTtsAudioEntry | null>>();
 const activeSynthesisAbortControllers = new Set<AbortController>();
+const failedPrefetchCache = new Map<string, number>();
+let consecutiveRemoteTtsFailures = 0;
+let remoteTtsPrefetchCooldownUntil = 0;
+let lastRemoteTtsCooldownWarnAt = 0;
+let activePrefetchCount = 0;
+let lastAlternativeTtsAttemptMeta: AlternativeTtsAttemptMeta | null = null;
+
+export function getLastAlternativeTtsAttemptMeta(): AlternativeTtsAttemptMeta | null {
+  return lastAlternativeTtsAttemptMeta;
+}
+
+export function isRemoteTtsPrefetchCooldownActive(): boolean {
+  return remoteTtsPrefetchCooldownUntil > Date.now();
+}
+
+function recordRemoteTtsOutcome(
+  succeeded: boolean,
+  failureReason?: string,
+  cacheKey?: string,
+): void {
+  const now = Date.now();
+  if (succeeded) {
+    consecutiveRemoteTtsFailures = 0;
+    remoteTtsPrefetchCooldownUntil = 0;
+    if (cacheKey) {
+      failedPrefetchCache.delete(cacheKey);
+    }
+    return;
+  }
+  if (cacheKey) {
+    failedPrefetchCache.set(cacheKey, now + FAILED_PREFETCH_TTL_MS);
+  }
+  consecutiveRemoteTtsFailures += 1;
+  if (consecutiveRemoteTtsFailures >= 2) {
+    const wasInCooldown = remoteTtsPrefetchCooldownUntil > now;
+    remoteTtsPrefetchCooldownUntil = now + ENDPOINT_PREFETCH_COOLDOWN_MS;
+    if (!wasInCooldown || now - lastRemoteTtsCooldownWarnAt >= ENDPOINT_PREFETCH_COOLDOWN_MS) {
+      lastRemoteTtsCooldownWarnAt = now;
+      logWarn("TTS-Play", "TTS3 prefetch cooldown activated after consecutive failures", {
+        consecutiveFailures: consecutiveRemoteTtsFailures,
+        cooldownMs: ENDPOINT_PREFETCH_COOLDOWN_MS,
+        reason: failureReason || "request-failed",
+      });
+    }
+  }
+}
 
 function buildTtsAudioCacheKey(text: string, lang: string, options?: LovableTtsOptions): string {
   const normalizedText = (text || "").slice(0, 5000);
@@ -937,6 +1002,12 @@ function cachedEntryToPlayableResult(
 export function clearAlternativeTtsAudioCache(): void {
   ttsAudioCache.clear();
   inFlightTtsSynthesisMap.clear();
+  failedPrefetchCache.clear();
+  consecutiveRemoteTtsFailures = 0;
+  remoteTtsPrefetchCooldownUntil = 0;
+  lastRemoteTtsCooldownWarnAt = 0;
+  activePrefetchCount = 0;
+  lastAlternativeTtsAttemptMeta = null;
 }
 
 export async function prefetchAlternativeTtsAudio(
@@ -947,10 +1018,25 @@ export async function prefetchAlternativeTtsAudio(
   if (!text || !text.trim() || typeof window === "undefined") {
     return false;
   }
+  const now = Date.now();
+  if (remoteTtsPrefetchCooldownUntil > now) {
+    return false;
+  }
   const cacheKey = buildTtsAudioCacheKey(text, lang, options);
   if (getCachedTtsAudioEntry(cacheKey)) {
     return true;
   }
+  const failedUntil = failedPrefetchCache.get(cacheKey);
+  if (failedUntil && failedUntil > now) {
+    return false;
+  }
+  if (failedUntil) {
+    failedPrefetchCache.delete(cacheKey);
+  }
+  if (activePrefetchCount >= MAX_CONCURRENT_PREFETCHES) {
+    return false;
+  }
+  activePrefetchCount += 1;
   try {
     const res = await synthesizeLovableTtsAudio(text, lang, options, "playback", true);
     if (res?.url && res.revokeOnDone) {
@@ -960,9 +1046,16 @@ export async function prefetchAlternativeTtsAudio(
         // ignore
       }
     }
-    return Boolean(res?.url);
+    const ok = Boolean(res?.url);
+    if (!ok) {
+      failedPrefetchCache.set(cacheKey, Date.now() + FAILED_PREFETCH_TTL_MS);
+    }
+    return ok;
   } catch {
+    failedPrefetchCache.set(cacheKey, Date.now() + FAILED_PREFETCH_TTL_MS);
     return false;
+  } finally {
+    activePrefetchCount = Math.max(0, activePrefetchCount - 1);
   }
 }
 
@@ -1062,6 +1155,11 @@ export async function synthesizeLovableTtsPost(
       };
       addExternalTtsAuditRecord(record);
       tracker.fail(record.error || "POST synthesis failed", res.status, errorBody);
+      recordRemoteTtsOutcome(
+        false,
+        `HTTP ${res.status}`,
+        buildTtsAudioCacheKey(text, lang, options),
+      );
       console.warn("[LovableTTS] POST synthesis failed with status:", res.status, errorBody);
       return null;
     }
@@ -1112,10 +1210,19 @@ export async function synthesizeLovableTtsPost(
       addExternalTtsAuditRecord(record);
       tracker.complete(res.status, data);
 
-      if (!data?.audio) return null;
+      if (!data?.audio) {
+        recordRemoteTtsOutcome(
+          false,
+          "empty-audio-payload",
+          buildTtsAudioCacheKey(text, lang, options),
+        );
+        return null;
+      }
+      const cacheKey = buildTtsAudioCacheKey(text, lang, options);
+      recordRemoteTtsOutcome(true, undefined, cacheKey);
       const dataUrl = `data:${mime};base64,${data.audio}`;
       if (source === "playback") {
-        setCachedTtsAudioEntry(buildTtsAudioCacheKey(text, lang, options), {
+        setCachedTtsAudioEntry(cacheKey, {
           kind: "dataUrl",
           dataUrl,
         });
@@ -1159,6 +1266,7 @@ export async function synthesizeLovableTtsPost(
       };
       addExternalTtsAuditRecord(record);
       tracker.complete(res.status, `Binary audio stream (${blob.size} bytes)`);
+      recordRemoteTtsOutcome(true, undefined, buildTtsAudioCacheKey(text, lang, options));
       return { url: objectUrl, revokeOnDone: true };
     }
   } catch (err) {
@@ -1191,6 +1299,7 @@ export async function synthesizeLovableTtsPost(
     };
     addExternalTtsAuditRecord(record);
     tracker.fail(errorMsg, 0);
+    recordRemoteTtsOutcome(false, errorMsg, buildTtsAudioCacheKey(text, lang, options));
     console.warn("[LovableTTS] Network error during POST speech synthesis:", err);
     return null;
   }
@@ -2610,6 +2719,10 @@ async function playSingleAlternativeTtsAudio(
   }
 
   const engine = engineOverride || getAlternativeTtsEngine();
+  const requestedProvider = optionsOverride?.provider || getLovableTtsProvider() || "auto";
+  const synthStartedAt = Date.now();
+  let cacheHit = false;
+  let synthMs = 0;
 
   let audioUrl = "";
   let shouldRevoke = false;
@@ -2621,12 +2734,15 @@ async function playSingleAlternativeTtsAudio(
       speed: requestedSpeed,
       ...optionsOverride,
     };
+    const cacheKey = buildTtsAudioCacheKey(text, lang, mergedOptions);
+    cacheHit = Boolean(getCachedTtsAudioEntry(cacheKey));
     const synthesized = await synthesizeLovableTtsAudio(
       text,
       lang,
       mergedOptions,
       optionsOverride?.auditSource ?? (optionsOverride ? "test_button" : "playback"),
     );
+    synthMs = Date.now() - synthStartedAt;
     if (generation !== undefined && generation !== audioQueueGeneration) {
       if (synthesized?.url && synthesized.revokeOnDone) {
         try {
@@ -2642,10 +2758,38 @@ async function playSingleAlternativeTtsAudio(
       shouldRevoke = Boolean(synthesized.revokeOnDone);
     }
   } catch (err) {
+    synthMs = Date.now() - synthStartedAt;
     console.warn("[LovableTTS] Synthesis error, will attempt fallback:", err);
   }
 
   if (!audioUrl || (generation !== undefined && generation !== audioQueueGeneration)) {
+    const failedMeta: AlternativeTtsAttemptMeta = {
+      lang,
+      provider: requestedProvider,
+      engine,
+      cacheHit,
+      synthMs,
+      audioStartDelayMs: 0,
+      totalPreSpeechDelayMs: synthMs,
+      failed: true,
+      timedOut: false,
+      reason: "synthesis-unavailable",
+      timestamp: Date.now(),
+    };
+    lastAlternativeTtsAttemptMeta = failedMeta;
+    if (synthMs > TTS_UNJUSTIFIED_DELAY_THRESHOLD_MS) {
+      logWarn("TTS-Play", "TTS_UNJUSTIFIED_DELAY: TTS3 synthesis failed after long wait", {
+        ...failedMeta,
+        textLength: text.length,
+        textPreview: text.slice(0, 60),
+      });
+      logStateMachineAction("TTS_UNJUSTIFIED_DELAY", {
+        phase: "tts3-synthesis-failed",
+        ...failedMeta,
+        textLength: text.length,
+        textPreview: text.slice(0, 60),
+      });
+    }
     return false;
   }
 
@@ -2669,17 +2813,50 @@ async function playSingleAlternativeTtsAudio(
     activeAlternativeAudio = audio;
 
     let hasEnded = false;
+    let audioPlayingAt = 0;
+    const playCalledAt = Date.now();
     let watchdogTimer: ReturnType<typeof setTimeout> | null = null;
-    const cleanup = (succeeded: boolean) => {
+    const cleanup = (succeeded: boolean, timedOut = false, reason?: string) => {
       if (hasEnded) return;
       hasEnded = true;
       isAudioPlaying = false;
+      const audioStartDelayMs =
+        audioPlayingAt > 0 ? audioPlayingAt - playCalledAt : Date.now() - playCalledAt;
+      const totalPreSpeechDelayMs = synthMs + audioStartDelayMs;
+      const attemptMeta: AlternativeTtsAttemptMeta = {
+        lang,
+        provider: requestedProvider,
+        engine,
+        cacheHit,
+        synthMs,
+        audioStartDelayMs,
+        totalPreSpeechDelayMs,
+        failed: !succeeded,
+        timedOut,
+        reason,
+        timestamp: Date.now(),
+      };
+      lastAlternativeTtsAttemptMeta = attemptMeta;
+      if (timedOut || totalPreSpeechDelayMs > TTS_UNJUSTIFIED_DELAY_THRESHOLD_MS) {
+        logWarn("TTS-Play", "TTS_UNJUSTIFIED_DELAY (alternative audio)", {
+          ...attemptMeta,
+          textLength: text.length,
+          textPreview: text.slice(0, 60),
+        });
+        logStateMachineAction("TTS_UNJUSTIFIED_DELAY", {
+          phase: "alternative-tts",
+          ...attemptMeta,
+          textLength: text.length,
+          textPreview: text.slice(0, 60),
+        });
+      }
       if (watchdogTimer) {
         clearTimeout(watchdogTimer);
         watchdogTimer = null;
       }
       audio.removeEventListener("ended", onEnd);
       audio.removeEventListener("error", onError);
+      audio.removeEventListener("playing", onPlaying);
       audio.removeEventListener("timeupdate", onTimeUpdate);
       audio.removeEventListener("loadedmetadata", applyPlaybackRate);
       audio.removeEventListener("canplay", applyPlaybackRate);
@@ -2703,7 +2880,7 @@ async function playSingleAlternativeTtsAudio(
       resolve(succeeded);
     };
 
-    activeAudioCancel = () => cleanup(false);
+    activeAudioCancel = () => cleanup(false, false, "cancelled");
 
     const effectiveRate = Math.max(0.25, typeof rate === "number" && rate > 0 ? rate : 1.0);
     const maxTimeoutMs = Math.max(16000, (text.length / 3) * (1000 / effectiveRate) + 8000);
@@ -2711,8 +2888,14 @@ async function playSingleAlternativeTtsAudio(
       console.warn(
         `[AlternativeTTS] Audio playback watchdog timer expired after ${maxTimeoutMs}ms`,
       );
-      cleanup(false);
+      cleanup(false, true, `audio-watchdog-timeout-${maxTimeoutMs}ms`);
     }, maxTimeoutMs);
+
+    const onPlaying = () => {
+      if (!audioPlayingAt) {
+        audioPlayingAt = Date.now();
+      }
+    };
 
     const onEnd = () => {
       onProgress?.(100);
@@ -2724,7 +2907,7 @@ async function playSingleAlternativeTtsAudio(
         optionsOverride?.skipInternalWebSpeechFallback ||
         (generation !== undefined && generation !== audioQueueGeneration)
       ) {
-        cleanup(false);
+        cleanup(false, false, "audio-error-or-skipped");
         return;
       }
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -2736,7 +2919,7 @@ async function playSingleAlternativeTtsAudio(
           }
           const speakFallback = () => {
             if (generation !== undefined && generation !== audioQueueGeneration) {
-              cleanup(false);
+              cleanup(false, false, "cancelled");
               return;
             }
             try {
@@ -2744,11 +2927,14 @@ async function playSingleAlternativeTtsAudio(
               u.lang = normalizeLanguageCode(lang);
               u.rate = Math.max(0.3, Math.min(1.5, rate || 0.5));
               u.volume = effectiveVolume;
+              u.onstart = () => {
+                if (!audioPlayingAt) audioPlayingAt = Date.now();
+              };
               u.onend = () => cleanup(true);
-              u.onerror = () => cleanup(false);
+              u.onerror = () => cleanup(false, false, "webspeech-fallback-error");
               synth.speak(u);
             } catch {
-              cleanup(false);
+              cleanup(false, false, "webspeech-fallback-exception");
             }
           };
           if (hadActive) {
@@ -2761,7 +2947,7 @@ async function playSingleAlternativeTtsAudio(
           // ignore
         }
       }
-      cleanup(false);
+      cleanup(false, false, "no-webspeech-fallback");
     }
 
     // Determine effective playback rate based on tts rate settings (clamped between 0.25 and 4.0)
@@ -2780,7 +2966,7 @@ async function playSingleAlternativeTtsAudio(
 
     const onError = (e: unknown) => {
       if (generation !== undefined && generation !== audioQueueGeneration) {
-        cleanup(false);
+        cleanup(false, false, "cancelled");
         return;
       }
       console.warn(
@@ -2791,6 +2977,9 @@ async function playSingleAlternativeTtsAudio(
     };
 
     const onTimeUpdate = () => {
+      if (!audioPlayingAt) {
+        audioPlayingAt = Date.now();
+      }
       if (audio.duration > 0 && onProgress) {
         const pct = Math.min(100, Math.round((audio.currentTime / audio.duration) * 100));
         onProgress(pct);
@@ -2799,6 +2988,7 @@ async function playSingleAlternativeTtsAudio(
 
     audio.addEventListener("ended", onEnd);
     audio.addEventListener("error", onError);
+    audio.addEventListener("playing", onPlaying);
     audio.addEventListener("timeupdate", onTimeUpdate);
     audio.addEventListener("loadedmetadata", applyPlaybackRate);
     audio.addEventListener("canplay", applyPlaybackRate);
@@ -2810,7 +3000,7 @@ async function playSingleAlternativeTtsAudio(
     if (playPromise && typeof playPromise.catch === "function") {
       playPromise.catch((err) => {
         if (generation !== undefined && generation !== audioQueueGeneration) {
-          cleanup(false);
+          cleanup(false, false, "cancelled");
           return;
         }
         console.warn(
@@ -2865,6 +3055,7 @@ export async function executeTtsFallbackSequence(
 
   for (const step of steps) {
     if (step === "tts3") {
+      const tts3StepStartAt = Date.now();
       try {
         const played = await playAlternativeTtsAudio(text, lang, rate, onProgress, "lovable", {
           provider,
@@ -2877,6 +3068,17 @@ export async function executeTtsFallbackSequence(
         });
         if (played) {
           return "tts3";
+        }
+        const elapsedMs = Date.now() - tts3StepStartAt;
+        if (elapsedMs > 1200) {
+          logWarn("TTS-Play", "TTS_UNJUSTIFIED_DELAY: TTS3 step failed slowly before fallback", {
+            lang,
+            provider,
+            order,
+            elapsedMs,
+            textLength: text.length,
+            textPreview: text.slice(0, 60),
+          });
         }
       } catch (err) {
         console.warn("[TtsFallbackSequence] TTS3 Speak API step failed, continuing:", err);
@@ -2957,6 +3159,25 @@ export async function executeTtsFallbackSequence(
                   if (steps.includes("tts3")) {
                     startWatchdog = setTimeout(() => {
                       if (!hasStarted && !settled) {
+                        logWarn(
+                          "TTS-Play",
+                          "TTS_UNJUSTIFIED_DELAY: Native WebSpeech start watchdog",
+                          {
+                            lang,
+                            order,
+                            watchdogMs: 1200,
+                            textLength: text.length,
+                            textPreview: text.slice(0, 60),
+                          },
+                        );
+                        logStateMachineAction("TTS_UNJUSTIFIED_DELAY", {
+                          phase: "native-webspeech-start-timeout",
+                          lang,
+                          order,
+                          startDelayMs: 1200,
+                          textLength: text.length,
+                          textPreview: text.slice(0, 60),
+                        });
                         try {
                           synth.cancel();
                         } catch {

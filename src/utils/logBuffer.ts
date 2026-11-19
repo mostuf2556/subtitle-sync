@@ -192,6 +192,42 @@ class LogRingBuffer {
     }
     lines.push("");
 
+    // Section 0.5: Promoted TTS-Play Delay & Unexpected Pause Diagnostics
+    const ttsAndPauseLogs = this.buffer.filter((e) => {
+      const msg = e.message || "";
+      if (
+        msg.includes("TTS_UNJUSTIFIED_DELAY") ||
+        msg.includes("TTS_STEP_") ||
+        msg.includes("MEDIA_SESSION_PAUSE_RECEIVED") ||
+        msg.includes("SPURIOUS_MEDIA_PAUSE_IGNORED") ||
+        msg.includes("UNEXPECTED_PLAYER_PAUSE")
+      ) {
+        return true;
+      }
+      if (
+        msg === "TTS_SECTION_FINISHED" &&
+        (Number(e.details?.durationMs) > 2500 || Number(e.details?.preSpeechDelayMs) > 1200)
+      ) {
+        return true;
+      }
+      return e.level === "WARN" && (e.category === "TTS-Play" || e.category === "Playback");
+    });
+    lines.push(
+      `## 0.5 TTS-Play Delay & Unexpected Pause Diagnostics (${ttsAndPauseLogs.length} events)`,
+    );
+    if (ttsAndPauseLogs.length === 0) {
+      lines.push("*No TTS-Play delays or unexpected pause events recorded.*");
+    } else {
+      const recentPromoted = ttsAndPauseLogs.slice(-40);
+      if (ttsAndPauseLogs.length > 40) {
+        lines.push(`... [${ttsAndPauseLogs.length - 40} earlier TTS/pause events omitted] ...`);
+      }
+      recentPromoted.forEach((entry, idx) => {
+        lines.push(`${idx + 1}. ${this.formatSingleLogEntry(entry)}`);
+      });
+    }
+    lines.push("");
+
     // Live App State Snapshot
     lines.push("## 1. Live Application State Snapshot");
     if (this.appStateProvider) {

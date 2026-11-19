@@ -184,6 +184,7 @@ declare global {
       ) => boolean;
     };
     onNativeCaptionsInterceptedBase64?: (base64Json: string) => void;
+    onNativeTTSStart?: (utteranceId: string) => void;
     onNativeTTSDone?: (utteranceId: string) => void;
     onNativeTTSBoundary?: (utteranceId: string, charIndex: number) => void;
     onNativeTTSError?: (utteranceId: string, errorMsg?: string) => void;

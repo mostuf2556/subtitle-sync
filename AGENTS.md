@@ -110,5 +110,6 @@ Sequential subtitle pipeline:
 
 ## Last raw prompt
 ```
-go on
+1. log should indicate a tts-play's huge and unjustefied delay - ensure such issue is reproducable based on the log
+2. the app pauses without justified reason - fix it
 ```

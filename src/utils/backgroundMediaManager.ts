@@ -24,8 +24,22 @@ export interface MediaSyncPayload {
   durationSec: number;
 }
 
+export type MediaCommandSource = "native_media_command" | "web_media_session";
+
 let activeCallbacks: MediaTransportCallbacks | null = null;
 let isInitialized = false;
+let lastMediaCommandSource: MediaCommandSource | null = null;
+let lastMediaCommandAt = 0;
+
+export function getLastMediaCommandMeta(): {
+  source: MediaCommandSource | null;
+  timestamp: number;
+} {
+  return {
+    source: lastMediaCommandSource,
+    timestamp: lastMediaCommandAt,
+  };
+}
 
 /**
  * Initializes the media session bridge and binds hardware/lockscreen action handlers.
@@ -40,6 +54,8 @@ export function initBackgroundMediaManager(callbacks: MediaTransportCallbacks): 
   // 1. Android Native Shell command dispatcher hook
   window.onNativeMediaCommand = (action: string, data?: number) => {
     if (!activeCallbacks) return;
+    lastMediaCommandSource = "native_media_command";
+    lastMediaCommandAt = Date.now();
     switch (action) {
       case "play":
         activeCallbacks.onPlay();
@@ -68,23 +84,35 @@ export function initBackgroundMediaManager(callbacks: MediaTransportCallbacks): 
   if ("mediaSession" in navigator) {
     try {
       navigator.mediaSession.setActionHandler("play", () => {
+        lastMediaCommandSource = "web_media_session";
+        lastMediaCommandAt = Date.now();
         activeCallbacks?.onPlay();
       });
       navigator.mediaSession.setActionHandler("pause", () => {
+        lastMediaCommandSource = "web_media_session";
+        lastMediaCommandAt = Date.now();
         activeCallbacks?.onPause();
       });
       navigator.mediaSession.setActionHandler("nexttrack", () => {
+        lastMediaCommandSource = "web_media_session";
+        lastMediaCommandAt = Date.now();
         activeCallbacks?.onNextSection?.();
       });
       navigator.mediaSession.setActionHandler("previoustrack", () => {
+        lastMediaCommandSource = "web_media_session";
+        lastMediaCommandAt = Date.now();
         activeCallbacks?.onPrevSection?.();
       });
       navigator.mediaSession.setActionHandler("seekto", (details) => {
+        lastMediaCommandSource = "web_media_session";
+        lastMediaCommandAt = Date.now();
         if (details.seekTime !== undefined) {
           activeCallbacks?.onSeek?.(details.seekTime);
         }
       });
       navigator.mediaSession.setActionHandler("stop", () => {
+        lastMediaCommandSource = "web_media_session";
+        lastMediaCommandAt = Date.now();
         activeCallbacks?.onStop?.();
       });
     } catch {

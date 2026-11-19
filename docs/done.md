@@ -12117,3 +12117,38 @@
   - `npx tsx scripts/verify-single-icon-floating-button.ts` — PASS
   - `npx tsx scripts/verify-agents-all.ts` — PASS (24/24)
   - `npm run check-version` — PASS (`v2.1.131`)
+
+### Task 451 (Prompt 224 Ch. 1): Log `tts-play` Huge & Unjustified Delays with Reproducible Diagnostics + Stop Prefetch Failure Storm
+- **Changes**:
+  - `src/lib/alternative-tts.ts`: Added per-key negative prefetch cache (`FAILED_PREFETCH_TTL_MS = 15000`), repeated-failure endpoint cooldown (`ENDPOINT_PREFETCH_COOLDOWN_MS = 15000` after 2 consecutive failures), concurrency cap (`MAX_CONCURRENT_PREFETCHES = 2`), synthesis/audio-start timing metrics (`AlternativeTtsAttemptMeta`, `getLastAlternativeTtsAttemptMeta()`), and `TTS_UNJUSTIFIED_DELAY` warning + state-machine logs whenever pre-speech delay exceeds `TTS_UNJUSTIFIED_DELAY_THRESHOLD_MS` (`1500ms`) or native start watchdog triggers.
+  - `src/utils/logBuffer.ts`: Promoted `## 0.5 TTS-Play Delay & Unexpected Pause Diagnostics` in `generateTroubleshootingPrompt()` between Section 0 and Section 1 so delay and pause diagnostics are never truncated by chronological log limits.
+  - `src/types.ts` & `android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt`: Added `window.onNativeTTSStart` declaration and `UtteranceProgressListener.onStart()` JS dispatch for native Android start latency measurement and stall detection.
+  - `src/routes/index.tsx`: Instrumented `speak()`, `executeSingleSpeech()`, and `speakRow()` with `TTS_STEP_STARTED`, `TTS_STEP_FINISHED`, `TTS_UNJUSTIFIED_DELAY`, Android native 1800ms startup stall watchdog with automatic alternative TTS fallback, section `durationMs`, and full reproducible `ttsConfig` + `lastTtsAttempt` in `registerAppStateProvider`.
+- **Verification**:
+  - `npx tsc --noEmit` — PASS
+  - `npx eslint src/lib/alternative-tts.ts src/routes/index.tsx` — PASS (0 errors)
+  - `npx tsx scripts/verify-tts-play-latency-and-floating-single-press.ts` — PASS
+  - `npx tsx scripts/verify-tts-post-and-provider-display.ts` — PASS
+  - `npx tsx scripts/verify-state-machine-log-actions-copy-clear.ts` — PASS
+
+### Task 452 (Prompt 224 Ch. 2): Fix App Pausing Without Justified Reason (`v2.1.132`)
+- **Changes**:
+  - `android-shell/app/src/main/java/com/ytviewer/app/BackgroundAudioService.kt`: Stopped `audioFocusChangeListener` (`AUDIOFOCUS_LOSS`, `AUDIOFOCUS_LOSS_TRANSIENT`, `AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK`, `AUDIOFOCUS_GAIN`) from dispatching `handlePause()` / `handlePlay()` on same-process WebView `<video>` / Android `TextToSpeech` AudioFocus reclamation (`requestAudioFocus()` / `abandonAudioFocus()` and explicit notification/MediaSession 1-click pause preserved).
+  - `src/utils/backgroundMediaManager.ts`: Tracked `MediaCommandSource` (`"native_media_command"` vs `"web_media_session"`) and timestamp via `getLastMediaCommandMeta()`.
+  - `src/routes/index.tsx`: Added `lastPlayOrResumeStartedAtRef`, `lastTtsSectionFinishedAtRef`, `isAndroidRef`, and `videoIdRef`; instrumented `initBackgroundMediaManager` `onPause` with `MEDIA_SESSION_PAUSE_RECEIVED` and suppressed spurious WebView/focus-bounce pauses (`SPURIOUS_MEDIA_PAUSE_IGNORED`) while preserving explicit pause controls; guarded `onStateChange` (`event.data === 2`) with `UNEXPECTED_PLAYER_PAUSE` diagnostics + immediate bounce auto-recovery (`< 650ms`); preserved `curPlaying = true` in `syncMediaMetadata` during buffering (`curStateNum === 3`) and post-play/resume windows (`< 2500ms`).
+  - `docs/video-pause-reasons.md`, `scripts/verify-tts-delay-logging-and-no-spurious-pause.ts`, `package.json`, `docs/files.md`: Documented self-focus hardening and added end-to-end verification script `test:tts-delay-logging-and-no-spurious-pause`; synced `v2.1.132` (`code 20232`).
+- **Verification**:
+  - `npx tsc --noEmit` — PASS
+  - `npm run test:tts-delay-logging-and-no-spurious-pause` — PASS
+  - `npx tsx scripts/verify-tts-play-latency-and-floating-single-press.ts` — PASS
+  - `npx tsx scripts/verify-android-background-audio-service.ts` — PASS (7/7)
+  - `npx tsx scripts/verify-floating-tts-play-active-during-video.ts` — PASS
+  - `npx tsx scripts/verify-floating-play-pause-button-state-and-action.ts` — PASS
+  - `npx tsx scripts/verify-floating-pause-button-reaction-and-reason.ts` — PASS
+  - `npx tsx scripts/verify-video-pause-explanations.ts` — PASS
+  - `npx tsx scripts/verify-tts-playback-coordination.ts` — PASS
+  - `npx tsx scripts/verify-agents-all.ts` — PASS (24/24)
+  - `npx tsx scripts/verify-no-duplicate-md-files.ts` — PASS
+  - `npx tsx scripts/verify-lean-tokens-economy.ts` — PASS
+  - `npm run check-version` — PASS (`v2.1.132`)
+

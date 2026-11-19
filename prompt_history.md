@@ -2836,3 +2836,12 @@ the floating play/pause - sometime u need to press twice in order for the button
 go on
 ```
 
+---
+
+### Prompt 224: TTS-Play Unjustified Delay Logging & Fix Unjustified App Pauses (`v2.1.132`)
+```
+1. log should indicate a tts-play's huge and unjustefied delay - ensure such issue is reproducable based on the log
+2. the app pauses without justified reason - fix it
+```
+
+

@@ -1,3 +1,3 @@
 # Todo
 
-(No active items.)
+No active items.

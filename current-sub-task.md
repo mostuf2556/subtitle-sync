@@ -1,3 +1,3 @@
 # Current Sub-Task
 
-(No active sub-task.)
+No active sub-task.

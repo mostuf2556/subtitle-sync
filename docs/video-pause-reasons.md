@@ -35,7 +35,7 @@ The primary reasons for automated or unexplained pauses are:
 ### E. Background Audio Focus / MediaSession Interruption
 
 - **Mechanism**: Android and desktop browsers trigger `navigator.mediaSession` pause handlers when another media app, tab, or notification claims audio focus.
-- **Why it pauses**: `initBackgroundMediaManager` intercepts OS-level pause commands.
+- **Why it pauses**: `initBackgroundMediaManager` intercepts OS-level pause commands. `BackgroundAudioService.kt` ignores internal same-process AudioFocus transitions from WebView `<video>` / Android `TextToSpeech` so the app never self-evicts into `"Paused via system media controls"` when speech completes or video resumes, and `initBackgroundMediaManager` suppresses spurious resume-window focus bounces (`SPURIOUS_MEDIA_PAUSE_IGNORED`).
 
 ### F. Setup Mode Pause (`isSetupPaused`)
 
@@ -44,7 +44,7 @@ The primary reasons for automated or unexplained pauses are:
 ### G. YouTube Player Events (Buffering, Embed Restrictions, Rate Limiting)
 
 - **Mechanism**: The native YouTube iframe emits state events (`event.data === 2` for pause, `event.data === 3` for buffering, `event.data === 0` for ended, or `onError` with code 150/101 for restricted embeds).
-- **Why it pauses**: Network lag, ad interception, or YouTube embed restrictions can halt playback.
+- **Why it pauses**: Network lag, ad interception, or YouTube embed restrictions can halt playback. Unexpected pauses shortly after play or TTS completion are recorded as `UNEXPECTED_PLAYER_PAUSE` and immediate resume bounces are auto-recovered.
 
 ---
 
@@ -64,4 +64,5 @@ To ensure the user is never confused about why playback paused, the UI displays 
 2. **Player Control Pause Reason (`data-testid="player-control-pause-reason"`)**:
    - Tagged inside `VideoPlaybackControls` status ribbon next to the Paused status indicator.
 3. **State Machine Action Logs**:
-   - `PLAYBACK_PAUSE_REQUESTED` and `PLAYER_STATE_CHANGED` events are recorded in `src/utils/logBuffer.ts` and viewable in the developer diagnostics inspector.
+   - `PLAYBACK_PAUSE_REQUESTED`, `PLAYER_STATE_CHANGED`, `MEDIA_SESSION_PAUSE_RECEIVED`, `SPURIOUS_MEDIA_PAUSE_IGNORED`, and `UNEXPECTED_PLAYER_PAUSE` events are recorded in `src/utils/logBuffer.ts` and surfaced in the developer diagnostics report (`logBuffer.generateTroubleshootingPrompt()`).
+

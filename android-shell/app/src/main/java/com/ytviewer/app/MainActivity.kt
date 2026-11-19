@@ -878,6 +878,11 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             textToSpeech?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                 override fun onStart(utteranceId: String?) {
                     Log.d(TAG, "Native TTS started utterance: $utteranceId")
+                    if (utteranceId != null) {
+                        mainHandler.post {
+                            webView.evaluateJavascript("if (window.onNativeTTSStart) { window.onNativeTTSStart('$utteranceId'); }", null)
+                        }
+                    }
                 }
 
                 override fun onDone(utteranceId: String?) {
