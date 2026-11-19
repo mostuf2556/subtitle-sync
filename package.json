@@ -1,6 +1,6 @@
 {
   "name": "subtitle-sync",
-  "version": "2.1.130",
+  "version": "2.1.131",
   "private": true,
   "sideEffects": false,
   "type": "module",
@@ -19,6 +19,7 @@
     "sync-version": "tsx scripts/sync-version.ts",
     "check-version": "tsx scripts/sync-version.ts --check",
     "test:floating-tts-play-active-during-video": "tsx scripts/verify-floating-tts-play-active-during-video.ts",
+    "test:tts-play-latency-and-floating-single-press": "tsx scripts/verify-tts-play-latency-and-floating-single-press.ts",
     "test:tab-change-keeps-video-playing": "tsx scripts/verify-tab-change-keeps-video-playing.ts",
     "test:learning-goals-no-autoscroll": "tsx scripts/verify-learning-goals-no-autoscroll.ts",
     "test:prompt-211": "tsx scripts/verify-prompt-211-ui-history-and-floating-tokens.ts",

@@ -2820,3 +2820,19 @@ allow switching to another subtitles language using a list of languages: russian
 ```
 
 
+---
+
+### Prompt 222: Fix `tts-play` Latency & Floating Play/Pause Double-Press Bug
+```
+tts-play - it can take up to 10 seconds for the tts to be played
+
+the floating play/pause - sometime u need to press twice in order for the button to activate.
+```
+
+---
+
+### Prompt 223: Go On — Active Backlog Empty
+```
+go on
+```
+
