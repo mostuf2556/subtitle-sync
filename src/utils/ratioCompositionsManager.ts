@@ -5,7 +5,11 @@
  * language ratio compositions (presets) for language learning goals.
  */
 
-import type { SectionOrder, TtsLanguageOrders } from "@/lib/playback-preferences";
+import type {
+  PickWordStrategy,
+  SectionOrder,
+  TtsLanguageOrders,
+} from "@/lib/playback-preferences";
 
 export interface LearningProfileConfig {
   maxWordsPerSentence?: number;
@@ -14,6 +18,19 @@ export interface LearningProfileConfig {
   rates?: Record<string, number>;
   volumes?: Record<string, number>;
   ttsLanguageOrders?: TtsLanguageOrders;
+  favoriteLanguages?: string[];
+  targetLanguages?: string[];
+  baseLanguage?: string;
+  primaryTtsLang?: string;
+  languageOrder?: string[];
+  ttsBlacklist?: string[];
+  zeroKnowledgeLangs?: Record<string, boolean>;
+  pickWordStrategy?: PickWordStrategy;
+  perLanguagePickWordStrategies?: Record<string, PickWordStrategy>;
+  languageMaxWords?: Record<string, number>;
+  languageSkipIncomplete?: Record<string, boolean>;
+  shown?: string[];
+  spoken?: string[];
 }
 
 export interface LanguageRatioComposition {
@@ -29,6 +46,19 @@ export interface LanguageRatioComposition {
   rates?: Record<string, number>;
   volumes?: Record<string, number>;
   ttsLanguageOrders?: TtsLanguageOrders;
+  favoriteLanguages?: string[];
+  targetLanguages?: string[];
+  baseLanguage?: string;
+  primaryTtsLang?: string;
+  languageOrder?: string[];
+  ttsBlacklist?: string[];
+  zeroKnowledgeLangs?: Record<string, boolean>;
+  pickWordStrategy?: PickWordStrategy;
+  perLanguagePickWordStrategies?: Record<string, PickWordStrategy>;
+  languageMaxWords?: Record<string, number>;
+  languageSkipIncomplete?: Record<string, boolean>;
+  shown?: string[];
+  spoken?: string[];
 }
 
 export const RATIO_COMPOSITIONS_STORAGE_KEY = "yt_language_ratio_compositions_v1";
@@ -70,6 +100,11 @@ function getCompositionsStorage(): Storage | null {
     return (globalThis as unknown as { localStorage: Storage }).localStorage;
   }
   return null;
+}
+
+function dedupeStringList(list?: string[]): string[] | undefined {
+  if (!Array.isArray(list)) return undefined;
+  return Array.from(new Set(list.map((s) => String(s).trim()).filter(Boolean)));
 }
 
 /**
@@ -131,6 +166,27 @@ export function saveRatioComposition(
     ttsLanguageOrders: profileConfig?.ttsLanguageOrders
       ? { ...profileConfig.ttsLanguageOrders }
       : undefined,
+    favoriteLanguages: dedupeStringList(profileConfig?.favoriteLanguages),
+    targetLanguages: dedupeStringList(profileConfig?.targetLanguages),
+    baseLanguage: profileConfig?.baseLanguage,
+    primaryTtsLang: profileConfig?.primaryTtsLang,
+    languageOrder: dedupeStringList(profileConfig?.languageOrder),
+    ttsBlacklist: dedupeStringList(profileConfig?.ttsBlacklist),
+    zeroKnowledgeLangs: profileConfig?.zeroKnowledgeLangs
+      ? { ...profileConfig.zeroKnowledgeLangs }
+      : undefined,
+    pickWordStrategy: profileConfig?.pickWordStrategy,
+    perLanguagePickWordStrategies: profileConfig?.perLanguagePickWordStrategies
+      ? { ...profileConfig.perLanguagePickWordStrategies }
+      : undefined,
+    languageMaxWords: profileConfig?.languageMaxWords
+      ? { ...profileConfig.languageMaxWords }
+      : undefined,
+    languageSkipIncomplete: profileConfig?.languageSkipIncomplete
+      ? { ...profileConfig.languageSkipIncomplete }
+      : undefined,
+    shown: dedupeStringList(profileConfig?.shown),
+    spoken: dedupeStringList(profileConfig?.spoken),
   };
 
   const s = getCompositionsStorage();
@@ -189,6 +245,48 @@ export function updateRatioComposition(
         updates.ttsLanguageOrders !== undefined
           ? { ...updates.ttsLanguageOrders }
           : existing.ttsLanguageOrders,
+      favoriteLanguages:
+        updates.favoriteLanguages !== undefined
+          ? dedupeStringList(updates.favoriteLanguages)
+          : existing.favoriteLanguages,
+      targetLanguages:
+        updates.targetLanguages !== undefined
+          ? dedupeStringList(updates.targetLanguages)
+          : existing.targetLanguages,
+      baseLanguage:
+        updates.baseLanguage !== undefined ? updates.baseLanguage : existing.baseLanguage,
+      primaryTtsLang:
+        updates.primaryTtsLang !== undefined ? updates.primaryTtsLang : existing.primaryTtsLang,
+      languageOrder:
+        updates.languageOrder !== undefined
+          ? dedupeStringList(updates.languageOrder)
+          : existing.languageOrder,
+      ttsBlacklist:
+        updates.ttsBlacklist !== undefined
+          ? dedupeStringList(updates.ttsBlacklist)
+          : existing.ttsBlacklist,
+      zeroKnowledgeLangs:
+        updates.zeroKnowledgeLangs !== undefined
+          ? { ...updates.zeroKnowledgeLangs }
+          : existing.zeroKnowledgeLangs,
+      pickWordStrategy:
+        updates.pickWordStrategy !== undefined
+          ? updates.pickWordStrategy
+          : existing.pickWordStrategy,
+      perLanguagePickWordStrategies:
+        updates.perLanguagePickWordStrategies !== undefined
+          ? { ...updates.perLanguagePickWordStrategies }
+          : existing.perLanguagePickWordStrategies,
+      languageMaxWords:
+        updates.languageMaxWords !== undefined
+          ? { ...updates.languageMaxWords }
+          : existing.languageMaxWords,
+      languageSkipIncomplete:
+        updates.languageSkipIncomplete !== undefined
+          ? { ...updates.languageSkipIncomplete }
+          : existing.languageSkipIncomplete,
+      shown: updates.shown !== undefined ? dedupeStringList(updates.shown) : existing.shown,
+      spoken: updates.spoken !== undefined ? dedupeStringList(updates.spoken) : existing.spoken,
     };
 
     list[index] = updated;

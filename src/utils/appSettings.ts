@@ -373,30 +373,43 @@ export function loadVideoSettings(videoId: string): VideoSpecificSettings | null
   return null;
 }
 
-export function saveVideoSettings(videoId: string, settings: Partial<VideoSpecificSettings>): void {
+export function saveVideoSettings(
+  videoId: string,
+  settings: Partial<VideoSpecificSettings>,
+  options?: { replaceMaps?: boolean },
+): void {
   if (typeof window === "undefined" || !videoId) return;
   try {
     const existing = loadVideoSettings(videoId) || {};
+    const replaceMaps = Boolean(options?.replaceMaps);
     const updated: VideoSpecificSettings = {
       ...existing,
       ...settings,
-      ttsRates: {
-        ...(existing.ttsRates || {}),
-        ...(settings.ttsRates || {}),
-        ...(settings.rates || {}),
-      },
-      ttsRatios: {
-        ...(existing.ttsRatios || {}),
-        ...(settings.ttsRatios || {}),
-      },
-      ttsVolumes: {
-        ...(existing.ttsVolumes || {}),
-        ...(settings.ttsVolumes || {}),
-      },
-      ttsLanguageOrders: {
-        ...(existing.ttsLanguageOrders || {}),
-        ...(settings.ttsLanguageOrders || {}),
-      },
+      ttsRates: replaceMaps
+        ? (settings.ttsRates ?? settings.rates ?? existing.ttsRates ?? {})
+        : {
+            ...(existing.ttsRates || {}),
+            ...(settings.ttsRates || {}),
+            ...(settings.rates || {}),
+          },
+      ttsRatios: replaceMaps
+        ? (settings.ttsRatios ?? existing.ttsRatios ?? {})
+        : {
+            ...(existing.ttsRatios || {}),
+            ...(settings.ttsRatios || {}),
+          },
+      ttsVolumes: replaceMaps
+        ? (settings.ttsVolumes ?? existing.ttsVolumes ?? {})
+        : {
+            ...(existing.ttsVolumes || {}),
+            ...(settings.ttsVolumes || {}),
+          },
+      ttsLanguageOrders: replaceMaps
+        ? (settings.ttsLanguageOrders ?? existing.ttsLanguageOrders ?? {})
+        : {
+            ...(existing.ttsLanguageOrders || {}),
+            ...(settings.ttsLanguageOrders || {}),
+          },
       voiceSelections: {
         ...(existing.voiceSelections || {}),
         ...(settings.voiceSelections || {}),
