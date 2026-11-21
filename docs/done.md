@@ -1,5 +1,46 @@
 # Done tasks
 
+### Task 458: Prompt 227 Chapter 3 — Language Selector Performance & Manual Filtered List Selection
+
+- **Prompt**:
+  ```
+  3. the language selector has performance issue - allow the user to filter and manaully select a language from a list (dont do it automaticly)
+  ```
+- **Changes**:
+  - `src/routes/index.tsx`: Removed native `<datalist id="stage-2-languages-datalist">` and auto-add behavior in `#stage-2-filter-languages-input`; memoized `stage2FilteredAddCatalog` via `useMemo`; added explicit `stage-2-browse-languages-btn` toggle, `stage-2-clear-filter-btn`, and virtual-capped `<div id="stage-2-languages-datalist" role="listbox">` (20 items + `stage-2-show-all-languages-btn`) requiring explicit click on `stage-2-add-lang-item-${c.code}`.
+  - `src/components/GlobalFavoriteLanguagesPanel.tsx`: Added `isHiddenMount` fast bypass, memoized `favoriteSet`/`catalogMap`/`availableLanguages`/`cappedManualLanguages` (`DEFAULT_MANUAL_LIST_CAP = 24`), and added `global-favorites-toggle-list-btn` + `global-favorites-manual-list` manual selection buttons (`global-fav-manual-item-${code}`) without auto-selecting on filter input.
+  - `src/components/LanguageBoxesSelector.tsx`: Added `isHiddenMount` fast bypass to eliminate hidden 76-card render overhead, used `Set` lookups, and capped visible cards at 24 unless searching or expanded (`language-boxes-show-more-btn`).
+  - `scripts/verify-language-selector-manual-performance.ts`, `package.json`, & `docs/files.md`: Added & registered `test:language-selector-manual-performance` covering source contracts plus Advanced & Beginner live Chromium checks verifying typing `"Japanese"`/`"ja"` and `"Korean"`/`"ko"` never auto-adds and requires explicit click selection.
+- **Verification**: `npm run test:language-selector-manual-performance`, `npm run test:stage-2-extend-favorite-languages`, `npm run test:learning-goals-list-presentation-minimal-text`, `npm run test:same-components-parity-policy`, `npx tsc --noEmit`, `compile_applet`, and `lint_applet` — all **PASSED**; git commit/push attempted and logged in `docs/git.md` (skipped: no `.git` directory).
+
+### Task 457: Prompt 227 Chapter 2 — Performance Level View Button & Draggable/Resizable Performance Graph
+
+- **Prompt**:
+  ```
+  2. add a performance level view button - when clicking it it will show a small/draggable/resizable performance graph. the user will be able to check which option trigger the performance defection
+  ```
+- **Changes**:
+  - `src/utils/performanceTelemetry.ts`: Created `usePerformanceTelemetry` (RAF FPS, avg/peak frame ms, dropped frames, `longtask` PerformanceObserver), `VISUAL_PERF_OPTIONS` (`disable_backdrop_blur`), `applySavedVisualPerfFlags`, and `evaluateOptionImpactVerdict`.
+  - `src/components/PerformanceLevelGraphWidget.tsx` & `src/components/PerformanceLevelGraphWidget.stories.tsx`: Created compact, draggable (header pointer drag), resizable (bottom-right pointer handle, viewport-clamped) floating performance monitor displaying FPS & frame-ms SVG curves, interactive option toggles (`disable_backdrop_blur` + all `NON_OBLIGATORY_ELEMENTS`), and `Option Impact Checks` defection verdicts.
+  - `src/components/shared/PerformanceModeSettingsPanel.tsx` & `src/routes/index.tsx`: Added `header-performance-level-btn` in the top header bar and `perf-open-graph-btn` inside `PerformanceModeSettingsPanel` (`yt-toggle-performance-graph`), wired `<PerformanceLevelGraphWidget>` and `applySavedVisualPerfFlags()`, and ensured full Advanced & Beginner parity.
+  - `scripts/verify-performance-level-graph.ts` & `package.json`: Added verification suite (`test:performance-level-graph`) and registered files in `docs/files.md`.
+- **Verification**: `npm run test:performance-level-graph` (unit + source parity + live Chromium drag/resize/option-impact E2E), `npx tsc --noEmit`, `compile_applet`, and `lint_applet` — all **PASSED**; git commit/push attempted and logged in `docs/git.md` (skipped: no `.git` directory).
+
+### Task 456: Prompt 227 Chapter 1 — Fix Android Menus Screen Becoming Unresponsive
+
+- **Prompt**:
+  ```
+  1. on android - the menus screen becomes not responsive
+  ```
+- **Changes**:
+  - `android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt`: Added bounded OkHttp timeouts (`connectTimeout(5s)`, `readTimeout(7s)`, `writeTimeout(5s)`, `callTimeout(10s)`) on `okHttpClient` & `anonHttpClient`, offloaded `saveLocalStorageBackup` disk/SharedPreferences I/O to `ioExecutor`, and added async `@JavascriptInterface fetchTimedTextExactAsync(requestId, url, withSession)` returning via `window.__onNativeFetchTimedTextResult`.
+  - `src/types.ts` & `src/lib/native-captions.ts`: Added TypeScript declarations for `fetchTimedTextExactAsync` and `__onNativeFetchTimedTextResult`.
+  - `src/lib/subtitle-fetch-plan.ts`: Added `yieldToMainThread()`, `runFetchAttemptsAsync(...)`, and `nativeExactFetchAsync(...)` to yield control between timedtext fetch attempts and prevent main-thread WebView UI freezes.
+  - `src/utils/videoMetadataManager.ts` & `src/components/ExperimentalSubtitleFetchPanel.tsx`: Migrated synchronous `fetchTimedTextExact` calls to non-blocking `await nativeExactFetchAsync(...)`.
+  - `src/routes/index.tsx` & `src/styles.css`: Switched timedtext attempts and toggle/refresh caption fetches to `runFetchAttemptsAsync` / `nativeExactFetchAsync`, deferred mount/toggle caption lookups via `setTimeout(0)`, added `data-android="true"` on the root container, and disabled heavy `[data-android="true"] .backdrop-blur-*` compositing + added `touch-action: manipulation` across buttons, summaries, tabs, and menu items.
+  - `scripts/verify-android-menus-responsiveness.ts` & `package.json`: Added dedicated verification script (`test:android-menus-responsiveness`).
+- **Verification**: `npx tsc --noEmit`, `npm run test:android-menus-responsiveness`, `npm run test:reliable-subtitles-fetching`, `npm run test:android-localstorage-persistence`, `compile_applet`, and `lint_applet` — all **PASSED**; git commit/push attempted and logged in `docs/git.md` (skipped: no `.git` directory).
+
 ### Task 432: Prompt 221 Chapter 3 — `AGENTS.md` Experimental Features Isolation & Undo/Cancel Rule
 
 - **Prompt**:

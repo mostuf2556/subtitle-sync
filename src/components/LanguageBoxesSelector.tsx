@@ -74,24 +74,32 @@ export const LanguageBoxesSelector: React.FC<LanguageBoxesSelectorProps> = React
     setLanguageDisplayModeSetting(nextMode);
   };
 
+  const isHiddenMount = Boolean(className?.split(/\s+/).includes("hidden"));
   const [showAllLanguages, setShowAllLanguages] = useState(false);
+  const [showFullUnfilteredList, setShowFullUnfilteredList] = useState(false);
 
   // When favoriteLanguages are present, language boxes appear for favorite languages (plus any currently selected)
   const isFavoritesFiltered = Boolean(
-    favoriteLanguages && favoriteLanguages.length > 0 && !showAllLanguages && !searchFilter.trim(),
+    !isHiddenMount &&
+      favoriteLanguages &&
+      favoriteLanguages.length > 0 &&
+      !showAllLanguages &&
+      !searchFilter.trim(),
   );
 
   const effectiveCatalog = useMemo(() => {
+    if (isHiddenMount) return [];
     if (isFavoritesFiltered) {
       const allowedCodes = new Set([...favoriteLanguages, ...selectedLanguages]);
       const favList = catalog.filter((l) => allowedCodes.has(l.code));
       if (favList.length > 0) return favList;
     }
     return catalog;
-  }, [catalog, favoriteLanguages, selectedLanguages, isFavoritesFiltered]);
+  }, [isHiddenMount, catalog, favoriteLanguages, selectedLanguages, isFavoritesFiltered]);
 
   // Keep clicked / selected languages strictly at the top
   const sortedCatalog = useMemo(() => {
+    if (isHiddenMount) return [];
     const query = searchFilter.trim().toLowerCase();
     const source = query ? catalog : effectiveCatalog;
     const filtered = query
@@ -100,21 +108,31 @@ export const LanguageBoxesSelector: React.FC<LanguageBoxesSelectorProps> = React
         )
       : source;
 
-    const selected = filtered.filter((l) => selectedLanguages.includes(l.code));
-    const unselected = filtered.filter((l) => !selectedLanguages.includes(l.code));
+    const selectedSet = new Set(selectedLanguages);
+    const selected = filtered.filter((l) => selectedSet.has(l.code));
+    const unselected = filtered.filter((l) => !selectedSet.has(l.code));
     const seenCodes = new Set<string>();
     return [...selected, ...unselected].filter((l) => {
       if (!l || !l.code || seenCodes.has(l.code)) return false;
       seenCodes.add(l.code);
       return true;
     });
-  }, [catalog, effectiveCatalog, selectedLanguages, searchFilter]);
+  }, [isHiddenMount, catalog, effectiveCatalog, selectedLanguages, searchFilter]);
+
+  const visibleCatalog = useMemo(() => {
+    if (showFullUnfilteredList || searchFilter.trim() || sortedCatalog.length <= 24) {
+      return sortedCatalog;
+    }
+    return sortedCatalog.slice(0, 24);
+  }, [sortedCatalog, showFullUnfilteredList, searchFilter]);
 
   // List of catalog languages without the saved/favorite languages
   const catalogWithoutFavorites = useMemo(() => {
+    if (isHiddenMount) return [];
     if (!favoriteLanguages || favoriteLanguages.length === 0) return catalog;
-    return catalog.filter((l) => !favoriteLanguages.includes(l.code));
-  }, [catalog, favoriteLanguages]);
+    const favSet = new Set(favoriteLanguages);
+    return catalog.filter((l) => !favSet.has(l.code));
+  }, [isHiddenMount, catalog, favoriteLanguages]);
 
   const gridRef = useRef<HTMLDivElement>(null);
   const pendingGridScrollTopRef = useRef<number | null>(null);
@@ -285,6 +303,16 @@ export const LanguageBoxesSelector: React.FC<LanguageBoxesSelectorProps> = React
     }
   };
 
+  if (isHiddenMount) {
+    return (
+      <div
+        className={`hidden ${className || ""}`.trim()}
+        data-testid="language-boxes-selector-wrapper"
+        aria-hidden="true"
+      />
+    );
+  }
+
   return (
     <div
       className={`space-y-3 rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-3 [overflow-anchor:none] ${className || ""}`.trim()}
@@ -392,7 +420,7 @@ export const LanguageBoxesSelector: React.FC<LanguageBoxesSelectorProps> = React
           onPointerDown={() => recordUserInteraction(Date.now())}
           className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 max-h-80 overflow-y-auto p-1 rounded-md border border-border bg-muted/10 [overflow-anchor:none]"
         >
-          {sortedCatalog.map((lang, idx) => {
+          {visibleCatalog.map((lang, idx) => {
             const isSelected = selectedLanguages.includes(lang.code);
             const priorityIdx = selectedLanguages.indexOf(lang.code);
             const isExpanded = expandedLangUrl === lang.code;
@@ -604,6 +632,18 @@ export const LanguageBoxesSelector: React.FC<LanguageBoxesSelectorProps> = React
               </div>
             );
           })}
+          {!showFullUnfilteredList && !searchFilter.trim() && sortedCatalog.length > 24 && (
+            <div className="col-span-2 sm:col-span-3 md:col-span-4 flex justify-center pt-1">
+              <button
+                type="button"
+                data-testid="language-boxes-show-more-btn"
+                onClick={() => setShowFullUnfilteredList(true)}
+                className="text-xs px-3 py-1 rounded-md border border-border bg-background hover:bg-muted text-primary font-medium cursor-pointer"
+              >
+                Show remaining {sortedCatalog.length - 24} languages
+              </button>
+            </div>
+          )}
         </div>
       ) : null}
 

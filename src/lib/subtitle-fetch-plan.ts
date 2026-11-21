@@ -350,6 +350,118 @@ export function runFetchAttempts(opts: {
   return null;
 }
 
+/** Yields control back to the browser/WebView UI loop so menus & touch inputs stay responsive. */
+export function yieldToMainThread(): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, 0);
+  });
+}
+
+/**
+ * Async variant of runFetchAttempts that yields between attempts so Android WebView
+ * touch handlers, menus, and accordions never become unresponsive during subtitle fetching.
+ */
+export async function runFetchAttemptsAsync(opts: {
+  observedUrl: string;
+  lang: string;
+  order: FetchAttempt[];
+  send: (url: string, withSession: boolean) => Promise<ExactFetchResult> | ExactFetchResult;
+  isGood: (body: string) => boolean;
+  onAttempt?: AttemptLog;
+}): Promise<{ body: string; winner: FetchAttempt } | null> {
+  for (const a of opts.order) {
+    if (!a.enabled) continue;
+    await yieldToMainThread();
+    const url = buildAttemptUrl(opts.observedUrl, opts.lang, a.mode);
+    const r = await opts.send(url, a.send === "session");
+    const good = r.status === 200 && opts.isGood(r.body);
+    opts.onAttempt?.(a, url, r, good);
+    if (good) return { body: r.body, winner: a };
+  }
+  return null;
+}
+
+const pendingNativeExactFetches = new Map<string, (rawJson: string) => void>();
+let nativeExactFetchSeq = 0;
+
+if (typeof window !== "undefined") {
+  window.__onNativeFetchTimedTextResult = (requestId: string, payloadJson: string) => {
+    const resolver = pendingNativeExactFetches.get(requestId);
+    if (resolver) {
+      pendingNativeExactFetches.delete(requestId);
+      resolver(payloadJson);
+    }
+  };
+}
+
+/**
+ * Non-blocking Android native bridge exact fetch: uses `fetchTimedTextExactAsync`
+ * when available so the WebView JS/UI thread never stalls on OkHttp I/O, and
+ * falls back cleanly to a yielded `fetchTimedTextExact` call on older APKs.
+ */
+export async function nativeExactFetchAsync(
+  bridge: {
+    fetchTimedTextExact?: (url: string, withSession: boolean) => string;
+    fetchTimedTextExactAsync?: (requestId: string, url: string, withSession: boolean) => boolean;
+  },
+  url: string,
+  withSession: boolean,
+): Promise<ExactFetchResult> {
+  const send: SendMode = withSession ? "session" : "anon";
+  if (typeof window !== "undefined" && bridge.fetchTimedTextExactAsync) {
+    // Re-ensure callback dispatcher is installed (handles late mock/bridge attachment)
+    window.__onNativeFetchTimedTextResult = (requestId: string, payloadJson: string) => {
+      const resolver = pendingNativeExactFetches.get(requestId);
+      if (resolver) {
+        pendingNativeExactFetches.delete(requestId);
+        resolver(payloadJson);
+      }
+    };
+    const requestId = `nf_${Date.now()}_${++nativeExactFetchSeq}`;
+    try {
+      const rawJson = await new Promise<string>((resolve) => {
+        const timer = setTimeout(() => {
+          pendingNativeExactFetches.delete(requestId);
+          resolve(
+            JSON.stringify({
+              status: 0,
+              body: "",
+              sentUrl: url,
+              send,
+              error: "Native async timedtext fetch timeout",
+            }),
+          );
+        }, 12000);
+        pendingNativeExactFetches.set(requestId, (payload: string) => {
+          clearTimeout(timer);
+          resolve(payload);
+        });
+        const accepted = bridge.fetchTimedTextExactAsync!(requestId, url, withSession);
+        if (accepted === false) {
+          clearTimeout(timer);
+          pendingNativeExactFetches.delete(requestId);
+          resolve("");
+        }
+      });
+      if (rawJson) {
+        const r = JSON.parse(rawJson || "{}");
+        return {
+          status: Number(r.status) || 0,
+          body: typeof r.body === "string" ? r.body : "",
+          sentUrl: r.sentUrl || url,
+          send,
+          error: r.error,
+        };
+      }
+    } catch (e) {
+      return { status: 0, body: "", sentUrl: url, send, error: String(e) };
+    }
+  }
+
+  await yieldToMainThread();
+  return nativeExactFetch(bridge, url, withSession);
+}
+
 /** Calls the native bridge's exact fetch and parses its JSON reply. */
 export function nativeExactFetch(
   bridge: { fetchTimedTextExact?: (url: string, withSession: boolean) => string },

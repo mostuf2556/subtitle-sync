@@ -7,6 +7,7 @@ export type NativeShell = {
   fetchTranslatedCaptionsWithUrl(url: string, language: string, format: string): string;
   fetchTranslatedCaptions?(language: string, format: string): string;
   fetchTimedTextExact?(url: string, withSession: boolean): string;
+  fetchTimedTextExactAsync?(requestId: string, url: string, withSession: boolean): boolean;
   openInBrowser?(url: string): boolean;
   shareText?(text: string, title?: string): boolean;
   shareSubtitlesUrl?(url: string, title?: string): boolean;

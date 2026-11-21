@@ -35,6 +35,8 @@ import java.io.File
 import java.io.FileOutputStream
 import java.nio.charset.StandardCharsets
 import java.util.Locale
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 /**
  * Custom WebView that prevents Chromium from suspending or pausing media playback
@@ -58,9 +60,21 @@ open class BackgroundPlayableWebView(context: Context) : WebView(context) {
 class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private lateinit var webView: BackgroundPlayableWebView
-    private val okHttpClient = OkHttpClient.Builder().build()
+    private val okHttpClient = OkHttpClient.Builder()
+        .connectTimeout(5, TimeUnit.SECONDS)
+        .readTimeout(7, TimeUnit.SECONDS)
+        .writeTimeout(5, TimeUnit.SECONDS)
+        .callTimeout(10, TimeUnit.SECONDS)
+        .build()
     // Link-only client: no cookie jar, no captured headers (like pasting the URL in a browser)
-    private val anonHttpClient = OkHttpClient.Builder().build()
+    private val anonHttpClient = OkHttpClient.Builder()
+        .connectTimeout(5, TimeUnit.SECONDS)
+        .readTimeout(7, TimeUnit.SECONDS)
+        .writeTimeout(5, TimeUnit.SECONDS)
+        .callTimeout(10, TimeUnit.SECONDS)
+        .build()
+    private val ioExecutor = Executors.newSingleThreadExecutor()
+    private val networkExecutor = Executors.newFixedThreadPool(2)
     private val anonUserAgent = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36"
     private val mainHandler = Handler(Looper.getMainLooper())
     private var textToSpeech: TextToSpeech? = null
@@ -1018,7 +1032,11 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         @JavascriptInterface
         fun saveLocalStorageBackup(snapshotJson: String): Boolean {
-            return this@MainActivity.persistLocalStorageSnapshot(snapshotJson)
+            if (snapshotJson.isBlank()) return false
+            ioExecutor.execute {
+                this@MainActivity.persistLocalStorageSnapshot(snapshotJson)
+            }
+            return true
         }
 
         @JavascriptInterface
@@ -1236,6 +1254,30 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         fun fetchTranslatedCaptions(targetLang: String, format: String): String {
             val base = lastObservedTimedTextUrl ?: return ""
             return this@MainActivity.executeTimedTextRepetition(base, targetLang, format)
+        }
+
+        /**
+         * Non-blocking async variant of fetchTimedTextExact so WebView JS & menus never freeze.
+         * Posts result JSON to window.__onNativeFetchTimedTextResult(requestId, resultJson).
+         */
+        @JavascriptInterface
+        fun fetchTimedTextExactAsync(requestId: String, url: String, withSession: Boolean): Boolean {
+            networkExecutor.execute {
+                val resultJson = fetchTimedTextExact(url, withSession)
+                val quotedId = JSONObject.quote(requestId)
+                val quotedPayload = JSONObject.quote(resultJson)
+                mainHandler.post {
+                    try {
+                        webView.evaluateJavascript(
+                            "if (window.__onNativeFetchTimedTextResult) { window.__onNativeFetchTimedTextResult($quotedId, $quotedPayload); }",
+                            null
+                        )
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Failed to post async timedtext result: ${e.message}")
+                    }
+                }
+            }
+            return true
         }
 
         /**

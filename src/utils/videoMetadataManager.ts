@@ -137,12 +137,18 @@ export async function fetchAvailableCaptionTracks(videoId: string): Promise<{
 
   const trackListUrl = `https://www.youtube.com/api/timedtext?type=list&v=${encodeURIComponent(cleanId)}`;
 
-  // Attempt 1: Android native bridge if running in native app
-  if (typeof window !== "undefined" && window.AndroidNativeShell?.fetchTimedTextExact) {
+  // Attempt 1: Android native bridge if running in native app (non-blocking)
+  if (
+    typeof window !== "undefined" &&
+    (window.AndroidNativeShell?.fetchTimedTextExactAsync ||
+      window.AndroidNativeShell?.fetchTimedTextExact)
+  ) {
     const tracker = trackNetworkRequest(trackListUrl, "GET", "native_bridge");
     try {
-      const rawXml = window.AndroidNativeShell.fetchTimedTextExact(trackListUrl, true);
-      if (rawXml && rawXml.includes("<transcript_list")) {
+      const { nativeExactFetchAsync } = await import("../lib/subtitle-fetch-plan");
+      const res = await nativeExactFetchAsync(window.AndroidNativeShell, trackListUrl, true);
+      const rawXml = res.body || "";
+      if (res.status === 200 && rawXml.includes("<transcript_list")) {
         tracker.complete(200, rawXml);
         const tracks = parseTimedTextTrackList(rawXml, cleanId);
         const defaultTrack = tracks.find((t) => t.isDefault);
@@ -151,7 +157,11 @@ export async function fetchAvailableCaptionTracks(videoId: string): Promise<{
           defaultLang: defaultTrack?.langCode || tracks[0]?.langCode,
         };
       }
-      tracker.fail("Non-transcript_list XML response from Android bridge", 200, rawXml);
+      tracker.fail(
+        res.error || "Non-transcript_list XML response from Android bridge",
+        res.status || 200,
+        rawXml,
+      );
     } catch (err) {
       tracker.fail(err instanceof Error ? err.message : "Android bridge error");
       // Fallback to fetch

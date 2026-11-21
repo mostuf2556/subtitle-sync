@@ -163,6 +163,7 @@ declare global {
       fetchTranslatedCaptions?: (targetLang: string, format: string) => string;
       fetchTranslatedCaptionsWithUrl?: (url: string, targetLang: string, format: string) => string;
       fetchTimedTextExact?: (url: string, withSession: boolean) => string;
+      fetchTimedTextExactAsync?: (requestId: string, url: string, withSession: boolean) => boolean;
       applyReleaseArtifact?: (downloadUrl: string, releaseTag: string) => boolean;
       clearOtaCache?: () => boolean;
       getAppliedReleaseArtifactTag?: () => string;
@@ -184,6 +185,7 @@ declare global {
       ) => boolean;
     };
     onNativeCaptionsInterceptedBase64?: (base64Json: string) => void;
+    __onNativeFetchTimedTextResult?: (requestId: string, payloadJson: string) => void;
     onNativeTTSStart?: (utteranceId: string) => void;
     onNativeTTSDone?: (utteranceId: string) => void;
     onNativeTTSBoundary?: (utteranceId: string, charIndex: number) => void;

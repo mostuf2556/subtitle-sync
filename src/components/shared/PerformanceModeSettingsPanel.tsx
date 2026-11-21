@@ -1,5 +1,15 @@
 import React, { useState } from "react";
-import { Zap, Gauge, EyeOff, Eye, RotateCcw, ChevronDown, ChevronUp, Sliders } from "lucide-react";
+import {
+  Activity,
+  Zap,
+  Gauge,
+  EyeOff,
+  Eye,
+  RotateCcw,
+  ChevronDown,
+  ChevronUp,
+  Sliders,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -17,10 +27,12 @@ import {
 
 export interface PerformanceModeSettingsPanelProps {
   className?: string;
+  onOpenPerformanceGraph?: () => void;
 }
 
 export const PerformanceModeSettingsPanel: React.FC<PerformanceModeSettingsPanelProps> = ({
   className = "",
+  onOpenPerformanceGraph,
 }) => {
   const currentMode = usePerformanceMode();
   const overrides = useElementOverrides();
@@ -63,8 +75,27 @@ export const PerformanceModeSettingsPanel: React.FC<PerformanceModeSettingsPanel
           </p>
         </div>
 
-        {/* Global Action Buttons: Disable All / Enable All */}
+        {/* Global Action Buttons: Graph View / Disable All / Enable All */}
         <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            data-testid="perf-open-graph-btn"
+            id="perf-open-graph-btn"
+            onClick={() => {
+              onOpenPerformanceGraph?.();
+              if (typeof window !== "undefined") {
+                window.dispatchEvent(new CustomEvent("yt-toggle-performance-graph"));
+              }
+            }}
+            className="h-8 gap-1.5 text-xs font-medium border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10"
+            title="Open draggable & resizable live performance level graph"
+          >
+            <Activity className="h-3.5 w-3.5 text-emerald-500" />
+            <span>Perf Graph</span>
+          </Button>
+
           <Button
             type="button"
             size="sm"

@@ -451,3 +451,30 @@ iframe[src*="youtube-nocookie.com"] {
 .studio-subtle-glow {
   box-shadow: 0 0 0 1px oklch(0.72 0.14 235 / 0.25), 0 4px 16px -2px oklch(0.72 0.14 235 / 0.15);
 }
+
+/* Android WebView menu & scrolling responsiveness: disable expensive GPU/CPU backdrop-blur & fixed background passes over iframes */
+[data-android="true"] .backdrop-blur-xs,
+[data-android="true"] .backdrop-blur-sm,
+[data-android="true"] .backdrop-blur-md,
+[data-android="true"] .backdrop-blur,
+[data-android="true"] .studio-glass,
+.perf-disable-backdrop-blur .backdrop-blur-xs,
+.perf-disable-backdrop-blur .backdrop-blur-sm,
+.perf-disable-backdrop-blur .backdrop-blur-md,
+.perf-disable-backdrop-blur .backdrop-blur,
+.perf-disable-backdrop-blur .studio-glass {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+[data-android="true"][data-testid="app-root-container"] {
+  background-attachment: scroll !important;
+}
+
+[data-android="true"] button,
+[data-android="true"] summary,
+[data-android="true"] [role="button"],
+[data-android="true"] [role="menuitem"],
+[data-android="true"] [role="tab"] {
+  touch-action: manipulation;
+}

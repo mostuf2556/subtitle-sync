@@ -1,3 +1,7 @@
 # Active Tasks
 
-*(No active tasks remaining — all queued tasks have been completed and archived to `docs/done.md`.)*
+## Serial Chapters (Latest Prompt)
+
+1. **Task 459 — Persist & restore full Learning Goals configuration inside language configuration profiles** (`[ACTIVE]`)
+   - **Sub-task 459.1 (`[ACTIVE]`)**: Extend `LearningProfileConfig` and `LanguageRatioComposition` (`src/utils/ratioCompositionsManager.ts`), add per-language pick-word strategy map accessors in `src/lib/playback-preferences.ts`, and update profile handlers + reload hydration in `src/routes/index.tsx` (`handleSaveComposition`, `handleUpdateRatioComposition`, `handleSelectRatioComposition`, initial mount & `videoId` sync) so saving, updating, switching, and reloading custom profiles preserves `favoriteLanguages`, `targetLanguages`, `baseLanguage`, `primaryTtsLang`, `languageOrder`, `sectionOrder`, `ttsLanguageOrders`, `ratios`, `rates`, `volumes`, `ttsBlacklist`, `zeroKnowledgeLangs`, `pickWordStrategy`, `perLanguagePickWordStrategies`, `maxWordsPerSentence`, `skipIncompleteSentences`, `languageMaxWords`, `languageSkipIncomplete`, and `shown`/`spoken` across Advanced (`#stage-2-top-profile-container`) and Beginner (`#beginner-top-profile-container`) modes.
+   - **Sub-task 459.2**: Add verification script (`scripts/verify-learning-goals-profile-full-persistence.ts`), register in `package.json` & `docs/files.md`, bump & sync `package.json` version (`npm run sync-version`), run Learning Goals & full regression tests + final `compile_applet` & `lint_applet`, log `docs/git.md`, and archive to `docs/done.md`.

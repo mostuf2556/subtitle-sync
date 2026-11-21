@@ -330,6 +330,8 @@ import {
   DEFAULT_SIMPLE_PARSER_CONFIG,
 } from "@/utils/newSubtitlesParser";
 import { PerformanceModeSettingsPanel } from "@/components/shared/PerformanceModeSettingsPanel";
+import { PerformanceLevelGraphWidget } from "@/components/PerformanceLevelGraphWidget";
+import { applySavedVisualPerfFlags } from "@/utils/performanceTelemetry";
 import { OpenRouterSettingsPanel } from "@/components/OpenRouterSettingsPanel";
 import { subscribeToCredentialUpdates } from "@/utils/credentialStatus";
 import { useIsElementEnabled } from "@/utils/performanceModeManager";
@@ -452,8 +454,9 @@ import {
   setFetchServerUrl,
   fetchViaServer,
   promoteAttempt,
-  runFetchAttempts,
-  nativeExactFetch,
+  runFetchAttemptsAsync,
+  nativeExactFetchAsync,
+  yieldToMainThread,
   getFetchStrategyConfig,
   DEFAULT_FETCH_STRATEGY_CONFIG,
   buildActiveAttemptOrder,
@@ -1740,7 +1743,19 @@ function Index() {
   );
   const [addFavoriteFilter, setAddFavoriteFilter] = useState("");
   const [stage2AddFavoriteFilter, setStage2AddFavoriteFilter] = useState("");
+  const [showStage2AddList, setShowStage2AddList] = useState(false);
+  const [showAllStage2Matches, setShowAllStage2Matches] = useState(false);
   const [targetLanguages, setTargetLanguages] = useState<string[]>(getInitialTargetLanguages);
+
+  const stage2FilteredAddCatalog = useMemo(() => {
+    const favSet = new Set(favoriteLanguages);
+    const query = stage2AddFavoriteFilter.trim().toLowerCase();
+    return SUPPORTED_LANGUAGES_CATALOG.filter((c) => {
+      if (favSet.has(c.code)) return false;
+      if (!query) return true;
+      return c.name.toLowerCase().includes(query) || c.code.toLowerCase().includes(query);
+    });
+  }, [favoriteLanguages, stage2AddFavoriteFilter]);
 
   // For any favorite language - by default do checkbox on for both options: present in table & tts-play
   const [shown, setShown] = useState<string[]>(() => {
@@ -2544,6 +2559,17 @@ function Index() {
     typeof window !== "undefined" ? getFetchStrategyConfig() : DEFAULT_FETCH_STRATEGY_CONFIG,
   );
 
+  const [showPerformanceGraph, setShowPerformanceGraph] = useState<boolean>(false);
+
+  useEffect(() => {
+    applySavedVisualPerfFlags();
+    const handleTogglePerfGraph = () => setShowPerformanceGraph((prev) => !prev);
+    window.addEventListener("yt-toggle-performance-graph", handleTogglePerfGraph);
+    return () => {
+      window.removeEventListener("yt-toggle-performance-graph", handleTogglePerfGraph);
+    };
+  }, []);
+
   useEffect(() => {
     // Load device-saved preferences after hydration
     setRequestModeState(getSubtitleRequestMode());
@@ -2719,25 +2745,29 @@ function Index() {
               // Reference primary mode order for backward compatibility & preference alignment
               const _modeOrder = subtitleRequestModeOrder(requestModeRef.current);
 
-              const result = runFetchAttempts({
+              const result = await runFetchAttemptsAsync({
                 observedUrl: activeUrl,
                 lang: code,
                 order: activeOrder,
-                send: (url, withSession): ExactFetchResult => {
+                send: async (url, withSession): Promise<ExactFetchResult> => {
                   const mode = url.includes("tlang=") ? "tlang" : "lang";
                   const sendMode: SendMode = withSession ? "session" : "anon";
                   const tracker = trackNetworkRequest(url, "GET", "native_bridge", {
                     attemptMode: mode,
                     attemptSend: sendMode,
                   });
-                  const r: ExactFetchResult = shell.fetchTimedTextExact
-                    ? nativeExactFetch(shell, url, withSession)
-                    : {
-                        status: 200,
-                        body: shell.fetchTranslatedCaptionsWithUrl(url, code, "json3"),
-                        sentUrl: url,
-                        send: sendMode,
-                      };
+                  let r: ExactFetchResult;
+                  if (shell.fetchTimedTextExactAsync || shell.fetchTimedTextExact) {
+                    r = await nativeExactFetchAsync(shell, url, withSession);
+                  } else {
+                    await yieldToMainThread();
+                    r = {
+                      status: 200,
+                      body: shell.fetchTranslatedCaptionsWithUrl(url, code, "json3"),
+                      sentUrl: url,
+                      send: sendMode,
+                    };
+                  }
                   const isGood = r.status === 200 && isValidJsonSubtitleResponse(r.body);
                   if (isGood) {
                     tracker.complete(r.status, r.body);
@@ -2949,14 +2979,17 @@ function Index() {
           attemptMode: mode,
           attemptSend: send,
         });
-        r = shell?.fetchTimedTextExact
-          ? nativeExactFetch(shell, url, withSession)
-          : {
-              status: 200,
-              body: shell ? shell.fetchTranslatedCaptionsWithUrl(url, targetLang, "json3") : "",
-              sentUrl: url,
-              send,
-            };
+        if (shell?.fetchTimedTextExactAsync || shell?.fetchTimedTextExact) {
+          r = await nativeExactFetchAsync(shell, url, withSession);
+        } else {
+          await yieldToMainThread();
+          r = {
+            status: 200,
+            body: shell ? shell.fetchTranslatedCaptionsWithUrl(url, targetLang, "json3") : "",
+            sentUrl: url,
+            send,
+          };
+        }
         if (r.status === 200 && isValidJsonSubtitleResponse(r.body)) {
           tracker.complete(r.status, r.body);
         } else {
@@ -4186,18 +4219,30 @@ function Index() {
     }
     if (!defaultLang || !shell) return;
 
-    try {
-      const raw = shell.fetchTranslatedCaptionsWithUrl(captured, defaultLang, "json3");
-      if (raw && isValidJsonSubtitleResponse(raw)) {
-        const json = parseJson3(raw);
-        if (json) {
-          setTracks((prev) => ({ ...prev, [defaultLang]: json }));
-          setShown((prev) => (prev.includes(defaultLang) ? prev : [defaultLang, ...prev]));
+    window.setTimeout(() => {
+      void (async () => {
+        try {
+          const targetUrl = buildLangReplacedCaptionUrl(captured, defaultLang, "json3");
+          let raw = "";
+          if (shell.fetchTimedTextExactAsync || shell.fetchTimedTextExact) {
+            const res = await nativeExactFetchAsync(shell, targetUrl, true);
+            if (res.status === 200) raw = res.body;
+          } else {
+            await yieldToMainThread();
+            raw = shell.fetchTranslatedCaptionsWithUrl(captured, defaultLang, "json3");
+          }
+          if (raw && isValidJsonSubtitleResponse(raw)) {
+            const json = parseJson3(raw);
+            if (json) {
+              setTracks((prev) => ({ ...prev, [defaultLang]: json }));
+              setShown((prev) => (prev.includes(defaultLang) ? prev : [defaultLang, ...prev]));
+            }
+          }
+        } catch {
+          // ignore fetch error
         }
-      }
-    } catch {
-      // ignore fetch error
-    }
+      })();
+    }, 0);
   };
 
   const handleRecheckCaptions = useCallback(() => {
@@ -4214,24 +4259,36 @@ function Index() {
         // ignore malformed url
       }
       if (defaultLang && shell) {
-        try {
-          const raw = shell.fetchTranslatedCaptionsWithUrl(captured, defaultLang, "json3");
-          if (raw && isValidJsonSubtitleResponse(raw)) {
-            const json = parseJson3(raw);
-            if (json) {
-              if (videoId) saveCachedRawJson3(videoId, defaultLang, raw);
-              setTracks((prev) => ({ ...prev, [defaultLang]: json }));
-              setShown((prev) => (prev.includes(defaultLang) ? prev : [defaultLang, ...prev]));
-              setOpenPanels((prev) => (prev.subtitles ? prev : { ...prev, subtitles: true }));
-              logSubtitlePopulation("Re-check successfully captured captions", {
-                defaultLang,
-                cues: json.events?.length,
-              });
+        window.setTimeout(() => {
+          void (async () => {
+            try {
+              const targetUrl = buildLangReplacedCaptionUrl(captured, defaultLang, "json3");
+              let raw = "";
+              if (shell.fetchTimedTextExactAsync || shell.fetchTimedTextExact) {
+                const res = await nativeExactFetchAsync(shell, targetUrl, true);
+                if (res.status === 200) raw = res.body;
+              } else {
+                await yieldToMainThread();
+                raw = shell.fetchTranslatedCaptionsWithUrl(captured, defaultLang, "json3");
+              }
+              if (raw && isValidJsonSubtitleResponse(raw)) {
+                const json = parseJson3(raw);
+                if (json) {
+                  if (videoId) saveCachedRawJson3(videoId, defaultLang, raw);
+                  setTracks((prev) => ({ ...prev, [defaultLang]: json }));
+                  setShown((prev) => (prev.includes(defaultLang) ? prev : [defaultLang, ...prev]));
+                  setOpenPanels((prev) => (prev.subtitles ? prev : { ...prev, subtitles: true }));
+                  logSubtitlePopulation("Re-check successfully captured captions", {
+                    defaultLang,
+                    cues: json.events?.length,
+                  });
+                }
+              }
+            } catch (err) {
+              logError("Interception", "Re-check failed to fetch captions via shell", err);
             }
-          }
-        } catch (err) {
-          logError("Interception", "Re-check failed to fetch captions via shell", err);
-        }
+          })();
+        }, 0);
       }
     } else {
       logInterception("Re-check found no observed timedtext URL yet", { videoId, isVideoPlaying });
@@ -4388,12 +4445,12 @@ function Index() {
           const shell = nativeShell();
           const attemptMode = fetchUrl.includes("tlang=") ? "tlang" : "lang";
 
-          if (shell?.fetchTimedTextExact) {
+          if (shell?.fetchTimedTextExactAsync || shell?.fetchTimedTextExact) {
             const tracker = trackNetworkRequest(fetchUrl, "GET", "native_bridge", {
               attemptMode,
               attemptSend: "session",
             });
-            const res = nativeExactFetch(shell, fetchUrl, true);
+            const res = await nativeExactFetchAsync(shell, fetchUrl, true);
             if (res.status === 200 && isValidJsonSubtitleResponse(res.body)) {
               tracker.complete(res.status, res.body);
               rawBody = res.body;
@@ -5239,12 +5296,12 @@ function Index() {
           }
         }
 
-        // 3. Android native bridge exact fetch if running in Android container
+        // 3. Android native bridge exact fetch if running in Android container (non-blocking)
         if (!parsed || !isValidJsonSubtitleResponse(parsed)) {
           const shell = typeof window !== "undefined" ? window.AndroidNativeShell : undefined;
-          if (shell?.fetchTimedTextExact) {
+          if (shell?.fetchTimedTextExactAsync || shell?.fetchTimedTextExact) {
             try {
-              const exactRes = JSON.parse(shell.fetchTimedTextExact(incomingSubUrl, false) || "{}");
+              const exactRes = await nativeExactFetchAsync(shell, incomingSubUrl, false);
               if (exactRes.status === 200 && exactRes.body) {
                 parsed = parseJson3(exactRes.body);
               }
@@ -5445,22 +5502,35 @@ function Index() {
       setObservedUrl(captured);
       setDefaultCaptionsLoaded(true);
       const defaultLang = new URL(captured).searchParams.get("lang") || "";
-      if (defaultLang) {
-        try {
-          const raw = shell!.fetchTranslatedCaptionsWithUrl(captured, defaultLang, "json3");
-          if (raw && isValidJsonSubtitleResponse(raw)) {
-            const json = parseJson3(raw);
-            if (json) {
-              if (videoId) {
-                saveCachedRawJson3(videoId, defaultLang, raw);
+      if (defaultLang && shell) {
+        const currentVid = videoId;
+        window.setTimeout(() => {
+          void (async () => {
+            try {
+              const targetUrl = buildLangReplacedCaptionUrl(captured, defaultLang, "json3");
+              let raw = "";
+              if (shell.fetchTimedTextExactAsync || shell.fetchTimedTextExact) {
+                const res = await nativeExactFetchAsync(shell, targetUrl, true);
+                if (res.status === 200) raw = res.body;
+              } else {
+                await yieldToMainThread();
+                raw = shell.fetchTranslatedCaptionsWithUrl(captured, defaultLang, "json3");
               }
-              setTracks((prev) => ({ ...prev, [defaultLang]: json }));
-              setShown((prev) => (prev.includes(defaultLang) ? prev : [defaultLang, ...prev]));
+              if (raw && isValidJsonSubtitleResponse(raw)) {
+                const json = parseJson3(raw);
+                if (json) {
+                  if (currentVid) {
+                    saveCachedRawJson3(currentVid, defaultLang, raw);
+                  }
+                  setTracks((prev) => ({ ...prev, [defaultLang]: json }));
+                  setShown((prev) => (prev.includes(defaultLang) ? prev : [defaultLang, ...prev]));
+                }
+              }
+            } catch (_e) {
+              // ignore native bridge fetch error
             }
-          }
-        } catch (_e) {
-          // ignore native bridge fetch error
-        }
+          })();
+        }, 0);
       }
     }
     const unregister = registerLiveCaptionInterceptor((encoded) => {
@@ -8877,6 +8947,7 @@ function Index() {
   return (
     <div
       data-testid="app-root-container"
+      data-android={isAndroid ? "true" : undefined}
       data-bg-diversity={bgDiversity ? "enabled" : "disabled"}
       className={`min-h-screen w-full max-w-full overflow-x-hidden text-foreground transition-all duration-300 ${
         bgDiversity
@@ -9300,6 +9371,23 @@ function Index() {
               <Eye className="h-3.5 w-3.5 text-indigo-500" />
             )}
             <span>Log View</span>
+          </Button>
+          <Button
+            id="header-performance-level-btn"
+            data-testid="header-performance-level-btn"
+            type="button"
+            size="sm"
+            variant={showPerformanceGraph ? "default" : "ghost"}
+            onClick={() => setShowPerformanceGraph((prev) => !prev)}
+            className={`h-7 px-2 sm:px-2.5 text-xs gap-1.5 border font-medium transition-all ${
+              showPerformanceGraph
+                ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/50 shadow-xs"
+                : "border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10"
+            }`}
+            title="Toggle draggable & resizable live Performance Level graph"
+          >
+            <Activity className="h-3.5 w-3.5 text-emerald-500" />
+            <span>Perf Level</span>
           </Button>
           <Button
             id="header-stage4-settings-button"
@@ -13367,74 +13455,52 @@ function Index() {
                                       })}
                                     </div>
 
-                                    {/* Extend Favorite Languages Control - Stage 2 in-place */}
+                                    {/* Extend Favorite Languages Control - Stage 2 in-place (manual selection, no auto-add) */}
                                     <div
                                       id="stage-2-extend-favorites-container"
                                       data-testid="stage-2-extend-favorites-container"
-                                      className="pt-2 border-t border-border/50 mt-1.5 space-y-1"
+                                      className="pt-2 border-t border-border/50 mt-1.5 space-y-1.5"
                                     >
                                       <div className="flex items-center justify-between text-xs">
                                         <span className="font-semibold text-foreground flex items-center gap-1.5">
                                           <PlusCircle className="h-3.5 w-3.5 text-primary" />
                                           <span>Add Language</span>
                                         </span>
+                                        <button
+                                          type="button"
+                                          data-testid="stage-2-browse-languages-btn"
+                                          onClick={() => setShowStage2AddList((prev) => !prev)}
+                                          className="text-[11px] text-primary hover:underline cursor-pointer"
+                                        >
+                                          {showStage2AddList || stage2AddFavoriteFilter.trim()
+                                            ? "Hide List"
+                                            : `Browse (${stage2FilteredAddCatalog.length})`}
+                                        </button>
                                       </div>
                                       <div className="flex items-center gap-1.5">
                                         <input
                                           type="text"
                                           id="stage-2-filter-languages-input"
                                           data-testid="stage-2-filter-languages-input"
-                                          list="stage-2-languages-datalist"
-                                          placeholder="Filter or add language…"
+                                          placeholder="Filter languages, then click to select…"
                                           value={stage2AddFavoriteFilter}
                                           onChange={(e) => {
-                                            const val = e.target.value;
-                                            setStage2AddFavoriteFilter(val);
-                                            const trimmed = val.trim();
-                                            if (trimmed) {
-                                              const matched = SUPPORTED_LANGUAGES_CATALOG.find(
-                                                (c) =>
-                                                  !favoriteLanguages.includes(c.code) &&
-                                                  (c.code.toLowerCase() === trimmed.toLowerCase() ||
-                                                    c.name.toLowerCase() ===
-                                                      trimmed.toLowerCase() ||
-                                                    `${c.name} (${c.code})`.toLowerCase() ===
-                                                      trimmed.toLowerCase()),
-                                              );
-                                              if (matched) {
-                                                const nextFavs = [
-                                                  ...favoriteLanguages,
-                                                  matched.code,
-                                                ];
-                                                handleUpdateFavoriteLanguages(nextFavs);
-                                                if (!targetLanguages.includes(matched.code)) {
-                                                  handleTargetLanguagesChange([
-                                                    ...targetLanguages,
-                                                    matched.code,
-                                                  ]);
-                                                }
-                                                setStage2AddFavoriteFilter("");
-                                              }
+                                            setStage2AddFavoriteFilter(e.target.value);
+                                            setShowAllStage2Matches(false);
+                                            if (e.target.value.trim()) {
+                                              setShowStage2AddList(true);
                                             }
                                           }}
                                           className="rounded border border-input bg-background px-2.5 py-1 text-xs w-full sm:w-64 focus:outline-none focus:ring-1 focus:ring-primary"
                                         />
-                                        <datalist
-                                          id="stage-2-languages-datalist"
-                                          data-testid="stage-2-languages-datalist"
-                                        >
-                                          {SUPPORTED_LANGUAGES_CATALOG.filter(
-                                            (c) => !favoriteLanguages.includes(c.code),
-                                          ).map((c) => (
-                                            <option key={c.code} value={`${c.name} (${c.code})`}>
-                                              {c.code}
-                                            </option>
-                                          ))}
-                                        </datalist>
                                         {stage2AddFavoriteFilter && (
                                           <button
                                             type="button"
-                                            onClick={() => setStage2AddFavoriteFilter("")}
+                                            data-testid="stage-2-clear-filter-btn"
+                                            onClick={() => {
+                                              setStage2AddFavoriteFilter("");
+                                              setShowAllStage2Matches(false);
+                                            }}
                                             className="text-[11px] text-muted-foreground hover:text-foreground px-2 py-0.5 rounded border border-border shrink-0 cursor-pointer"
                                             title="Clear filter"
                                           >
@@ -13442,50 +13508,71 @@ function Index() {
                                           </button>
                                         )}
                                       </div>
-                                      {stage2AddFavoriteFilter.trim() && (
-                                        <div className="flex flex-col space-y-1 max-h-28 overflow-y-auto pt-0.5">
-                                          {SUPPORTED_LANGUAGES_CATALOG.filter(
-                                            (c) =>
-                                              !favoriteLanguages.includes(c.code) &&
-                                              (c.name
-                                                .toLowerCase()
-                                                .includes(
-                                                  stage2AddFavoriteFilter.trim().toLowerCase(),
-                                                ) ||
-                                                c.code
-                                                  .toLowerCase()
-                                                  .includes(
-                                                    stage2AddFavoriteFilter.trim().toLowerCase(),
-                                                  )),
-                                          )
-                                            .slice(0, 16)
-                                            .map((c) => (
-                                              <button
-                                                key={c.code}
-                                                type="button"
-                                                data-testid={`stage-2-add-lang-item-${c.code}`}
-                                                onClick={() => {
-                                                  const nextFavs = [...favoriteLanguages, c.code];
-                                                  handleUpdateFavoriteLanguages(nextFavs);
-                                                  if (!targetLanguages.includes(c.code)) {
-                                                    handleTargetLanguagesChange([
-                                                      ...targetLanguages,
-                                                      c.code,
-                                                    ]);
-                                                  }
-                                                  setStage2AddFavoriteFilter("");
-                                                }}
-                                                className="inline-flex items-center gap-1.5 rounded bg-secondary/80 hover:bg-primary/20 text-foreground px-2 py-1 text-xs border border-border cursor-pointer transition-colors"
-                                              >
-                                                <Plus className="h-3 w-3 text-primary" />
-                                                <span>{c.name}</span>
-                                                <span className="text-[10px] text-muted-foreground font-mono">
-                                                  ({c.code})
-                                                </span>
-                                              </button>
-                                            ))}
-                                        </div>
-                                      )}
+                                      <div
+                                        id="stage-2-languages-datalist"
+                                        data-testid="stage-2-languages-datalist"
+                                        role="listbox"
+                                        aria-label="Filtered languages list for manual selection"
+                                        className={
+                                          stage2AddFavoriteFilter.trim() || showStage2AddList
+                                            ? "flex flex-col space-y-1 max-h-36 overflow-y-auto pt-0.5 border border-border/50 rounded-md p-1 bg-background/70"
+                                            : "hidden"
+                                        }
+                                      >
+                                        {(stage2AddFavoriteFilter.trim() || showStage2AddList) && (
+                                          <>
+                                            {stage2FilteredAddCatalog.length === 0 ? (
+                                              <span className="text-[11px] text-muted-foreground px-2 py-1 italic">
+                                                No matching languages found.
+                                              </span>
+                                            ) : (
+                                              (showAllStage2Matches
+                                                ? stage2FilteredAddCatalog
+                                                : stage2FilteredAddCatalog.slice(0, 20)
+                                              ).map((c) => (
+                                                <button
+                                                  key={c.code}
+                                                  type="button"
+                                                  role="option"
+                                                  aria-selected={false}
+                                                  data-testid={`stage-2-add-lang-item-${c.code}`}
+                                                  onClick={() => {
+                                                    const nextFavs = [...favoriteLanguages, c.code];
+                                                    handleUpdateFavoriteLanguages(nextFavs);
+                                                    if (!targetLanguages.includes(c.code)) {
+                                                      handleTargetLanguagesChange([
+                                                        ...targetLanguages,
+                                                        c.code,
+                                                      ]);
+                                                    }
+                                                    setStage2AddFavoriteFilter("");
+                                                  }}
+                                                  className="inline-flex items-center justify-between gap-1.5 rounded bg-secondary/70 hover:bg-primary/20 text-foreground px-2 py-1 text-xs border border-border/70 cursor-pointer transition-colors text-left"
+                                                >
+                                                  <span className="inline-flex items-center gap-1.5">
+                                                    <Plus className="h-3 w-3 text-primary shrink-0" />
+                                                    <span>{c.name}</span>
+                                                  </span>
+                                                  <span className="text-[10px] text-muted-foreground font-mono">
+                                                    ({c.code})
+                                                  </span>
+                                                </button>
+                                              ))
+                                            )}
+                                            {!showAllStage2Matches &&
+                                              stage2FilteredAddCatalog.length > 20 && (
+                                                <button
+                                                  type="button"
+                                                  data-testid="stage-2-show-all-languages-btn"
+                                                  onClick={() => setShowAllStage2Matches(true)}
+                                                  className="text-[11px] text-primary hover:underline py-1 text-center cursor-pointer"
+                                                >
+                                                  Show all {stage2FilteredAddCatalog.length} matches
+                                                </button>
+                                              )}
+                                          </>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
                                 </LearningGoalAccordion>
@@ -15846,6 +15933,10 @@ function Index() {
         onOpenTtsServiceSettings={handleNavigateToTtsSetup}
       />
       <FloatingErrorButton />
+      <PerformanceLevelGraphWidget
+        isOpen={showPerformanceGraph}
+        onClose={() => setShowPerformanceGraph(false)}
+      />
       {/* Auto-Fetching Subtitles widget: folded and hidden by default on refresh */}
       <div
         id="autofetch-subtitles-container"

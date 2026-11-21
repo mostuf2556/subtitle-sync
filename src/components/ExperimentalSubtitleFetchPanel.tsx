@@ -15,8 +15,8 @@ import {
   type SubtitleRequestMode,
   buildAttemptUrl,
   fetchViaServer,
+  nativeExactFetchAsync,
   DEFAULT_FETCH_SERVER_URL,
-  type ExactFetchResult,
 } from "@/lib/subtitle-fetch-plan";
 import { parseJson3, nativeShell } from "@/lib/native-captions";
 import { isValidJsonSubtitleResponse } from "@/utils/subtitleCache";
@@ -116,10 +116,9 @@ export const ExperimentalSubtitleFetchPanel: React.FC<ExperimentalSubtitleFetchP
       } else {
         // Direct route via native shell bridge or web fetch
         const shell = nativeShell();
-        if (shell?.fetchTimedTextExact) {
+        if (shell?.fetchTimedTextExactAsync || shell?.fetchTimedTextExact) {
           try {
-            const raw = shell.fetchTimedTextExact(targetUrl, true);
-            const parsed = JSON.parse(raw || "{}") as ExactFetchResult;
+            const parsed = await nativeExactFetchAsync(shell, targetUrl, true);
             status = Number(parsed.status) || 0;
             body = parsed.body || "";
             if (parsed.error) item.error = parsed.error;
