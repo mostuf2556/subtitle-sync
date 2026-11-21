@@ -347,7 +347,7 @@ export interface VideoSpecificSettings {
   ttsRatios?: Record<string, number>; // langCode -> ratio (1 in N sentences)
   ttsVolumes?: Record<string, number>; // langCode -> volume (0.0 to 1.0)
   ttsBlacklist?: string[];
-  ttsLanguageOrders?: Record<string, any>;
+  ttsLanguageOrders?: Record<string, string>;
   voiceSelections?: Record<string, string>;
   maxWordsPerSentence?: number;
   skipIncompleteSentences?: boolean;

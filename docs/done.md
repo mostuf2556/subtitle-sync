@@ -1,5 +1,19 @@
 # Done tasks
 
+### Task 459: Prompt 227 Chapter 4 — Persist & Restore Full Learning Goals Configuration in Language Profiles (`v2.1.135`)
+
+- **Prompt**:
+  ```
+  4. the language configuration profile doesnt seems to remember the list of langauges and all the other settings on the learning goals stage
+  ```
+- **Changes**:
+  - `src/utils/ratioCompositionsManager.ts`: Extended `LearningProfileConfig` and `LanguageRatioComposition` with `favoriteLanguages`, `targetLanguages`, `baseLanguage`, `primaryTtsLang`, `languageOrder`, `ttsBlacklist`, `zeroKnowledgeLangs`, `pickWordStrategy`, `perLanguagePickWordStrategies`, `languageMaxWords`, `languageSkipIncomplete`, `shown`, and `spoken` (plus `dedupeStringList` normalization across save & update).
+  - `src/lib/playback-preferences.ts`: Added `saveAllTtsRatiosPreference`, `saveAllTtsRatesPreference`, `saveAllTtsVolumesPreference`, `getLanguageOrderPreference`/`saveLanguageOrderPreference`, `getShownLanguagesPreference`/`saveShownLanguagesPreference`, `getSpokenLanguagesPreference`/`saveSpokenLanguagesPreference`, `setAllZeroKnowledgeInLang`, and `setAllPerLanguagePickWordStrategies` with stale per-language `localStorage` key eviction (`removeStorageKeysByPrefix`).
+  - `src/utils/appSettings.ts`: Added `options?: { replaceMaps?: boolean }` to `saveVideoSettings` so profile switches cleanly replace `ttsRates`, `ttsRatios`, `ttsVolumes`, and `ttsLanguageOrders` instead of merging stale values from previous profiles; typed `VideoSpecificSettings.ttsLanguageOrders` as `Record<string, string>`.
+  - `src/routes/index.tsx`: Wired full Learning Goals state capture and restoration across `handleSaveComposition`, `handleUpdateRatioComposition`, `handleSelectRatioComposition`, and reload hydration (`languageOrder`, `shown`, `spoken`, `manualBaseOverrideVideoId`, `primaryTtsLang`); fixed `processedDefaultFavsRef` so `getInitialFavoriteLanguages()`/`getInitialTargetLanguages()` are not evaluated on every render (which previously re-injected the previous profile's `?target_lang=` into `yt_favorite_languages` during profile switches) and immediately synced `target_lang` URL param in `handleSelectRatioComposition`.
+  - `scripts/verify-learning-goals-profile-full-persistence.ts`, `scripts/verify-learning-goals-persist-on-video-share.ts`, `package.json`, & `docs/files.md`: Added & registered `test:learning-goals-profile-full-persistence` covering unit round-trip, stale key eviction, `replaceMaps`, source parity, and live Chromium save -> switch -> reload -> Beginner Mode verification; synced `v2.1.135` (`code 20235`).
+- **Verification**: `npm run check-version`, `npx tsc --noEmit`, `npm run test:learning-goals-profile-full-persistence` (unit + live Chromium E2E + Beginner parity), `npm run test:learning-goals-video-share-persist`, `npm run test:learning-goals-tts-speed-per-language`, `npm run test:learning-goals-tts-order-and-video-bar`, `npm run test:learning-profile-save-and-switch`, `npm run test:learning-goals-profiles-crud`, `npm run test:same-components-parity-policy`, `npm run test:route-app-state-sync`, `npm run test:agents-all` (24/24), `compile_applet`, and `lint_applet` — all **PASSED**; git commit/push attempted and logged in `docs/git.md` (skipped: no `.git` directory).
+
 ### Task 458: Prompt 227 Chapter 3 — Language Selector Performance & Manual Filtered List Selection
 
 - **Prompt**:

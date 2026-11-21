@@ -115,7 +115,8 @@ assert.ok(
   "VideoSpecificSettings must declare voiceSelections",
 );
 assert.ok(
-  appSettingsCode.includes("ttsRates: {") && appSettingsCode.includes("ttsRatios: {"),
+  appSettingsCode.includes("...(existing.ttsRates || {})") &&
+    appSettingsCode.includes("...(existing.ttsRatios || {})"),
   "saveVideoSettings must merge existing and new ttsRates and ttsRatios",
 );
 console.log("✅ PASS: VideoSpecificSettings interface and persistence verified");

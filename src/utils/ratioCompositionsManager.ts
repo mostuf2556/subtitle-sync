@@ -5,11 +5,7 @@
  * language ratio compositions (presets) for language learning goals.
  */
 
-import type {
-  PickWordStrategy,
-  SectionOrder,
-  TtsLanguageOrders,
-} from "@/lib/playback-preferences";
+import type { PickWordStrategy, SectionOrder, TtsLanguageOrders } from "@/lib/playback-preferences";
 
 export interface LearningProfileConfig {
   maxWordsPerSentence?: number;
@@ -224,10 +220,7 @@ export function updateRatioComposition(
     const existing = list[index];
     const updated: LanguageRatioComposition = {
       ...existing,
-      name:
-        updates.name !== undefined && updates.name.trim()
-          ? updates.name.trim()
-          : existing.name,
+      name: updates.name !== undefined && updates.name.trim() ? updates.name.trim() : existing.name,
       ratios: updates.ratios !== undefined ? { ...updates.ratios } : existing.ratios,
       rates: updates.rates !== undefined ? { ...updates.rates } : existing.rates,
       volumes: updates.volumes !== undefined ? { ...updates.volumes } : existing.volumes,
@@ -323,10 +316,7 @@ export function getActiveRatioCompositionId(): string {
   const s = getCompositionsStorage();
   if (!s) return BUILT_IN_COMPOSITIONS[0].id;
   try {
-    return (
-      s.getItem(ACTIVE_RATIO_COMPOSITION_KEY) ||
-      BUILT_IN_COMPOSITIONS[0].id
-    );
+    return s.getItem(ACTIVE_RATIO_COMPOSITION_KEY) || BUILT_IN_COMPOSITIONS[0].id;
   } catch {
     return BUILT_IN_COMPOSITIONS[0].id;
   }

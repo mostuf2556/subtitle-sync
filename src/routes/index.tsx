@@ -3277,12 +3277,27 @@ function Index() {
 
       if (nextTargets !== undefined) {
         for (const l of [...(nextFavs ?? favoriteLanguages), ...nextTargets]) {
-          processedDefaultFavsRef.current.add(l);
+          processedDefaultFavsRef.current?.add(l);
         }
         setTargetLanguages(nextTargets);
         targetLanguagesRef.current = nextTargets;
         setUserLearningLanguages(nextTargets);
         setFailedLangs((prev) => prev.filter((lang) => nextTargets.includes(lang)));
+        if (typeof window !== "undefined") {
+          try {
+            const params = new URLSearchParams(window.location.search);
+            if (nextTargets[0]) {
+              params.set("target_lang", nextTargets[0]);
+            } else {
+              params.delete("target_lang");
+            }
+            const qs = params.toString();
+            const nextUrl = window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash;
+            window.history.replaceState(window.history.state ?? null, "", nextUrl);
+          } catch {
+            // ignore
+          }
+        }
       }
 
       if (comp.shown !== undefined) {
@@ -5970,26 +5985,30 @@ function Index() {
 
   // Keep shown columns and spoken TTS synchronized with favorite languages by default
   const suppressNextShownSpokenAutoSyncRef = useRef(false);
-  const processedDefaultFavsRef = useRef<Set<string>>(
-    new Set([
-      ...getInitialFavoriteLanguages(),
-      ...getInitialTargetLanguages(),
-      ...(getShownLanguagesPreference() ?? []),
-      ...(getSpokenLanguagesPreference() ?? []),
-    ]),
-  );
+  const processedDefaultFavsRef = useRef<Set<string> | null>(null);
+  if (!processedDefaultFavsRef.current) {
+    processedDefaultFavsRef.current = new Set([
+      ...favoriteLanguages,
+      ...targetLanguages,
+      ...shown,
+      ...spoken,
+    ]);
+  }
   useEffect(() => {
     if (suppressNextShownSpokenAutoSyncRef.current) {
       suppressNextShownSpokenAutoSyncRef.current = false;
       return;
     }
+    const processedSet =
+      processedDefaultFavsRef.current ??
+      (processedDefaultFavsRef.current = new Set([...favoriteLanguages, ...targetLanguages]));
     setShown((prevShown) => {
       const missingInShown = targetLanguages.filter((l) => !prevShown.includes(l));
       const allFavs = Array.from(new Set([...favoriteLanguages, ...targetLanguages]));
-      const newFavsToDefault = allFavs.filter((lang) => !processedDefaultFavsRef.current.has(lang));
+      const newFavsToDefault = allFavs.filter((lang) => !processedSet.has(lang));
       const toAdd = Array.from(new Set([...missingInShown, ...newFavsToDefault]));
       if (toAdd.length === 0) return prevShown;
-      newFavsToDefault.forEach((l) => processedDefaultFavsRef.current.add(l));
+      newFavsToDefault.forEach((l) => processedSet.add(l));
       const next = Array.from(new Set([...prevShown, ...toAdd]));
       if (prevShown.length === next.length && prevShown.every((c, i) => c === next[i])) {
         return prevShown;
@@ -5998,9 +6017,9 @@ function Index() {
     });
 
     const allFavs = Array.from(new Set([...favoriteLanguages, ...targetLanguages]));
-    const newFavsToDefault = allFavs.filter((lang) => !processedDefaultFavsRef.current.has(lang));
+    const newFavsToDefault = allFavs.filter((lang) => !processedSet.has(lang));
     if (newFavsToDefault.length > 0) {
-      newFavsToDefault.forEach((l) => processedDefaultFavsRef.current.add(l));
+      newFavsToDefault.forEach((l) => processedSet.add(l));
       setSpoken((prevSpoken) => {
         const next = Array.from(new Set([...prevSpoken, ...newFavsToDefault]));
         if (prevSpoken.length === next.length && prevSpoken.every((c, i) => c === next[i])) {
