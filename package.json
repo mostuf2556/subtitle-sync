@@ -1,6 +1,6 @@
 {
   "name": "subtitle-sync",
-  "version": "2.1.134",
+  "version": "2.1.135",
   "private": true,
   "sideEffects": false,
   "type": "module",
@@ -25,6 +25,7 @@
     "test:default-native-tts-and-ondemand-x7": "tsx scripts/verify-default-native-tts-and-ondemand-x7.ts",
     "test:android-menus-responsiveness": "tsx scripts/verify-android-menus-responsiveness.ts",
     "test:performance-level-graph": "tsx scripts/verify-performance-level-graph.ts",
+    "test:learning-goals-profile-full-persistence": "tsx scripts/verify-learning-goals-profile-full-persistence.ts",
     "test:language-selector-manual-performance": "tsx scripts/verify-language-selector-manual-performance.ts",
     "test:tab-change-keeps-video-playing": "tsx scripts/verify-tab-change-keeps-video-playing.ts",
     "test:learning-goals-no-autoscroll": "tsx scripts/verify-learning-goals-no-autoscroll.ts",

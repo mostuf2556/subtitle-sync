@@ -406,17 +406,30 @@ import {
   extractLanguageCodeString,
   getTtsVolumesPreference,
   setTtsVolumePreference as saveTtsVolumePreference,
+  saveAllTtsRatiosPreference,
+  saveAllTtsRatesPreference,
+  saveAllTtsVolumesPreference,
   getLanguageTtsVolume,
   getZeroKnowledgeInLang,
   setZeroKnowledgeInLang,
   toggleZeroKnowledgeInLang,
   getAllZeroKnowledgeInLang,
+  setAllZeroKnowledgeInLang,
   getPickWordStrategy,
   setPickWordStrategy,
+  getAllPerLanguagePickWordStrategies,
+  setAllPerLanguagePickWordStrategies,
   ZERO_KNOWLEDGE_EVENT,
   PICK_WORD_STRATEGY_EVENT,
+  getSectionOrderPreference,
   saveSectionOrderPreference,
   saveTtsLanguageOrdersPreference,
+  getLanguageOrderPreference,
+  saveLanguageOrderPreference,
+  getShownLanguagesPreference,
+  saveShownLanguagesPreference,
+  getSpokenLanguagesPreference,
+  saveSpokenLanguagesPreference,
   getTableDisplayModePreference,
   setTableDisplayModePreference,
   getCriteriaMatchActionPreference,
@@ -1759,15 +1772,31 @@ function Index() {
 
   // For any favorite language - by default do checkbox on for both options: present in table & tts-play
   const [shown, setShown] = useState<string[]>(() => {
+    const persistedShown = getShownLanguagesPreference();
+    if (persistedShown !== null) return persistedShown;
     const favs = getInitialFavoriteLanguages();
     const targets = getInitialTargetLanguages();
     return Array.from(new Set([...favs, ...targets]));
   });
   const [spoken, setSpoken] = useState<string[]>(() => {
+    const persistedSpoken = getSpokenLanguagesPreference();
+    if (persistedSpoken !== null) return persistedSpoken;
     const favs = getInitialFavoriteLanguages();
     const targets = getInitialTargetLanguages();
     return Array.from(new Set([...favs, ...targets]));
   });
+  const hasMountedShownSpokenRef = useRef(false);
+  useEffect(() => {
+    if (!hasMountedShownSpokenRef.current) {
+      hasMountedShownSpokenRef.current = true;
+      return;
+    }
+    saveShownLanguagesPreference(shown);
+  }, [shown]);
+  useEffect(() => {
+    if (!hasMountedShownSpokenRef.current) return;
+    saveSpokenLanguagesPreference(spoken);
+  }, [spoken]);
 
   const handleUpdateFavoriteLanguages = (newFavs: string[]) => {
     const uniqueFavs = Array.from(new Set(newFavs));
@@ -2111,7 +2140,16 @@ function Index() {
     setCriteriaMatchActionPreference(action);
   }, []);
 
-  const [manualBaseOverrideVideoId, setManualBaseOverrideVideoId] = useState<string>("");
+  const [manualBaseOverrideVideoId, setManualBaseOverrideVideoId] = useState<string>(() => {
+    const activeId = getActiveRatioCompositionId();
+    const activeComp = getStoredRatioCompositions().find((c) => c.id === activeId);
+    if (activeComp && !activeComp.isBuiltIn && activeComp.baseLanguage) {
+      return typeof window !== "undefined"
+        ? parseVideoId(window.location.search) || DEMO_VIDEO
+        : "";
+    }
+    return "";
+  });
   const lastAutoKingSyncRef = useRef<string>("");
 
   const kingOfCommaResult = useMemo(
@@ -3130,7 +3168,13 @@ function Index() {
       }
     }
   };
-  const [languageOrder, setLanguageOrder] = useState(() => LANGS.map((lang) => lang.code));
+  const [languageOrder, setLanguageOrder] = useState<string[]>(() => {
+    const saved = getLanguageOrderPreference();
+    const defaultCodes = LANGS.map((lang) => lang.code);
+    if (saved.length === 0) return defaultCodes;
+    const extra = defaultCodes.filter((c) => !saved.includes(c));
+    return [...saved, ...extra];
+  });
   const [ttsRatios, setTtsRatios] = useState<Record<string, number>>(() => {
     const saved = getTtsRatiosPreference();
     const defaults = Object.fromEntries(LANGS.map((lang) => [lang.code, 1]));
@@ -3173,7 +3217,9 @@ function Index() {
     [videoId],
   );
 
-  const [sectionOrder, setSectionOrderState] = useState<SectionOrder>("video-first");
+  const [sectionOrder, setSectionOrderState] = useState<SectionOrder>(() =>
+    getSectionOrderPreference(),
+  );
 
   const [activeRatioCompositionId, setActiveRatioCompositionIdState] = useState<string>(() =>
     getActiveRatioCompositionId(),
@@ -3183,69 +3229,271 @@ function Index() {
     getStoredRatioCompositions(),
   );
 
+  const primaryTtsLang = useMemo(() => {
+    // The explicit is-primary column selection is the only way to define the tts-ratio absolute parent
+    if (primaryTtsLangState) {
+      return primaryTtsLangState;
+    }
+    const saved = getPrimaryTtsLang();
+    if (saved) {
+      return saved;
+    }
+    return spoken[0] || "en";
+  }, [primaryTtsLangState, spoken]);
+
   const handleSelectRatioComposition = useCallback(
     (comp: LanguageRatioComposition) => {
       setActiveRatioCompositionIdState(comp.id);
       setActiveRatioCompositionId(comp.id);
-      const targetLangs = Array.from(
-        new Set([baseLanguage, primaryTtsLangState, ...targetLanguages].filter(Boolean)),
-      );
-      const nextRatios = resolveCompositionRatios(comp, targetLangs, primaryTtsLangState);
-      setTtsRatios((prev) => ({ ...prev, ...nextRatios }));
-      for (const [lang, ratio] of Object.entries(nextRatios)) {
-        saveTtsRatioPreference(lang, ratio);
+
+      const nextFavs =
+        comp.favoriteLanguages !== undefined
+          ? Array.from(new Set(comp.favoriteLanguages.map(canonicalizeLangCode).filter(Boolean)))
+          : undefined;
+      const favsChanged =
+        nextFavs !== undefined &&
+        (nextFavs.length !== favoriteLanguages.length ||
+          nextFavs.some((c, i) => c !== favoriteLanguages[i]));
+      if (nextFavs !== undefined) {
+        setFavoriteLanguagesState(nextFavs);
+        setFavoriteLanguages(nextFavs);
       }
 
+      const nextTargets =
+        comp.targetLanguages !== undefined
+          ? Array.from(new Set(comp.targetLanguages.map(canonicalizeLangCode).filter(Boolean)))
+          : undefined;
+      const targetsChanged =
+        nextTargets !== undefined &&
+        (nextTargets.length !== targetLanguages.length ||
+          nextTargets.some((c, i) => c !== targetLanguages[i]));
+
+      if (
+        (comp.shown !== undefined || comp.spoken !== undefined) &&
+        (favsChanged || targetsChanged)
+      ) {
+        suppressNextShownSpokenAutoSyncRef.current = true;
+      }
+
+      if (nextTargets !== undefined) {
+        for (const l of [...(nextFavs ?? favoriteLanguages), ...nextTargets]) {
+          processedDefaultFavsRef.current.add(l);
+        }
+        setTargetLanguages(nextTargets);
+        targetLanguagesRef.current = nextTargets;
+        setUserLearningLanguages(nextTargets);
+        setFailedLangs((prev) => prev.filter((lang) => nextTargets.includes(lang)));
+      }
+
+      if (comp.shown !== undefined) {
+        const cleanShown = Array.from(
+          new Set(comp.shown.map(canonicalizeLangCode).filter(Boolean)),
+        );
+        setShown(cleanShown);
+        saveShownLanguagesPreference(cleanShown);
+      } else if (nextTargets !== undefined || nextFavs !== undefined) {
+        const fallbackShown = Array.from(
+          new Set([...(nextFavs ?? favoriteLanguages), ...(nextTargets ?? targetLanguages)]),
+        );
+        setShown(fallbackShown);
+        saveShownLanguagesPreference(fallbackShown);
+      }
+
+      if (comp.spoken !== undefined) {
+        const cleanSpoken = Array.from(
+          new Set(comp.spoken.map(canonicalizeLangCode).filter(Boolean)),
+        );
+        setSpoken(cleanSpoken);
+        saveSpokenLanguagesPreference(cleanSpoken);
+      } else if (nextTargets !== undefined || nextFavs !== undefined) {
+        const fallbackSpoken = Array.from(
+          new Set([...(nextFavs ?? favoriteLanguages), ...(nextTargets ?? targetLanguages)]),
+        );
+        setSpoken(fallbackSpoken);
+        saveSpokenLanguagesPreference(fallbackSpoken);
+      }
+
+      if (comp.baseLanguage) {
+        const nextBase = canonicalizeLangCode(comp.baseLanguage) || comp.baseLanguage;
+        const normSelected = nextBase === "iw" ? "he" : nextBase;
+        const normKing = kingOfCommaLang === "iw" ? "he" : kingOfCommaLang;
+        if (normKing && normSelected === normKing) {
+          setManualBaseOverrideVideoId("");
+        } else {
+          setManualBaseOverrideVideoId(videoId);
+        }
+        setExplicitBaseLanguage(nextBase);
+        setDefaultLanguage(nextBase);
+        setBaseLanguagePreference(nextBase);
+        setMotherTongueLanguage(nextBase, false);
+      }
+
+      const effectivePrimaryTts =
+        comp.primaryTtsLang !== undefined ? comp.primaryTtsLang : primaryTtsLangState;
+      if (comp.primaryTtsLang !== undefined) {
+        setPrimaryTtsLangState(comp.primaryTtsLang);
+        setPrimaryTtsLang(comp.primaryTtsLang);
+      }
+
+      if (comp.languageOrder !== undefined && comp.languageOrder.length > 0) {
+        const defaultCodes = LANGS.map((l) => l.code);
+        const cleanedOrder = Array.from(
+          new Set(comp.languageOrder.map(canonicalizeLangCode).filter(Boolean)),
+        );
+        const mergedOrder = [
+          ...cleanedOrder,
+          ...defaultCodes.filter((c) => !cleanedOrder.includes(c)),
+        ];
+        setLanguageOrder(mergedOrder);
+        saveLanguageOrderPreference(mergedOrder);
+      }
+
+      const effectiveFavs = nextFavs ?? favoriteLanguages;
+      const effectiveTargets = nextTargets ?? targetLanguages;
+      const effectiveBase = comp.baseLanguage || baseLanguage;
+      const targetLangs = Array.from(
+        new Set(
+          [
+            ...LANGS.map((l) => l.code),
+            effectiveBase,
+            effectivePrimaryTts,
+            ...effectiveFavs,
+            ...effectiveTargets,
+            ...Object.keys(comp.ratios || {}),
+          ].filter(Boolean),
+        ),
+      );
+      const nextRatios = resolveCompositionRatios(comp, targetLangs, effectivePrimaryTts);
+      setTtsRatios((prev) => ({ ...prev, ...nextRatios }));
+      saveAllTtsRatiosPreference(nextRatios);
+
       // Restore profile extensions if present
+      if (
+        typeof comp.maxWordsPerSentence === "number" ||
+        typeof comp.skipIncompleteSentences === "boolean"
+      ) {
+        setSimpleParserConfig((prev) => {
+          const next = {
+            ...prev,
+            ...(typeof comp.maxWordsPerSentence === "number" && comp.maxWordsPerSentence > 0
+              ? { maxWordsPerSentence: comp.maxWordsPerSentence }
+              : {}),
+            ...(typeof comp.skipIncompleteSentences === "boolean"
+              ? { skipIncompleteSentences: comp.skipIncompleteSentences }
+              : {}),
+          };
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem("yt_simple_parser_config", JSON.stringify(next));
+            } catch {
+              // ignore
+            }
+          }
+          return next;
+        });
+      }
       if (typeof comp.maxWordsPerSentence === "number" && comp.maxWordsPerSentence > 0) {
-        setSimpleParserConfig((prev) => ({
-          ...prev,
-          maxWordsPerSentence: comp.maxWordsPerSentence!,
-        }));
         saveLearningGoalsMaxWords(comp.maxWordsPerSentence);
       }
       if (typeof comp.skipIncompleteSentences === "boolean") {
-        setSimpleParserConfig((prev) => ({
-          ...prev,
-          skipIncompleteSentences: comp.skipIncompleteSentences!,
-        }));
         saveLearningGoalsSkipIncomplete(comp.skipIncompleteSentences);
       }
+
+      if (comp.languageMaxWords !== undefined) {
+        const nextLangMax = { ...comp.languageMaxWords };
+        saveAllLearningGoalsLanguageMaxWords(nextLangMax);
+        setLanguageMaxWords(nextLangMax);
+        languageMaxWordsRef.current = nextLangMax;
+      }
+      if (comp.languageSkipIncomplete !== undefined) {
+        const nextLangSkip = { ...comp.languageSkipIncomplete };
+        saveAllLearningGoalsLanguageSkipIncomplete(nextLangSkip);
+        setLanguageSkipIncomplete(nextLangSkip);
+        languageSkipIncompleteRef.current = nextLangSkip;
+      }
+
       if (comp.sectionOrder) {
         setSectionOrderState(comp.sectionOrder);
         st.current.sectionOrder = comp.sectionOrder;
         saveSectionOrderPreference(comp.sectionOrder);
       }
-      if (comp.rates && Object.keys(comp.rates).length > 0) {
-        setRates((prev) => ({ ...prev, ...comp.rates }));
-        for (const [l, r] of Object.entries(comp.rates)) {
-          saveTtsRatePreference(l, r);
-        }
+
+      let nextRates: Record<string, number> | undefined;
+      if (comp.rates !== undefined) {
+        nextRates = {
+          ...Object.fromEntries(
+            LANGS.map((lang) => [lang.code, getDefaultLanguageTtsRate(lang.code)] as const),
+          ),
+          ...comp.rates,
+        };
+        setRates(nextRates);
+        saveAllTtsRatesPreference(nextRates);
       }
-      if (comp.volumes && Object.keys(comp.volumes).length > 0) {
-        setTtsVolumes((prev) => ({ ...prev, ...comp.volumes }));
-        for (const [l, v] of Object.entries(comp.volumes)) {
-          saveTtsVolumePreference(l, v);
-        }
+
+      let nextVolumes: Record<string, number> | undefined;
+      if (comp.volumes !== undefined) {
+        nextVolumes = {
+          ...Object.fromEntries(LANGS.map((lang) => [lang.code, 1.0] as const)),
+          ...comp.volumes,
+        };
+        setTtsVolumes(nextVolumes);
+        saveAllTtsVolumesPreference(nextVolumes);
       }
-      if (comp.ttsLanguageOrders && Object.keys(comp.ttsLanguageOrders).length > 0) {
-        setTtsLanguageOrders((prev) => ({ ...prev, ...comp.ttsLanguageOrders }));
-        saveTtsLanguageOrdersPreference(comp.ttsLanguageOrders);
+
+      if (comp.ttsLanguageOrders !== undefined) {
+        const nextOrders = { ...comp.ttsLanguageOrders };
+        setTtsLanguageOrders(nextOrders);
+        saveTtsLanguageOrdersPreference(nextOrders);
+      }
+
+      if (comp.ttsBlacklist !== undefined) {
+        const nextBlacklist = [...comp.ttsBlacklist];
+        setTtsBlacklistState(nextBlacklist);
+        setTtsBlacklist(nextBlacklist);
+      }
+
+      if (comp.zeroKnowledgeLangs !== undefined) {
+        const nextZk = { ...comp.zeroKnowledgeLangs };
+        setZeroKnowledgeMap(nextZk);
+        setAllZeroKnowledgeInLang(nextZk);
+      }
+
+      if (comp.pickWordStrategy !== undefined) {
+        setPickWordStrategy(comp.pickWordStrategy);
+        setPickWordStrategyState(comp.pickWordStrategy);
+      }
+
+      if (comp.perLanguagePickWordStrategies !== undefined) {
+        setAllPerLanguagePickWordStrategies(comp.perLanguagePickWordStrategies);
       }
 
       if (videoId) {
-        saveVideoSettings(videoId, {
-          ttsRatios: nextRatios,
-          maxWordsPerSentence: comp.maxWordsPerSentence,
-          skipIncompleteSentences: comp.skipIncompleteSentences,
-          ttsRates: comp.rates,
-          ttsVolumes: comp.volumes,
-          ttsLanguageOrders: comp.ttsLanguageOrders,
-        });
+        saveVideoSettings(
+          videoId,
+          {
+            targetLanguages: effectiveTargets,
+            ttsBlacklist: comp.ttsBlacklist,
+            sourceLang: comp.baseLanguage,
+            ttsRatios: nextRatios,
+            maxWordsPerSentence: comp.maxWordsPerSentence,
+            skipIncompleteSentences: comp.skipIncompleteSentences,
+            ttsRates: nextRates,
+            ttsVolumes: nextVolumes,
+            ttsLanguageOrders: comp.ttsLanguageOrders,
+          },
+          { replaceMaps: true },
+        );
       }
       notifySubtitleFetch("completed", `Applied profile "${comp.name}"`, comp.id);
     },
-    [baseLanguage, primaryTtsLangState, targetLanguages, videoId],
+    [
+      baseLanguage,
+      favoriteLanguages,
+      kingOfCommaLang,
+      primaryTtsLangState,
+      targetLanguages,
+      videoId,
+    ],
   );
 
   const handleSaveComposition = useCallback(
@@ -3260,7 +3508,23 @@ function Index() {
           rates,
           volumes: ttsVolumes,
           ttsLanguageOrders,
+          favoriteLanguages,
+          targetLanguages,
+          baseLanguage: explicitBaseLanguage || baseLanguage,
+          primaryTtsLang: primaryTtsLangState || primaryTtsLang,
+          languageOrder,
+          ttsBlacklist,
+          zeroKnowledgeLangs: zeroKnowledgeMap,
+          pickWordStrategy: pickWordStrategyState,
+          perLanguagePickWordStrategies: getAllPerLanguagePickWordStrategies(),
+          languageMaxWords,
+          languageSkipIncomplete,
+          shown,
+          spoken,
         });
+        saveLanguageOrderPreference(languageOrder);
+        saveShownLanguagesPreference(shown);
+        saveSpokenLanguagesPreference(spoken);
         setStoredCompositions(getStoredRatioCompositions());
         setActiveRatioCompositionIdState(saved.id);
         setNewCompositionName("");
@@ -3278,6 +3542,20 @@ function Index() {
       rates,
       ttsVolumes,
       ttsLanguageOrders,
+      favoriteLanguages,
+      targetLanguages,
+      explicitBaseLanguage,
+      baseLanguage,
+      primaryTtsLangState,
+      primaryTtsLang,
+      languageOrder,
+      ttsBlacklist,
+      zeroKnowledgeMap,
+      pickWordStrategyState,
+      languageMaxWords,
+      languageSkipIncomplete,
+      shown,
+      spoken,
     ],
   );
 
@@ -3286,10 +3564,10 @@ function Index() {
       try {
         const payload: Parameters<typeof updateRatioComposition>[1] = {
           ...updates,
-          ratios: updates.ratios || ttsRatios,
-          rates: updates.rates || rates,
-          volumes: updates.volumes || ttsVolumes,
-          sectionOrder: updates.sectionOrder || sectionOrder,
+          ratios: updates.ratios ?? ttsRatios,
+          rates: updates.rates ?? rates,
+          volumes: updates.volumes ?? ttsVolumes,
+          sectionOrder: updates.sectionOrder ?? sectionOrder,
           maxWordsPerSentence:
             updates.maxWordsPerSentence !== undefined
               ? updates.maxWordsPerSentence
@@ -3298,10 +3576,33 @@ function Index() {
             updates.skipIncompleteSentences !== undefined
               ? updates.skipIncompleteSentences
               : simpleParserConfig.skipIncompleteSentences,
-          ttsLanguageOrders: updates.ttsLanguageOrders || ttsLanguageOrders,
+          ttsLanguageOrders: updates.ttsLanguageOrders ?? ttsLanguageOrders,
+          favoriteLanguages: updates.favoriteLanguages ?? favoriteLanguages,
+          targetLanguages: updates.targetLanguages ?? targetLanguages,
+          baseLanguage:
+            updates.baseLanguage !== undefined
+              ? updates.baseLanguage
+              : explicitBaseLanguage || baseLanguage,
+          primaryTtsLang:
+            updates.primaryTtsLang !== undefined
+              ? updates.primaryTtsLang
+              : primaryTtsLangState || primaryTtsLang,
+          languageOrder: updates.languageOrder ?? languageOrder,
+          ttsBlacklist: updates.ttsBlacklist ?? ttsBlacklist,
+          zeroKnowledgeLangs: updates.zeroKnowledgeLangs ?? zeroKnowledgeMap,
+          pickWordStrategy: updates.pickWordStrategy ?? pickWordStrategyState,
+          perLanguagePickWordStrategies:
+            updates.perLanguagePickWordStrategies ?? getAllPerLanguagePickWordStrategies(),
+          languageMaxWords: updates.languageMaxWords ?? languageMaxWords,
+          languageSkipIncomplete: updates.languageSkipIncomplete ?? languageSkipIncomplete,
+          shown: updates.shown ?? shown,
+          spoken: updates.spoken ?? spoken,
         };
         const updated = updateRatioComposition(id, payload);
         if (updated) {
+          saveLanguageOrderPreference(updated.languageOrder ?? languageOrder);
+          saveShownLanguagesPreference(updated.shown ?? shown);
+          saveSpokenLanguagesPreference(updated.spoken ?? spoken);
           setStoredCompositions(getStoredRatioCompositions());
           notifySubtitleFetch("completed", `Updated profile "${updated.name}"!`, updated.id);
         }
@@ -3317,6 +3618,20 @@ function Index() {
       simpleParserConfig.maxWordsPerSentence,
       simpleParserConfig.skipIncompleteSentences,
       ttsLanguageOrders,
+      favoriteLanguages,
+      targetLanguages,
+      explicitBaseLanguage,
+      baseLanguage,
+      primaryTtsLangState,
+      primaryTtsLang,
+      languageOrder,
+      ttsBlacklist,
+      zeroKnowledgeMap,
+      pickWordStrategyState,
+      languageMaxWords,
+      languageSkipIncomplete,
+      shown,
+      spoken,
     ],
   );
 
@@ -3330,17 +3645,6 @@ function Index() {
     },
     [activeRatioCompositionId],
   );
-  const primaryTtsLang = useMemo(() => {
-    // The explicit is-primary column selection is the only way to define the tts-ratio absolute parent
-    if (primaryTtsLangState) {
-      return primaryTtsLangState;
-    }
-    const saved = getPrimaryTtsLang();
-    if (saved) {
-      return saved;
-    }
-    return spoken[0] || "en";
-  }, [primaryTtsLangState, spoken]);
   const handleTtsLanguageOrderChange = useCallback((languageCode: string, order: SectionOrder) => {
     setTtsLanguageOrders((current) => ({ ...current, [languageCode]: order }));
     setTtsLanguageOrderPreference(languageCode, order);
@@ -5665,10 +5969,20 @@ function Index() {
   ]);
 
   // Keep shown columns and spoken TTS synchronized with favorite languages by default
+  const suppressNextShownSpokenAutoSyncRef = useRef(false);
   const processedDefaultFavsRef = useRef<Set<string>>(
-    new Set([...getInitialFavoriteLanguages(), ...getInitialTargetLanguages()]),
+    new Set([
+      ...getInitialFavoriteLanguages(),
+      ...getInitialTargetLanguages(),
+      ...(getShownLanguagesPreference() ?? []),
+      ...(getSpokenLanguagesPreference() ?? []),
+    ]),
   );
   useEffect(() => {
+    if (suppressNextShownSpokenAutoSyncRef.current) {
+      suppressNextShownSpokenAutoSyncRef.current = false;
+      return;
+    }
     setShown((prevShown) => {
       const missingInShown = targetLanguages.filter((l) => !prevShown.includes(l));
       const allFavs = Array.from(new Set([...favoriteLanguages, ...targetLanguages]));
@@ -5731,8 +6045,12 @@ function Index() {
     const savedLangs = getUserLearningLanguages();
     if (savedLangs && savedLangs.length > 0) {
       setTargetLanguages(savedLangs);
-      setShown((prev) => Array.from(new Set([...prev, ...savedLangs])));
-      setSpoken((prev) => Array.from(new Set([...prev, ...savedLangs])));
+      if (getShownLanguagesPreference() === null) {
+        setShown((prev) => Array.from(new Set([...prev, ...savedLangs])));
+      }
+      if (getSpokenLanguagesPreference() === null) {
+        setSpoken((prev) => Array.from(new Set([...prev, ...savedLangs])));
+      }
     }
     setAudioTrackModeState(getAudioTrackMode());
     const persistedAutoScroll = getAutoScrollSetting();
@@ -8284,11 +8602,15 @@ function Index() {
 
   const moveLanguage = (code: string, direction: -1 | 1) => {
     setLanguageOrder((current) => {
-      const index = current.indexOf(code);
+      const baseList = current.includes(code)
+        ? current
+        : Array.from(new Set([...current, ...targetLanguagesRef.current, code]));
+      const index = baseList.indexOf(code);
       const next = index + direction;
-      if (index < 0 || next < 0 || next >= current.length) return current;
-      const copy = [...current];
+      if (index < 0 || next < 0 || next >= baseList.length) return baseList;
+      const copy = [...baseList];
       [copy[index], copy[next]] = [copy[next]!, copy[index]!];
+      saveLanguageOrderPreference(copy);
       return copy;
     });
 

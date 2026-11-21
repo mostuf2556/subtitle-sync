@@ -68,11 +68,20 @@ const KEYS = {
   ttsVolumes: "yt_tts_volumes_v1",
   tableDisplayMode: "yt_table_display_mode_v1",
   criteriaMatchAction: "yt_criteria_match_action_v1",
+  languageOrder: "yt_language_order_v1",
+  shownLanguages: "yt_shown_languages_v1",
+  spokenLanguages: "yt_spoken_languages_v1",
 } as const;
 
 const memoryStorage = new Map<string, string>();
 
-function getStorage(): { getItem(k: string): string | null; setItem(k: string, v: string): void } {
+function getStorage(): {
+  getItem(k: string): string | null;
+  setItem(k: string, v: string): void;
+  removeItem?(k: string): void;
+  length?: number;
+  key?(index: number): string | null;
+} {
   try {
     if (typeof window !== "undefined" && window.localStorage) {
       return window.localStorage;
@@ -85,7 +94,35 @@ function getStorage(): { getItem(k: string): string | null; setItem(k: string, v
     setItem: (k: string, v: string) => {
       memoryStorage.set(k, v);
     },
+    removeItem: (k: string) => {
+      memoryStorage.delete(k);
+    },
+    get length() {
+      return memoryStorage.size;
+    },
+    key: (index: number) => Array.from(memoryStorage.keys())[index] ?? null,
   };
+}
+
+function removeStorageKeysByPrefix(prefix: string, excludeKeys: string[] = []): void {
+  const s = getStorage();
+  try {
+    if (typeof s.removeItem !== "function") return;
+    if (typeof s.length === "number" && typeof s.key === "function") {
+      const toRemove: string[] = [];
+      for (let i = 0; i < s.length; i++) {
+        const k = s.key(i);
+        if (k && k.startsWith(prefix) && !excludeKeys.includes(k)) {
+          toRemove.push(k);
+        }
+      }
+      for (const k of toRemove) {
+        s.removeItem(k);
+      }
+    }
+  } catch {
+    // ignore
+  }
 }
 
 export function getTtsBlacklist(): string[] {
@@ -296,6 +333,20 @@ export const setTtsRatioPreference = (langCode: string, ratio: number) => {
   }
 };
 export const saveTtsRatioPreference = setTtsRatioPreference;
+export const saveAllTtsRatiosPreference = (ratios: Record<string, number>): void => {
+  const s = getStorage();
+  try {
+    const cleaned: Record<string, number> = {};
+    for (const [k, v] of Object.entries(ratios || {})) {
+      if (typeof v === "number" && Number.isFinite(v) && v > 0) {
+        cleaned[k] = Math.max(1, Math.min(20, Math.round(v)));
+      }
+    }
+    s.setItem(KEYS.ttsRatios, JSON.stringify(cleaned));
+  } catch {
+    // ignore
+  }
+};
 export function getDefaultLanguageTtsRate(langCode?: string | null): number {
   if (!langCode || typeof langCode !== "string") return 0.8;
   const normalized = langCode.trim().toLowerCase().split(/[-_]/)[0];
@@ -338,6 +389,20 @@ export const setTtsRatePreference = (langCode: string, rate: number) => {
   }
 };
 export const saveTtsRatePreference = setTtsRatePreference;
+export const saveAllTtsRatesPreference = (rates: Record<string, number>): void => {
+  const s = getStorage();
+  try {
+    const cleaned: Record<string, number> = {};
+    for (const [k, v] of Object.entries(rates || {})) {
+      if (typeof v === "number" && Number.isFinite(v)) {
+        cleaned[k] = Math.max(0.25, Math.min(2.5, Math.round(v * 100) / 100));
+      }
+    }
+    s.setItem(KEYS.ttsRates, JSON.stringify(cleaned));
+  } catch {
+    // ignore
+  }
+};
 
 export const getTtsVolumesPreference = (): Record<string, number> => {
   if (typeof window === "undefined") return {};
@@ -367,6 +432,20 @@ export const setTtsVolumePreference = (langCode: string, volume: number) => {
   }
 };
 export const saveTtsVolumePreference = setTtsVolumePreference;
+export const saveAllTtsVolumesPreference = (volumes: Record<string, number>): void => {
+  const s = getStorage();
+  try {
+    const cleaned: Record<string, number> = {};
+    for (const [k, v] of Object.entries(volumes || {})) {
+      if (typeof v === "number" && Number.isFinite(v)) {
+        cleaned[k] = Math.max(0, Math.min(1, Math.round(v * 100) / 100));
+      }
+    }
+    s.setItem(KEYS.ttsVolumes, JSON.stringify(cleaned));
+  } catch {
+    // ignore
+  }
+};
 
 export const getLanguageTtsVolume = (
   volumes: Record<string, number> | undefined | null,
@@ -1162,12 +1241,83 @@ export function getAllZeroKnowledgeInLang(): Record<string, boolean> {
 export function setAllZeroKnowledgeInLang(map: Record<string, boolean>): void {
   const s = getStorage();
   try {
-    s.setItem(KEYS.zeroKnowledgeInLang, JSON.stringify(map));
-    for (const [code, val] of Object.entries(map)) {
-      s.setItem(`yt_zero_knowledge_${code.toLowerCase()}`, val ? "true" : "false");
+    const prev = getAllZeroKnowledgeInLang();
+    if (typeof s.removeItem === "function") {
+      for (const prevCode of Object.keys(prev)) {
+        s.removeItem(`yt_zero_knowledge_${prevCode.toLowerCase()}`);
+      }
     }
+    removeStorageKeysByPrefix("yt_zero_knowledge_", [KEYS.zeroKnowledgeInLang]);
+
+    const normalized: Record<string, boolean> = {};
+    for (const [code, val] of Object.entries(map || {})) {
+      const clean = extractLanguageCodeString(code).toLowerCase();
+      if (!clean) continue;
+      normalized[clean] = Boolean(val);
+      s.setItem(`yt_zero_knowledge_${clean}`, val ? "true" : "false");
+    }
+    s.setItem(KEYS.zeroKnowledgeInLang, JSON.stringify(normalized));
     if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent(ZERO_KNOWLEDGE_EVENT, { detail: { map } }));
+      window.dispatchEvent(new CustomEvent(ZERO_KNOWLEDGE_EVENT, { detail: { map: normalized } }));
+    }
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * Gets all per-language pick word strategies as a map of languageCode -> PickWordStrategy.
+ */
+export function getAllPerLanguagePickWordStrategies(): Record<string, PickWordStrategy> {
+  const s = getStorage();
+  try {
+    const raw = s.getItem(KEYS.perLangPickWordStrategy);
+    if (!raw) return {};
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    const result: Record<string, PickWordStrategy> = {};
+    for (const [k, v] of Object.entries(parsed)) {
+      const clean = extractLanguageCodeString(k).toLowerCase();
+      if (clean && (v === "longest" || v === "random")) {
+        result[clean] = v;
+      }
+    }
+    return result;
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Sets all per-language pick word strategies from a map of languageCode -> PickWordStrategy.
+ */
+export function setAllPerLanguagePickWordStrategies(map: Record<string, PickWordStrategy>): void {
+  const s = getStorage();
+  try {
+    const prev = getAllPerLanguagePickWordStrategies();
+    if (typeof s.removeItem === "function") {
+      for (const prevCode of Object.keys(prev)) {
+        s.removeItem(`yt_pick_word_strategy_${prevCode.toLowerCase()}`);
+      }
+    }
+    removeStorageKeysByPrefix("yt_pick_word_strategy_", [
+      KEYS.pickWordStrategy,
+      KEYS.perLangPickWordStrategy,
+    ]);
+
+    const normalized: Record<string, PickWordStrategy> = {};
+    for (const [code, val] of Object.entries(map || {})) {
+      const clean = extractLanguageCodeString(code).toLowerCase();
+      if (clean && (val === "longest" || val === "random")) {
+        normalized[clean] = val;
+        s.setItem(`yt_pick_word_strategy_${clean}`, val);
+      }
+    }
+    s.setItem(KEYS.perLangPickWordStrategy, JSON.stringify(normalized));
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent(PICK_WORD_STRATEGY_EVENT, { detail: { map: normalized } }),
+      );
     }
   } catch {
     // ignore
@@ -1227,6 +1377,78 @@ export function setPickWordStrategy(strategy: PickWordStrategy, langCode?: unkno
         new CustomEvent(PICK_WORD_STRATEGY_EVENT, { detail: { langCode: code, strategy } }),
       );
     }
+  } catch {
+    // ignore
+  }
+}
+
+export function getLanguageOrderPreference(): string[] {
+  const s = getStorage();
+  try {
+    const raw = s.getItem(KEYS.languageOrder);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? extractLanguageCodeList(parsed) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveLanguageOrderPreference(order: unknown[]): void {
+  const s = getStorage();
+  try {
+    const cleaned = extractLanguageCodeList(order);
+    s.setItem(KEYS.languageOrder, JSON.stringify(cleaned));
+  } catch {
+    // ignore
+  }
+}
+
+export function getShownLanguagesPreference(): string[] | null {
+  const s = getStorage();
+  try {
+    const raw = s.getItem(KEYS.shownLanguages);
+    if (raw === null) return null;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? extractLanguageCodeList(parsed) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveShownLanguagesPreference(langs: unknown[] | null): void {
+  const s = getStorage();
+  try {
+    if (langs === null) {
+      s.removeItem?.(KEYS.shownLanguages);
+      return;
+    }
+    s.setItem(KEYS.shownLanguages, JSON.stringify(extractLanguageCodeList(langs)));
+  } catch {
+    // ignore
+  }
+}
+
+export function getSpokenLanguagesPreference(): string[] | null {
+  const s = getStorage();
+  try {
+    const raw = s.getItem(KEYS.spokenLanguages);
+    if (raw === null) return null;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? extractLanguageCodeList(parsed) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveSpokenLanguagesPreference(langs: unknown[] | null): void {
+  const s = getStorage();
+  try {
+    if (langs === null) {
+      s.removeItem?.(KEYS.spokenLanguages);
+      return;
+    }
+    s.setItem(KEYS.spokenLanguages, JSON.stringify(extractLanguageCodeList(langs)));
   } catch {
     // ignore
   }
