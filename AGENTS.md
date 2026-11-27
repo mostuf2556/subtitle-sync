@@ -110,8 +110,6 @@ Sequential subtitle pipeline:
 
 ## Last raw prompt
 ```
-1. fix: the menu option (fetching subtitles) is alternating in a loop (tested on android)
-
-tts-play is no longer working and the floating button is not able to enable it
+by default the app fails to execute tts-play based on native tts
 ```
 

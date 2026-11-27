@@ -378,12 +378,16 @@ export const BeginnerPreferencesTab: React.FC<BeginnerPreferencesTabProps> = ({
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = ttsSpeed;
+      utterance.lang = baseLanguage || "en-US";
       if (ttsVoice) {
         const found = voices.find((v) => v.voiceURI === ttsVoice);
         if (found) {
           const sysVoices = window.speechSynthesis.getVoices();
           const target = sysVoices.find((v) => v.voiceURI === found.voiceURI);
-          if (target) utterance.voice = target;
+          if (target) {
+            utterance.voice = target;
+            if (target.lang) utterance.lang = target.lang;
+          }
         }
       }
       utterance.onend = () => setIsAuditioning(false);
