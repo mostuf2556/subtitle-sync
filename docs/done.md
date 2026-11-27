@@ -12265,3 +12265,26 @@
   - `npm run test:auto-speak-on-fetch` — PASS
   - `npm run test:autospeak-init` — PASS
   - `npm run test:reliable-subtitles-fetching` — PASS
+
+### Task 461 (Prompt 228): Fix `tts-play` Not Working & Floating Button Unable to Enable It (`v2.1.136`)
+- **Changes**:
+  - `src/components/FloatingDraggablePauseButton.tsx`: Stopped touch/pointer/mouse event propagation on `floating-menu-toggle-btn`, credential chips, and `floating-menu-dropdown` so Android drag handlers on `floating-draggable-pause-container` never swallow taps; added `role="menuitem"`, `tabIndex={0}`, `touchAction: "manipulation"`, Enter/Space keyboard handlers, `aria-haspopup="menu"`, `aria-expanded`, and outside touch/pointer dismissal.
+  - `src/routes/index.tsx`: Wired `onNativeSpeak: speakAndroidNativeStep` into `executeTtsFallbackSequence` inside `executeSingleSpeech` (`altTtsMode === "always"`) with `1800ms` startup watchdog -> `stopSpeaking()` -> TTS3 fallback and cancellation settlement; hardened `onTtsPlayEnabledChange(true)` to clear stale `isSetupPaused`, reset current-row block sets (`playedTtsRecords`, `playedTtsLanguageRecords`, `handledTtsFirstSections`, `handledVideoFirstSections`, `busy`), recover speakable target languages when `spoken` is empty or base-only, and immediately invoke `triggerImmediateCurrentRowTtsRef.current?.(...)`; split `tracks` / `observedUrl` / `defaultCaptionsLoaded` reset (`[isAndroid, videoId]`) from `registerLiveCaptionInterceptor` so `baseLanguage` updates never wipe intercepted subtitles; exempted explicit `native_media_command` pauses from `shouldSuppressSpuriousPause`.
+  - `scripts/verify-tts-play-and-floating-enable-android.ts` (`package.json`, `docs/files.md`), `scripts/verify-exclude-default-subtitles-tts.ts`, & version `2.1.136`: Added static contracts and 4 live Playwright Chromium Android E2E scenarios (`alt-always-native`, `1800ms` stall watchdog -> TTS3, Expert Android touch floating enablement/setup-pause clear/spoken recovery/immediate speech, Beginner parity); updated `verify-exclude-default-subtitles-tts.ts` signature check; synced `v2.1.136` (`code 20236`) via `npm run sync-version`.
+- **Verification**:
+  - `npm run sync-version` & `npm run check-version` — PASS (`v2.1.136`, `code 20236`)
+  - `npx tsc --noEmit` — PASS
+  - `npm run test:tts-play-and-floating-enable-android` — PASS (Static + Scenarios 1, 1B, 2, 3)
+  - `npm run test:tts-delay-and-no-spurious-pause-e2e` — PASS
+  - `npm run test:floating-tts-play-active-during-video` — PASS
+  - `npm run test:floating-menu-third-option-tts-play` — PASS
+  - `npm run test:default-native-tts-and-ondemand-x7` — PASS
+  - `npm run test:autofetch-no-loop-android` — PASS
+  - `npm run test:tab-change-keeps-video-playing` — PASS
+  - `npx tsx scripts/verify-exclude-default-subtitles-tts.ts` — PASS
+  - `npx tsx scripts/verify-hotfix-tts-play-enabled-init.ts` — PASS
+  - `npx tsx scripts/verify-tts-playback-coordination.ts` — PASS
+  - `npm run test:same-components-parity-policy` — PASS
+  - `npm run test:agents-all` — PASS (24/24)
+  - `npm run test:no-duplicate-md` — PASS
+  - `npm run test:lean-tokens` — PASS

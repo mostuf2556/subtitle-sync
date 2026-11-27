@@ -1,6 +1,6 @@
 {
   "name": "subtitle-sync",
-  "version": "2.1.135",
+  "version": "2.1.136",
   "private": true,
   "sideEffects": false,
   "type": "module",
@@ -19,6 +19,7 @@
     "sync-version": "tsx scripts/sync-version.ts",
     "check-version": "tsx scripts/sync-version.ts --check",
     "test:floating-tts-play-active-during-video": "tsx scripts/verify-floating-tts-play-active-during-video.ts",
+    "test:tts-play-and-floating-enable-android": "tsx scripts/verify-tts-play-and-floating-enable-android.ts",
     "test:tts-play-latency-and-floating-single-press": "tsx scripts/verify-tts-play-latency-and-floating-single-press.ts",
     "test:tts-delay-logging-and-no-spurious-pause": "tsx scripts/verify-tts-delay-logging-and-no-spurious-pause.ts",
     "test:tts-delay-and-no-spurious-pause-e2e": "tsx scripts/verify-tts-delay-and-no-spurious-pause-e2e.ts",

@@ -78,7 +78,7 @@ assert(
   "src/routes/index.tsx must filter baseLanguage from spoken state when discovered",
 );
 assert(
-  indexContent.includes("isTtsSpeakableLanguage(l.code, currentBaseLanguage)"),
+  indexContent.includes("isTtsSpeakableLanguage(l.code, currentBaseLanguage"),
   "Automatic TTS scheduling must exclude the base subtitle language",
 );
 assert(

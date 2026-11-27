@@ -831,6 +831,131 @@ function executeSingleSpeech(
       // 1. If alternative TTS service is enabled as preferred / always, speak using configured fallback sequence
       if (useAltTts && altTtsMode === "always") {
         markTtsServiceSessionActive(true);
+        const speakAndroidNativeStep = async (): Promise<boolean> => {
+          if (typeof window === "undefined" || !window.AndroidNativeShell?.speak) {
+            return false;
+          }
+          if (isCancelled()) return false;
+          return new Promise<boolean>((resolveNative) => {
+            try {
+              const utteranceId = `row-${row}-${lang}-${Date.now()}`;
+              const handled = window.AndroidNativeShell!.speak!(
+                text,
+                lang,
+                normalizedRate,
+                utteranceId,
+              );
+              if (!handled) {
+                stallReason = "android-native-not-ready";
+                resolveNative(false);
+                return;
+              }
+              engineUsed = "android-native";
+              safeProgress({
+                lang: lang.slice(0, 2),
+                row,
+                start: 0,
+                end: text.length,
+              });
+              let settled = false;
+              let nativeStarted = false;
+              let timer: ReturnType<typeof setTimeout> | null = null;
+              let nativeStartWatchdog: ReturnType<typeof setTimeout> | null = null;
+              const prevStart = window.onNativeTTSStart;
+              const prevDone = window.onNativeTTSDone;
+              const prevErr = window.onNativeTTSError;
+              const restoreNativeHandlers = () => {
+                if (window.onNativeTTSStart === handleNativeStart) {
+                  window.onNativeTTSStart = prevStart;
+                }
+                if (window.onNativeTTSDone === wrappedDone) {
+                  window.onNativeTTSDone = prevDone;
+                }
+                if (window.onNativeTTSError === handleNativeErr) {
+                  window.onNativeTTSError = prevErr;
+                }
+              };
+              const finishNative = (ok: boolean, reason?: string) => {
+                if (settled) return;
+                settled = true;
+                if (timer) clearTimeout(timer);
+                if (nativeStartWatchdog) clearTimeout(nativeStartWatchdog);
+                restoreNativeHandlers();
+                if (reason && !stallReason) stallReason = reason;
+                resolveNative(ok);
+              };
+              const handleNativeStart = (uid: string) => {
+                if (uid === utteranceId) {
+                  nativeStarted = true;
+                  if (nativeStartWatchdog) {
+                    clearTimeout(nativeStartWatchdog);
+                    nativeStartWatchdog = null;
+                  }
+                  markSpeechStarted("android-native");
+                } else if (prevStart) {
+                  prevStart(uid);
+                }
+              };
+              const handleNativeDone = (uid: string) => {
+                if (uid === utteranceId) {
+                  finishNative(true);
+                } else if (prevDone) {
+                  prevDone(uid);
+                }
+              };
+              const handleNativeErr = (uid: string, err?: string) => {
+                if (uid === utteranceId) {
+                  finishNative(false, err || "android-native-error");
+                } else if (prevErr) {
+                  prevErr(uid, err);
+                }
+              };
+              window.onNativeTTSStart = handleNativeStart;
+              const wrappedDone = (window.onNativeTTSDone = (uid: string) => handleNativeDone(uid));
+              window.onNativeTTSError = handleNativeErr;
+              if (canFallbackToTts3) {
+                nativeStartWatchdog = setTimeout(() => {
+                  if (settled || nativeStarted) return;
+                  if (isCancelled()) {
+                    finishNative(false, "cancelled");
+                    return;
+                  }
+                  logWarn(
+                    "TTS-Play",
+                    "Android native TTS did not start within 1800ms, falling back",
+                    {
+                      videoId: activeVid,
+                      rowIndex: row,
+                      lang,
+                      utteranceId,
+                    },
+                  );
+                  try {
+                    window.AndroidNativeShell?.stopSpeaking?.();
+                  } catch {
+                    // ignore stop error
+                  }
+                  finishNative(false, "android-native-start-timeout");
+                }, 1800);
+              }
+              const estDurationMs = Math.max(
+                16000,
+                (text.length / 3) * (1000 / (normalizedRate || 0.5)) + 8000,
+              );
+              timer = setTimeout(
+                () =>
+                  finishNative(
+                    nativeStarted,
+                    !nativeStarted ? "android-never-started" : "android-done-timeout",
+                  ),
+                estDurationMs,
+              );
+            } catch (e) {
+              stallReason = e instanceof Error ? e.message : "android-bridge-exception";
+              resolveNative(false);
+            }
+          });
+        };
         try {
           safeProgress({
             lang: lang.slice(0, 2),
@@ -856,10 +981,19 @@ function executeSingleSpeech(
               tts3Provider: altProvider,
               isAnonymous: typeof window !== "undefined" ? getAlternativeTtsAnonymousMode() : false,
               volume: normalizedVolume,
+              onNativeSpeak:
+                typeof window !== "undefined" && window.AndroidNativeShell?.speak
+                  ? speakAndroidNativeStep
+                  : undefined,
             },
           );
           if (outcome !== "none" || isCancelled()) {
-            engineUsed = outcome === "tts3" ? "alternative-tts" : outcome;
+            engineUsed =
+              outcome === "tts3"
+                ? "alternative-tts"
+                : engineUsed === "android-native"
+                  ? "android-native"
+                  : outcome;
             finalizeStepTelemetry(isCancelled() ? "cancelled" : `alt-always-${outcome}`);
             safeProgress(null);
             return res();
@@ -4017,17 +4151,84 @@ function Index() {
       if (st.current) {
         st.current.isTtsPlayEnabled = enabled;
       }
+      let targetRowIdxForImmediateSpeech = -1;
       if (enabled) {
         unlockTtsAudioPlayback();
         setPauseMode(true);
         if (st.current) {
           st.current.pauseMode = true;
         }
-        const playerState = player.current?.getPlayerState?.();
-        if ((playerState === 1 || isVideoPlayingRef.current) && st.current?.isSetupPaused) {
+        // Always clear stale setup pause when user explicitly enables TTS-Play
+        if (st.current?.isSetupPaused) {
           setIsSetupPaused(false);
           st.current.isSetupPaused = false;
-          setPauseReason(null);
+          setupPauseActivatedAtRef.current = 0;
+        }
+        setPauseReason((prev) =>
+          prev === "Paused for setup" || prev === "Paused by user" ? null : prev,
+        );
+        if (!speakingLangRef.current) {
+          busy.current = false;
+          isPausedForTtsRef.current = false;
+        }
+        userExplicitlyPausedRef.current = false;
+
+        // Recover an active speakable target language if spoken is empty or lacks speakable targets
+        const curBaseLang = st.current?.baseLanguage || "";
+        const curBlacklist = st.current?.ttsBlacklist || [];
+        const curOrdered = st.current?.orderedLangs || [];
+        const curSpoken = st.current?.spoken || [];
+        const curRows = st.current?.rows || [];
+        const hasSpeakableSelected = curOrdered.some(
+          (l) =>
+            !isLanguageTtsBlacklisted(l.code, curBlacklist) &&
+            isTtsSpeakableLanguage(l.code, curBaseLang, curBlacklist) &&
+            isLanguageSpoken(l.code, curSpoken),
+        );
+        if (!hasSpeakableSelected) {
+          const preferredTargets = targetLanguagesRef.current || [];
+          const candidateCodes = Array.from(
+            new Set([...preferredTargets, ...curOrdered.map((l) => l.code)]),
+          ).filter((code) => {
+            if (isLanguageTtsBlacklisted(code, curBlacklist)) return false;
+            if (!isTtsSpeakableLanguage(code, curBaseLang, curBlacklist)) return false;
+            if (curRows.length > 0) {
+              return curRows.some((r) => Boolean(r.texts?.[code]?.trim()));
+            }
+            return true;
+          });
+          if (candidateCodes.length > 0) {
+            const recoveredCode = candidateCodes[0]!;
+            const nextSpoken = Array.from(new Set([...curSpoken, recoveredCode]));
+            setSpoken(nextSpoken);
+            if (st.current) {
+              st.current.spoken = nextSpoken;
+            }
+          }
+        }
+
+        // Clear current-row blocks so re-enabling TTS-Play speaks the current row immediately
+        const pInst = player.current || multiVideoPlayerRegistry.get("primary");
+        const curSec = pInst?.getCurrentTime?.();
+        const curMs =
+          typeof curSec === "number" && Number.isFinite(curSec) ? curSec * 1000 : lastMs.current;
+        if (curRows.length > 0) {
+          const exactIdx = findRowIndexAtTimeMs(curRows, curMs);
+          targetRowIdxForImmediateSpeech =
+            exactIdx >= 0
+              ? exactIdx
+              : lastRow.current >= 0 && lastRow.current < curRows.length
+                ? lastRow.current
+                : 0;
+          const targetRow = curRows[targetRowIdxForImmediateSpeech];
+          if (targetRow) {
+            const sectionId = getPlaybackSectionId(targetRow);
+            playedTtsRecords.current.delete(sectionId);
+            playedTtsLanguageRecords.current.delete(sectionId);
+            handledTtsFirstSections.current.delete(sectionId);
+            handledVideoFirstSections.current.delete(sectionId);
+            setPlayedRecordsCount(playedTtsRecords.current.size);
+          }
         }
       }
       const currentSettings = loadAppSettings();
@@ -4039,7 +4240,11 @@ function Index() {
         videoId,
         enabled,
       });
-      if (!enabled) {
+      if (enabled) {
+        if (targetRowIdxForImmediateSpeech >= 0) {
+          void triggerImmediateCurrentRowTtsRef.current?.(targetRowIdxForImmediateSpeech);
+        }
+      } else {
         const wasPausedForTts = isPausedForTtsRef.current;
         cancelSpeech();
         busy.current = false;
@@ -5888,6 +6093,10 @@ function Index() {
         }, 0);
       }
     }
+  }, [isAndroid, videoId]);
+
+  useEffect(() => {
+    if (!isAndroid) return;
     const unregister = registerLiveCaptionInterceptor((encoded) => {
       const payload = decodeInterceptedCaption(encoded);
       if (!payload) return;
@@ -5998,7 +6207,10 @@ function Index() {
     });
   }, [tracks]);
 
-  const targetLanguagesKey = useMemo(() => targetLanguages.filter(Boolean).join(","), [targetLanguages]);
+  const targetLanguagesKey = useMemo(
+    () => targetLanguages.filter(Boolean).join(","),
+    [targetLanguages],
+  );
 
   useEffect(() => {
     if (!isAndroid || !observedUrl || !defaultCaptionsLoaded) return;
@@ -6203,7 +6415,9 @@ function Index() {
           (msSinceTtsFinished !== null && msSinceTtsFinished < 1500);
         const isWebMediaSessionInNativeShell =
           isAndroidRef.current && mediaCmdMeta.source === "web_media_session";
+        const isExplicitNativeMediaCmd = mediaCmdMeta.source === "native_media_command";
         const shouldSuppressSpuriousPause =
+          !isExplicitNativeMediaCmd &&
           !st.current?.isSetupPaused &&
           ((isInResumeWindow && (isVisible || isWebMediaSessionInNativeShell)) ||
             (isWebMediaSessionInNativeShell &&
@@ -7129,6 +7343,9 @@ function Index() {
   const playedTtsLanguageRecords = useRef<Map<string, Set<string>>>(new Map());
   const handledTtsFirstSections = useRef<Set<string>>(new Set());
   const handledVideoFirstSections = useRef<Set<string>>(new Set());
+  const triggerImmediateCurrentRowTtsRef = useRef<
+    ((preferredRowIdx?: number) => Promise<void>) | null
+  >(null);
   const [playedRecordsCount, setPlayedRecordsCount] = useState(0);
 
   // Quiet grace period for programmatic caption activation before showing "Captions Required" notification
@@ -7619,6 +7836,567 @@ function Index() {
         document.body.appendChild(s);
       }
     }
+    const getEligibleLangs = (rowIdx: number, requestedOrder?: SectionOrder) => {
+      if (!st.current.isTtsPlayEnabled) return [];
+      const {
+        rows,
+        spoken,
+        ttsRatios: currentTtsRatios,
+        primaryTtsLang: currentPrimaryTtsLang,
+        orderedLangs,
+        audioTrackMode: isAudioTrackMode,
+        baseLanguage: currentBaseLanguage,
+        ttsBlacklist: currentTtsBlacklist,
+      } = st.current;
+      const effectivePrimary = currentPrimaryTtsLang || spoken[0] || "";
+      const primaryRatio = getLanguageTtsRatio(currentTtsRatios, effectivePrimary);
+      const targetRow = rowIdx >= 0 ? rows[rowIdx] : undefined;
+      if (!targetRow || playedTtsRecords.current.has(getPlaybackSectionId(targetRow))) return [];
+      const baseText = st.current.rows[rowIdx]?.texts[st.current.baseLanguage] ?? "";
+      let eligibleLanguages = orderedLangs.filter((l) => {
+        const langMaxWords = getEffectiveLanguageMaxWords(
+          l.code,
+          languageMaxWordsRef.current,
+          maxTtsWordsRef.current,
+        );
+        if (!isSentenceWithinWordLimit(baseText, langMaxWords)) return false;
+        const langSkipIncomplete = getEffectiveLanguageSkipIncomplete(
+          l.code,
+          languageSkipIncompleteRef.current,
+          skipIncompleteRef.current,
+        );
+        if (langSkipIncomplete && !isCompleteSentence(baseText)) return false;
+
+        return (
+          !isLanguageTtsBlacklisted(l.code, currentTtsBlacklist) &&
+          isTtsSpeakableLanguage(l.code, currentBaseLanguage, currentTtsBlacklist) &&
+          isLanguageSpoken(l.code, spoken) &&
+          isLanguageEligibleForTtsWithRole({
+            rowIdx,
+            langCode: l.code,
+            ratio: getLanguageTtsRatio(currentTtsRatios, l.code),
+            primaryLang: effectivePrimary,
+            primaryRatio,
+            blacklist: currentTtsBlacklist,
+          })
+        );
+      });
+      if (eligibleLanguages.length === 0 && isAudioTrackMode && spoken.length === 0) {
+        const fallbackLang =
+          orderedLangs.find(
+            (l) =>
+              l.code === currentBaseLanguage &&
+              !isLanguageTtsBlacklisted(l.code, currentTtsBlacklist),
+          ) || orderedLangs.find((l) => !isLanguageTtsBlacklisted(l.code, currentTtsBlacklist));
+        if (fallbackLang) {
+          eligibleLanguages = [fallbackLang];
+        }
+      }
+      // In beginner mode or default playback, use the first available target subtitle when none are selected.
+      if (eligibleLanguages.length === 0 && spoken.length === 0 && orderedLangs.length > 0) {
+        const fallbackLang =
+          orderedLangs.find(
+            (l) =>
+              l.code !== currentBaseLanguage &&
+              !isLanguageTtsBlacklisted(l.code, currentTtsBlacklist),
+          ) || orderedLangs.find((l) => !isLanguageTtsBlacklisted(l.code, currentTtsBlacklist));
+        if (
+          fallbackLang &&
+          isSubtitleInstanceEligibleForTTS(
+            rowIdx,
+            getLanguageTtsRatio(currentTtsRatios, fallbackLang.code),
+          )
+        ) {
+          eligibleLanguages = [fallbackLang];
+        }
+      }
+      const sectionId = getPlaybackSectionId(rows[rowIdx]!);
+      const alreadySpoken = playedTtsLanguageRecords.current.get(sectionId) ?? new Set<string>();
+      const pendingLanguages = eligibleLanguages.filter(
+        (language) => !alreadySpoken.has(language.code),
+      );
+      if (!requestedOrder) return pendingLanguages;
+      const orderGroups = partitionTtsLanguagesByOrder(
+        pendingLanguages,
+        st.current.ttsLanguageOrders,
+        st.current.sectionOrder,
+      );
+      return requestedOrder === "tts-first" ? orderGroups.ttsFirst : orderGroups.videoFirst;
+    };
+
+    const prefetchRowTtsAudio = (targetRowIdx: number) => {
+      if (!st.current.isTtsPlayEnabled || st.current.audioTrackMode) return;
+      if (!isTtsServiceActivelyUsed()) return;
+      const { rows } = st.current;
+      if (targetRowIdx < 0 || targetRowIdx >= rows.length) return;
+      const candidateLangs = getEligibleLangs(targetRowIdx);
+      if (candidateLangs.length === 0) return;
+      const provider = typeof window !== "undefined" ? getLovableTtsProvider() : "auto";
+      const isAnonymous = typeof window !== "undefined" ? getAlternativeTtsAnonymousMode() : false;
+      for (const l of candidateLangs) {
+        if (getZeroKnowledgeInLang(l.code)) continue;
+        const text = rows[targetRowIdx]?.texts?.[l.code]?.trim();
+        if (!text) continue;
+        void prefetchAlternativeTtsAudio(text, l.tts, {
+          provider: provider || "auto",
+          isAnonymous,
+          auditSource: "playback",
+        });
+      }
+    };
+
+    const prefetchTtsServiceOnDemandAhead = (
+      startRowIdx: number,
+      maxSentences: number = TTS_SERVICE_ON_DEMAND_AHEAD_COUNT,
+    ) => {
+      if (!st.current.isTtsPlayEnabled || st.current.audioTrackMode) return;
+      if (!isTtsServiceActivelyUsed()) return;
+      const { rows } = st.current;
+      if (startRowIdx < 0 || startRowIdx >= rows.length) return;
+      if (maxSentences <= 1) {
+        prefetchRowTtsAudio(startRowIdx);
+        return;
+      }
+      const provider = typeof window !== "undefined" ? getLovableTtsProvider() : "auto";
+      const isAnonymous = typeof window !== "undefined" ? getAlternativeTtsAnonymousMode() : false;
+      const items: TtsServiceOnDemandRequestItem[] = [];
+      for (let r = startRowIdx; r < rows.length && items.length < maxSentences; r += 1) {
+        const candidateLangs = getEligibleLangs(r);
+        for (const l of candidateLangs) {
+          if (items.length >= maxSentences) break;
+          if (getZeroKnowledgeInLang(l.code)) continue;
+          const text = rows[r]?.texts?.[l.code]?.trim();
+          if (!text) continue;
+          items.push({
+            text,
+            lang: l.tts,
+            options: {
+              provider: provider || "auto",
+              isAnonymous,
+              auditSource: "playback",
+            },
+          });
+        }
+      }
+      if (items.length > 0) {
+        void requestTtsServiceOnDemandBatch(items, maxSentences);
+      }
+    };
+
+    const speakRow = async (rowIdx: number, requestedOrder: SectionOrder, runEpoch: number) => {
+      const {
+        rows,
+        spoken,
+        rates,
+        ttsRatios: currentTtsRatios,
+        primaryTtsLang: currentPrimaryTtsLang,
+        voiceSelections,
+        audioTrackMode: isAudioTrackMode,
+        baseLanguage: currentBaseLanguage,
+        ttsBlacklist: currentTtsBlacklist,
+      } = st.current;
+      const effectivePrimary = currentPrimaryTtsLang || spoken[0] || "";
+      const primaryRatio = getLanguageTtsRatio(currentTtsRatios, effectivePrimary);
+      const p = player.current || multiVideoPlayerRegistry.get("primary");
+      const targetRow = rowIdx >= 0 ? rows[rowIdx] : undefined;
+      if (!targetRow || playedTtsRecords.current.has(getPlaybackSectionId(targetRow))) return;
+      const langs = getEligibleLangs(rowIdx, requestedOrder);
+      if (langs.length === 0) return;
+      // On active TTS service usage, prefetch up to X=7 upcoming eligible sentences on demand
+      if (!isAudioTrackMode && isTtsServiceActivelyUsed()) {
+        prefetchTtsServiceOnDemandAhead(rowIdx, TTS_SERVICE_ON_DEMAND_AHEAD_COUNT);
+      }
+      const sectionId = getPlaybackSectionId(targetRow);
+      const spokenLanguages = playedTtsLanguageRecords.current.get(sectionId) ?? new Set<string>();
+      playedTtsLanguageRecords.current.set(sectionId, spokenLanguages);
+      const sectionStartedAt = Date.now();
+      logStateMachineAction("TTS_SECTION_STARTED", {
+        videoId,
+        sectionId,
+        rowIndex: rowIdx,
+        languages: langs.map((language) => language.code),
+        fallbackOrder:
+          typeof window !== "undefined" ? getTtsFallbackOrder() : DEFAULT_TTS_FALLBACK_ORDER,
+        useAltTts: typeof window !== "undefined" ? getUseAlternativeTts() : false,
+      });
+      try {
+        for (const l of langs) {
+          if (!busy.current || playbackSeekEpochRef.current !== runEpoch) break;
+          if (isLanguageTtsBlacklisted(l.code, currentTtsBlacklist)) {
+            logStateMachineAction("TTS_BLACKLIST_SKIPPED", {
+              videoId,
+              rowIndex: rowIdx,
+              langCode: l.code,
+            });
+            continue;
+          }
+          const ratio = getLanguageTtsRatio(currentTtsRatios, l.code);
+          const isEligible = isLanguageEligibleForTtsWithRole({
+            rowIdx,
+            langCode: l.code,
+            ratio,
+            primaryLang: effectivePrimary,
+            primaryRatio,
+          });
+          if (!isEligible) {
+            logStateMachineAction("TTS_RATIO_SKIPPED", {
+              videoId,
+              rowIndex: rowIdx,
+              langCode: l.code,
+              ratio,
+            });
+            continue;
+          }
+          setSpeakingLang(l.code);
+          setSpeakingRow(rowIdx);
+          try {
+            if (isAudioTrackMode && p) {
+              await executeMultiVideoSegmentSync({
+                registry: multiVideoPlayerRegistry,
+                primaryPlayer: p,
+                languageCode: l.code,
+                startMs: rows[rowIdx]?.start ?? 0,
+                endMs: rows[rowIdx]?.end ?? 0,
+                checkCancelled: () => !busy.current,
+                onProgress: (prog) => {
+                  setSpeechProgress({
+                    row: rowIdx,
+                    lang: l.code,
+                    start: 0,
+                    end: Math.round(prog.percent ?? 0),
+                  });
+                },
+              });
+            } else {
+              const rawText = rows[rowIdx]?.texts[l.code] ?? "";
+              const isZeroKnowledge = getZeroKnowledgeInLang(l.code);
+              if (isZeroKnowledge) {
+                const strategy = getPickWordStrategy(l.code);
+                const pickedWord = pickWordFromSentence(rawText, strategy);
+                let wordTranslation = "";
+                try {
+                  wordTranslation = await getWordTranslation(
+                    pickedWord,
+                    l.code,
+                    currentBaseLanguage || "en",
+                  );
+                } catch (e) {
+                  console.warn(`[ZeroKnowledge] Word translation failed for ${pickedWord}:`, e);
+                }
+
+                logStateMachineAction("ZERO_KNOWLEDGE_WORD_SPOKEN", {
+                  videoId,
+                  rowIndex: rowIdx,
+                  langCode: l.code,
+                  pickedWord,
+                  translation: wordTranslation,
+                  strategy,
+                });
+
+                recordTtsPlayHistory({
+                  videoId,
+                  videoTitle: historyContextRef.current.videoTitle,
+                  videoTimeSec: p?.getCurrentTime?.() ?? (rows[rowIdx]?.start ?? 0) / 1000,
+                  rowIndex: rowIdx,
+                  sentence: rows[rowIdx]?.texts?.[currentBaseLanguage] || rawText,
+                  playedText:
+                    wordTranslation && wordTranslation.trim().length > 0
+                      ? `${pickedWord} → ${wordTranslation}`
+                      : pickedWord,
+                  spokenLang: l.code,
+                  baseLang: currentBaseLanguage,
+                  translationText: wordTranslation || rawText,
+                  translationLang: l.code,
+                  ttsProvider: getActiveTtsProviderLabel(),
+                  source: "zero_knowledge",
+                });
+
+                // 1. Pronounce the picked word in the target language
+                const wordVol = getLanguageTtsVolume(st.current.ttsVolumes || ttsVolumes, l.code);
+                const speakWordPromise = speak(
+                  pickedWord,
+                  l.tts,
+                  rates[l.code] ?? 1.0,
+                  voiceSelections[l.code] ?? "",
+                  rowIdx,
+                  setSpeechProgress,
+                  wordVol,
+                );
+                const wordSpeed = Math.max(0.25, rates[l.code] ?? 1.0);
+                const wordWaitMs = Math.max(
+                  12000,
+                  (pickedWord.length / 3) * (1000 / wordSpeed) + 6000,
+                );
+                await Promise.race([
+                  speakWordPromise,
+                  new Promise<void>((resolve) => setTimeout(resolve, wordWaitMs)),
+                ]);
+
+                // 2. Pronounce the translation in base language
+                if (
+                  wordTranslation &&
+                  wordTranslation.trim().length > 0 &&
+                  wordTranslation.trim().toLowerCase() !== pickedWord.trim().toLowerCase()
+                ) {
+                  await new Promise<void>((resolve) => setTimeout(resolve, 250));
+                  const baseTtsMeta = (isAndroid ? SUPPORTED_LANGUAGES_CATALOG : LANGS).find(
+                    (x) => x.code === currentBaseLanguage,
+                  );
+                  const baseTtsLang = baseTtsMeta?.tts || currentBaseLanguage || "en";
+                  const baseRate = rates[currentBaseLanguage] ?? 1.0;
+                  const baseVoice = voiceSelections[currentBaseLanguage] ?? "";
+                  const baseVol = getLanguageTtsVolume(
+                    st.current.ttsVolumes || ttsVolumes,
+                    currentBaseLanguage,
+                  );
+
+                  const speakTransPromise = speak(
+                    wordTranslation,
+                    baseTtsLang,
+                    baseRate,
+                    baseVoice,
+                    rowIdx,
+                    setSpeechProgress,
+                    baseVol,
+                  );
+                  const transSpeed = Math.max(0.25, baseRate || 1.0);
+                  const transWaitMs = Math.max(
+                    12000,
+                    (wordTranslation.length / 3) * (1000 / transSpeed) + 6000,
+                  );
+                  await Promise.race([
+                    speakTransPromise,
+                    new Promise<void>((resolve) => setTimeout(resolve, transWaitMs)),
+                  ]);
+                }
+              } else {
+                recordTtsPlayHistory({
+                  videoId,
+                  videoTitle: historyContextRef.current.videoTitle,
+                  videoTimeSec: p?.getCurrentTime?.() ?? (rows[rowIdx]?.start ?? 0) / 1000,
+                  rowIndex: rowIdx,
+                  sentence: rows[rowIdx]?.texts?.[currentBaseLanguage] || rawText,
+                  playedText: rawText,
+                  spokenLang: l.code,
+                  baseLang: currentBaseLanguage,
+                  translationText: rawText,
+                  translationLang: l.code,
+                  ttsProvider: getActiveTtsProviderLabel(),
+                  source: "auto_playback",
+                });
+                const rowVol = getLanguageTtsVolume(st.current.ttsVolumes || ttsVolumes, l.code);
+                const speakPromise = speak(
+                  rawText,
+                  l.tts,
+                  rates[l.code] ?? 1.0,
+                  voiceSelections[l.code] ?? "",
+                  rowIdx,
+                  setSpeechProgress,
+                  rowVol,
+                );
+                const textSpeed = Math.max(0.25, rates[l.code] ?? 1.0);
+                const textWaitMs = Math.max(
+                  16000,
+                  (rawText.length / 3) * (1000 / textSpeed) + 8000,
+                );
+                await Promise.race([
+                  speakPromise,
+                  new Promise<void>((resolve) => setTimeout(resolve, textWaitMs)),
+                ]);
+              }
+            }
+          } catch (err) {
+            console.warn(`[TTS] Speak error for ${l.code} at row ${rowIdx}:`, err);
+          }
+          if (busy.current && playbackSeekEpochRef.current === runEpoch) {
+            spokenLanguages.add(l.code);
+          }
+        }
+        if (isAudioTrackMode) {
+          multiVideoPlayerRegistry.pauseAllExcept("primary");
+          multiVideoPlayerRegistry.unmuteOnly("primary");
+        }
+        if (playbackSeekEpochRef.current === runEpoch && getEligibleLangs(rowIdx).length === 0) {
+          playedTtsRecords.current.add(sectionId);
+          setPlayedRecordsCount(playedTtsRecords.current.size);
+        }
+      } catch (error) {
+        logError("State Machine", "TTS section playback failed", {
+          videoId,
+          sectionId,
+          rowIndex: rowIdx,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      } finally {
+        const sectionDurationMs = Date.now() - sectionStartedAt;
+        const wasSectionCancelled = !busy.current || playbackSeekEpochRef.current !== runEpoch;
+        if (!wasSectionCancelled) {
+          lastTtsSectionFinishedAtRef.current = Date.now();
+        }
+        logStateMachineAction("TTS_SECTION_FINISHED", {
+          videoId,
+          sectionId,
+          rowIndex: rowIdx,
+          languages: langs.map((l) => l.code),
+          durationMs: sectionDurationMs,
+          cancelled: wasSectionCancelled,
+        });
+        if (playbackSeekEpochRef.current === runEpoch) {
+          setSpeakingLang(null);
+          setSpeakingRow(-1);
+          setSpeechProgress(null);
+        }
+      }
+    };
+
+    const safelyResumePrimaryVideo = (resumeTargetSec?: number) => {
+      const p = player.current || multiVideoPlayerRegistry.get("primary");
+      if (!p) return;
+      clearPlayKickTimers();
+      lastPlayRequestAtRef.current = Date.now();
+      lastPlayOrResumeStartedAtRef.current = Date.now();
+      multiVideoPlayerRegistry.unmuteOnly("primary");
+      userExplicitlyPausedRef.current = false;
+      isPausedForTtsRef.current = false;
+      programmaticPauseTimestampRef.current = 0;
+      try {
+        if (typeof resumeTargetSec === "number" && Number.isFinite(resumeTargetSec)) {
+          pendingSeekTargetRef.current = {
+            targetSec: resumeTargetSec,
+            requestedAt: Date.now(),
+          };
+          p.seekTo(resumeTargetSec, true);
+        }
+        p.playVideo();
+        setIsVideoPlaying(true);
+        setPauseReason(null);
+      } catch (err) {
+        console.warn("[PlaybackCoordinator] playVideo error:", err);
+      }
+      // First kick at 80ms: Ensure player actually resumed
+      const resumeKick1 = setTimeout(() => {
+        try {
+          if (
+            !busy.current &&
+            !userExplicitlyPausedRef.current &&
+            !st.current?.isSetupPaused &&
+            p.getPlayerState?.() !== 1
+          ) {
+            p.playVideo?.();
+            setIsVideoPlaying(true);
+          }
+        } catch {
+          // ignore
+        }
+      }, 80);
+      // Second kick at 240ms: In case of delay or state transition
+      const resumeKick2 = setTimeout(() => {
+        try {
+          if (
+            !busy.current &&
+            !userExplicitlyPausedRef.current &&
+            !st.current?.isSetupPaused &&
+            p.getPlayerState?.() !== 1
+          ) {
+            p.playVideo?.();
+            setIsVideoPlaying(true);
+          }
+        } catch {
+          // ignore
+        }
+      }, 240);
+      playKickTimersRef.current.push(resumeKick1, resumeKick2);
+    };
+
+    triggerImmediateCurrentRowTtsRef.current = async (preferredRowIdx?: number) => {
+      const p = player.current || multiVideoPlayerRegistry.get("primary");
+      if (!st.current.isTtsPlayEnabled || !st.current.pauseMode || st.current.isSetupPaused) return;
+      if (activeTopTabRef.current === "playground" || showWordBalloonLearningViewRef.current)
+        return;
+      const curRows = st.current.rows;
+      if (!curRows || curRows.length === 0) return;
+      if (busy.current) return;
+
+      const rawSec = p?.getCurrentTime?.();
+      const curMs =
+        typeof rawSec === "number" && Number.isFinite(rawSec) ? rawSec * 1000 : lastMs.current;
+      const idxFromTime = findRowIndexAtTimeMs(curRows, curMs);
+      const targetIdx =
+        idxFromTime >= 0
+          ? idxFromTime
+          : typeof preferredRowIdx === "number" &&
+              preferredRowIdx >= 0 &&
+              preferredRowIdx < curRows.length
+            ? preferredRowIdx
+            : lastRow.current >= 0 && lastRow.current < curRows.length
+              ? lastRow.current
+              : 0;
+      const targetRow = curRows[targetIdx];
+      if (!targetRow) return;
+      const sectionId = getPlaybackSectionId(targetRow);
+      if (!sectionId) return;
+
+      const ttsFirstLangs = getEligibleLangs(targetIdx, "tts-first");
+      const videoFirstLangs = getEligibleLangs(targetIdx, "video-first");
+      const allEligible = [...ttsFirstLangs, ...videoFirstLangs];
+      if (allEligible.length === 0) return;
+
+      const wasVideoPlaying = p?.getPlayerState?.() === 1 || isVideoPlayingRef.current;
+      const runEpoch = playbackSeekEpochRef.current;
+      handledTtsFirstSections.current.add(sectionId);
+      handledVideoFirstSections.current.add(sectionId);
+      busy.current = true;
+      isPausedForTtsRef.current = true;
+      programmaticPauseTimestampRef.current = Date.now();
+      setActive(targetIdx);
+      lastRow.current = targetIdx;
+      const langLabels = allEligible.map((l) => l.name || l.code).join(", ");
+      setPauseReason(`Speaking translation (${langLabels})`);
+      if (wasVideoPlaying) {
+        try {
+          p?.pauseVideo?.();
+        } catch {
+          // ignore
+        }
+      }
+      try {
+        if (ttsFirstLangs.length > 0) {
+          await speakRow(targetIdx, "tts-first", runEpoch);
+        }
+        if (
+          videoFirstLangs.length > 0 &&
+          busy.current &&
+          playbackSeekEpochRef.current === runEpoch &&
+          st.current.isTtsPlayEnabled &&
+          !st.current.isSetupPaused
+        ) {
+          await speakRow(targetIdx, "video-first", runEpoch);
+        }
+      } catch (err) {
+        console.warn("[TTS] Error during immediate TTS-Play speech:", err);
+      }
+      const wasCancelled = !busy.current || playbackSeekEpochRef.current !== runEpoch;
+      if (playbackSeekEpochRef.current === runEpoch) {
+        setPauseReason(null);
+        busy.current = false;
+        isPausedForTtsRef.current = false;
+      }
+      if (
+        shouldAbortQueuedSectionResume({
+          runEpoch,
+          currentEpoch: playbackSeekEpochRef.current,
+          wasCancelled,
+          isSetupPaused: st.current.isSetupPaused,
+          userExplicitlyPaused: userExplicitlyPausedRef.current,
+        })
+      ) {
+        return;
+      }
+      if (wasVideoPlaying) {
+        safelyResumePrimaryVideo();
+      }
+    };
+
     const iv = setInterval(async () => {
       if (
         (!player.current || playerEl.current?.childElementCount === 0) &&
@@ -7792,470 +8570,11 @@ function Index() {
         return;
       }
 
-      const {
-        rows,
-        spoken,
-        rates,
-        ttsRatios: currentTtsRatios,
-        primaryTtsLang: currentPrimaryTtsLang,
-        voiceSelections,
-        pauseMode,
-        orderedLangs,
-        audioTrackMode: isAudioTrackMode,
-        baseLanguage: currentBaseLanguage,
-        ttsBlacklist: currentTtsBlacklist,
-      } = st.current;
-      const effectivePrimary = currentPrimaryTtsLang || spoken[0] || "";
-      const primaryRatio = getLanguageTtsRatio(currentTtsRatios, effectivePrimary);
+      const { rows, pauseMode } = st.current;
       const idx = rows.findIndex((r) => ms >= r.start && ms < r.end);
       setActive(idx);
       const prev = lastRow.current;
       lastRow.current = idx;
-
-      const getEligibleLangs = (rowIdx: number, requestedOrder?: SectionOrder) => {
-        if (!st.current.isTtsPlayEnabled) return [];
-        const targetRow = rowIdx >= 0 ? rows[rowIdx] : undefined;
-        if (!targetRow || playedTtsRecords.current.has(getPlaybackSectionId(targetRow))) return [];
-        const baseText = st.current.rows[rowIdx]?.texts[st.current.baseLanguage] ?? "";
-        let eligibleLanguages = orderedLangs.filter((l) => {
-          const langMaxWords = getEffectiveLanguageMaxWords(
-            l.code,
-            languageMaxWordsRef.current,
-            maxTtsWordsRef.current,
-          );
-          if (!isSentenceWithinWordLimit(baseText, langMaxWords)) return false;
-          const langSkipIncomplete = getEffectiveLanguageSkipIncomplete(
-            l.code,
-            languageSkipIncompleteRef.current,
-            skipIncompleteRef.current,
-          );
-          if (langSkipIncomplete && !isCompleteSentence(baseText)) return false;
-
-          return (
-            !isLanguageTtsBlacklisted(l.code, currentTtsBlacklist) &&
-            isTtsSpeakableLanguage(l.code, currentBaseLanguage, currentTtsBlacklist) &&
-            isLanguageSpoken(l.code, spoken) &&
-            isLanguageEligibleForTtsWithRole({
-              rowIdx,
-              langCode: l.code,
-              ratio: getLanguageTtsRatio(currentTtsRatios, l.code),
-              primaryLang: effectivePrimary,
-              primaryRatio,
-              blacklist: currentTtsBlacklist,
-            })
-          );
-        });
-        if (eligibleLanguages.length === 0 && isAudioTrackMode && spoken.length === 0) {
-          const fallbackLang =
-            orderedLangs.find(
-              (l) =>
-                l.code === currentBaseLanguage &&
-                !isLanguageTtsBlacklisted(l.code, currentTtsBlacklist),
-            ) || orderedLangs.find((l) => !isLanguageTtsBlacklisted(l.code, currentTtsBlacklist));
-          if (fallbackLang) {
-            eligibleLanguages = [fallbackLang];
-          }
-        }
-        // In beginner mode or default playback, use the first available target subtitle when none are selected.
-        if (eligibleLanguages.length === 0 && spoken.length === 0 && orderedLangs.length > 0) {
-          const fallbackLang =
-            orderedLangs.find(
-              (l) =>
-                l.code !== currentBaseLanguage &&
-                !isLanguageTtsBlacklisted(l.code, currentTtsBlacklist),
-            ) || orderedLangs.find((l) => !isLanguageTtsBlacklisted(l.code, currentTtsBlacklist));
-          if (
-            fallbackLang &&
-            isSubtitleInstanceEligibleForTTS(
-              rowIdx,
-              getLanguageTtsRatio(currentTtsRatios, fallbackLang.code),
-            )
-          ) {
-            eligibleLanguages = [fallbackLang];
-          }
-        }
-        const sectionId = getPlaybackSectionId(rows[rowIdx]!);
-        const alreadySpoken = playedTtsLanguageRecords.current.get(sectionId) ?? new Set<string>();
-        const pendingLanguages = eligibleLanguages.filter(
-          (language) => !alreadySpoken.has(language.code),
-        );
-        if (!requestedOrder) return pendingLanguages;
-        const orderGroups = partitionTtsLanguagesByOrder(
-          pendingLanguages,
-          st.current.ttsLanguageOrders,
-          st.current.sectionOrder,
-        );
-        return requestedOrder === "tts-first" ? orderGroups.ttsFirst : orderGroups.videoFirst;
-      };
-
-      const prefetchRowTtsAudio = (targetRowIdx: number) => {
-        if (!st.current.isTtsPlayEnabled || st.current.audioTrackMode) return;
-        if (!isTtsServiceActivelyUsed()) return;
-        if (targetRowIdx < 0 || targetRowIdx >= rows.length) return;
-        const candidateLangs = getEligibleLangs(targetRowIdx);
-        if (candidateLangs.length === 0) return;
-        const provider = typeof window !== "undefined" ? getLovableTtsProvider() : "auto";
-        const isAnonymous =
-          typeof window !== "undefined" ? getAlternativeTtsAnonymousMode() : false;
-        for (const l of candidateLangs) {
-          if (getZeroKnowledgeInLang(l.code)) continue;
-          const text = rows[targetRowIdx]?.texts?.[l.code]?.trim();
-          if (!text) continue;
-          void prefetchAlternativeTtsAudio(text, l.tts, {
-            provider: provider || "auto",
-            isAnonymous,
-            auditSource: "playback",
-          });
-        }
-      };
-
-      const prefetchTtsServiceOnDemandAhead = (
-        startRowIdx: number,
-        maxSentences: number = TTS_SERVICE_ON_DEMAND_AHEAD_COUNT,
-      ) => {
-        if (!st.current.isTtsPlayEnabled || st.current.audioTrackMode) return;
-        if (!isTtsServiceActivelyUsed()) return;
-        if (startRowIdx < 0 || startRowIdx >= rows.length) return;
-        if (maxSentences <= 1) {
-          prefetchRowTtsAudio(startRowIdx);
-          return;
-        }
-        const provider = typeof window !== "undefined" ? getLovableTtsProvider() : "auto";
-        const isAnonymous =
-          typeof window !== "undefined" ? getAlternativeTtsAnonymousMode() : false;
-        const items: TtsServiceOnDemandRequestItem[] = [];
-        for (let r = startRowIdx; r < rows.length && items.length < maxSentences; r += 1) {
-          const candidateLangs = getEligibleLangs(r);
-          for (const l of candidateLangs) {
-            if (items.length >= maxSentences) break;
-            if (getZeroKnowledgeInLang(l.code)) continue;
-            const text = rows[r]?.texts?.[l.code]?.trim();
-            if (!text) continue;
-            items.push({
-              text,
-              lang: l.tts,
-              options: {
-                provider: provider || "auto",
-                isAnonymous,
-                auditSource: "playback",
-              },
-            });
-          }
-        }
-        if (items.length > 0) {
-          void requestTtsServiceOnDemandBatch(items, maxSentences);
-        }
-      };
-
-      const speakRow = async (rowIdx: number, requestedOrder: SectionOrder, runEpoch: number) => {
-        const targetRow = rowIdx >= 0 ? rows[rowIdx] : undefined;
-        if (!targetRow || playedTtsRecords.current.has(getPlaybackSectionId(targetRow))) return;
-        const langs = getEligibleLangs(rowIdx, requestedOrder);
-        if (langs.length === 0) return;
-        // On active TTS service usage, prefetch up to X=7 upcoming eligible sentences on demand
-        if (!isAudioTrackMode && isTtsServiceActivelyUsed()) {
-          prefetchTtsServiceOnDemandAhead(rowIdx, TTS_SERVICE_ON_DEMAND_AHEAD_COUNT);
-        }
-        const sectionId = getPlaybackSectionId(targetRow);
-        const spokenLanguages =
-          playedTtsLanguageRecords.current.get(sectionId) ?? new Set<string>();
-        playedTtsLanguageRecords.current.set(sectionId, spokenLanguages);
-        const sectionStartedAt = Date.now();
-        logStateMachineAction("TTS_SECTION_STARTED", {
-          videoId,
-          sectionId,
-          rowIndex: rowIdx,
-          languages: langs.map((language) => language.code),
-          fallbackOrder:
-            typeof window !== "undefined" ? getTtsFallbackOrder() : DEFAULT_TTS_FALLBACK_ORDER,
-          useAltTts: typeof window !== "undefined" ? getUseAlternativeTts() : false,
-        });
-        try {
-          for (const l of langs) {
-            if (!busy.current || playbackSeekEpochRef.current !== runEpoch) break;
-            if (isLanguageTtsBlacklisted(l.code, currentTtsBlacklist)) {
-              logStateMachineAction("TTS_BLACKLIST_SKIPPED", {
-                videoId,
-                rowIndex: rowIdx,
-                langCode: l.code,
-              });
-              continue;
-            }
-            const ratio = getLanguageTtsRatio(currentTtsRatios, l.code);
-            const isEligible = isLanguageEligibleForTtsWithRole({
-              rowIdx,
-              langCode: l.code,
-              ratio,
-              primaryLang: effectivePrimary,
-              primaryRatio,
-            });
-            if (!isEligible) {
-              logStateMachineAction("TTS_RATIO_SKIPPED", {
-                videoId,
-                rowIndex: rowIdx,
-                langCode: l.code,
-                ratio,
-              });
-              continue;
-            }
-            setSpeakingLang(l.code);
-            setSpeakingRow(rowIdx);
-            try {
-              if (isAudioTrackMode) {
-                await executeMultiVideoSegmentSync({
-                  registry: multiVideoPlayerRegistry,
-                  primaryPlayer: p,
-                  languageCode: l.code,
-                  startMs: rows[rowIdx]?.start ?? 0,
-                  endMs: rows[rowIdx]?.end ?? 0,
-                  checkCancelled: () => !busy.current,
-                  onProgress: (prog) => {
-                    setSpeechProgress({
-                      row: rowIdx,
-                      lang: l.code,
-                      start: 0,
-                      end: Math.round(prog.percent ?? 0),
-                    });
-                  },
-                });
-              } else {
-                const rawText = rows[rowIdx]?.texts[l.code] ?? "";
-                const isZeroKnowledge = getZeroKnowledgeInLang(l.code);
-                if (isZeroKnowledge) {
-                  const strategy = getPickWordStrategy(l.code);
-                  const pickedWord = pickWordFromSentence(rawText, strategy);
-                  let wordTranslation = "";
-                  try {
-                    wordTranslation = await getWordTranslation(
-                      pickedWord,
-                      l.code,
-                      baseLanguage || "en",
-                    );
-                  } catch (e) {
-                    console.warn(`[ZeroKnowledge] Word translation failed for ${pickedWord}:`, e);
-                  }
-
-                  logStateMachineAction("ZERO_KNOWLEDGE_WORD_SPOKEN", {
-                    videoId,
-                    rowIndex: rowIdx,
-                    langCode: l.code,
-                    pickedWord,
-                    translation: wordTranslation,
-                    strategy,
-                  });
-
-                  recordTtsPlayHistory({
-                    videoId,
-                    videoTitle: historyContextRef.current.videoTitle,
-                    videoTimeSec: p?.getCurrentTime?.() ?? (rows[rowIdx]?.start ?? 0) / 1000,
-                    rowIndex: rowIdx,
-                    sentence: rows[rowIdx]?.texts?.[baseLanguage] || rawText,
-                    playedText:
-                      wordTranslation && wordTranslation.trim().length > 0
-                        ? `${pickedWord} → ${wordTranslation}`
-                        : pickedWord,
-                    spokenLang: l.code,
-                    baseLang: baseLanguage,
-                    translationText: wordTranslation || rawText,
-                    translationLang: l.code,
-                    ttsProvider: getActiveTtsProviderLabel(),
-                    source: "zero_knowledge",
-                  });
-
-                  // 1. Pronounce the picked word in the target language
-                  const wordVol = getLanguageTtsVolume(st.current.ttsVolumes || ttsVolumes, l.code);
-                  const speakWordPromise = speak(
-                    pickedWord,
-                    l.tts,
-                    rates[l.code] ?? 1.0,
-                    voiceSelections[l.code] ?? "",
-                    rowIdx,
-                    setSpeechProgress,
-                    wordVol,
-                  );
-                  const wordSpeed = Math.max(0.25, rates[l.code] ?? 1.0);
-                  const wordWaitMs = Math.max(
-                    12000,
-                    (pickedWord.length / 3) * (1000 / wordSpeed) + 6000,
-                  );
-                  await Promise.race([
-                    speakWordPromise,
-                    new Promise<void>((resolve) => setTimeout(resolve, wordWaitMs)),
-                  ]);
-
-                  // 2. Pronounce the translation in base language
-                  if (
-                    wordTranslation &&
-                    wordTranslation.trim().length > 0 &&
-                    wordTranslation.trim().toLowerCase() !== pickedWord.trim().toLowerCase()
-                  ) {
-                    await new Promise<void>((resolve) => setTimeout(resolve, 250));
-                    const baseTtsMeta = (isAndroid ? SUPPORTED_LANGUAGES_CATALOG : LANGS).find(
-                      (x) => x.code === baseLanguage,
-                    );
-                    const baseTtsLang = baseTtsMeta?.tts || baseLanguage || "en";
-                    const baseRate = rates[baseLanguage] ?? 1.0;
-                    const baseVoice = voiceSelections[baseLanguage] ?? "";
-                    const baseVol = getLanguageTtsVolume(
-                      st.current.ttsVolumes || ttsVolumes,
-                      baseLanguage,
-                    );
-
-                    const speakTransPromise = speak(
-                      wordTranslation,
-                      baseTtsLang,
-                      baseRate,
-                      baseVoice,
-                      rowIdx,
-                      setSpeechProgress,
-                      baseVol,
-                    );
-                    const transSpeed = Math.max(0.25, baseRate || 1.0);
-                    const transWaitMs = Math.max(
-                      12000,
-                      (wordTranslation.length / 3) * (1000 / transSpeed) + 6000,
-                    );
-                    await Promise.race([
-                      speakTransPromise,
-                      new Promise<void>((resolve) => setTimeout(resolve, transWaitMs)),
-                    ]);
-                  }
-                } else {
-                  recordTtsPlayHistory({
-                    videoId,
-                    videoTitle: historyContextRef.current.videoTitle,
-                    videoTimeSec: p?.getCurrentTime?.() ?? (rows[rowIdx]?.start ?? 0) / 1000,
-                    rowIndex: rowIdx,
-                    sentence: rows[rowIdx]?.texts?.[baseLanguage] || rawText,
-                    playedText: rawText,
-                    spokenLang: l.code,
-                    baseLang: baseLanguage,
-                    translationText: rawText,
-                    translationLang: l.code,
-                    ttsProvider: getActiveTtsProviderLabel(),
-                    source: "auto_playback",
-                  });
-                  const rowVol = getLanguageTtsVolume(st.current.ttsVolumes || ttsVolumes, l.code);
-                  const speakPromise = speak(
-                    rawText,
-                    l.tts,
-                    rates[l.code] ?? 1.0,
-                    voiceSelections[l.code] ?? "",
-                    rowIdx,
-                    setSpeechProgress,
-                    rowVol,
-                  );
-                  const textSpeed = Math.max(0.25, rates[l.code] ?? 1.0);
-                  const textWaitMs = Math.max(
-                    16000,
-                    (rawText.length / 3) * (1000 / textSpeed) + 8000,
-                  );
-                  await Promise.race([
-                    speakPromise,
-                    new Promise<void>((resolve) => setTimeout(resolve, textWaitMs)),
-                  ]);
-                }
-              }
-            } catch (err) {
-              console.warn(`[TTS] Speak error for ${l.code} at row ${rowIdx}:`, err);
-            }
-            if (busy.current && playbackSeekEpochRef.current === runEpoch) {
-              spokenLanguages.add(l.code);
-            }
-          }
-          if (isAudioTrackMode) {
-            multiVideoPlayerRegistry.pauseAllExcept("primary");
-            multiVideoPlayerRegistry.unmuteOnly("primary");
-          }
-          if (playbackSeekEpochRef.current === runEpoch && getEligibleLangs(rowIdx).length === 0) {
-            playedTtsRecords.current.add(sectionId);
-            setPlayedRecordsCount(playedTtsRecords.current.size);
-          }
-        } catch (error) {
-          logError("State Machine", "TTS section playback failed", {
-            videoId,
-            sectionId,
-            rowIndex: rowIdx,
-            error: error instanceof Error ? error.message : String(error),
-          });
-        } finally {
-          const sectionDurationMs = Date.now() - sectionStartedAt;
-          const wasSectionCancelled = !busy.current || playbackSeekEpochRef.current !== runEpoch;
-          if (!wasSectionCancelled) {
-            lastTtsSectionFinishedAtRef.current = Date.now();
-          }
-          logStateMachineAction("TTS_SECTION_FINISHED", {
-            videoId,
-            sectionId,
-            rowIndex: rowIdx,
-            languages: langs.map((l) => l.code),
-            durationMs: sectionDurationMs,
-            cancelled: wasSectionCancelled,
-          });
-          if (playbackSeekEpochRef.current === runEpoch) {
-            setSpeakingLang(null);
-            setSpeakingRow(-1);
-            setSpeechProgress(null);
-          }
-        }
-      };
-      const isPlaying = p.getPlayerState() === 1;
-      const safelyResumePrimaryVideo = (resumeTargetSec?: number) => {
-        clearPlayKickTimers();
-        lastPlayRequestAtRef.current = Date.now();
-        lastPlayOrResumeStartedAtRef.current = Date.now();
-        multiVideoPlayerRegistry.unmuteOnly("primary");
-        userExplicitlyPausedRef.current = false;
-        isPausedForTtsRef.current = false;
-        programmaticPauseTimestampRef.current = 0;
-        try {
-          if (typeof resumeTargetSec === "number" && Number.isFinite(resumeTargetSec)) {
-            pendingSeekTargetRef.current = {
-              targetSec: resumeTargetSec,
-              requestedAt: Date.now(),
-            };
-            p.seekTo(resumeTargetSec, true);
-          }
-          p.playVideo();
-          setIsVideoPlaying(true);
-          setPauseReason(null);
-        } catch (err) {
-          console.warn("[PlaybackCoordinator] playVideo error:", err);
-        }
-        // First kick at 80ms: Ensure player actually resumed
-        const resumeKick1 = setTimeout(() => {
-          try {
-            if (
-              !busy.current &&
-              !userExplicitlyPausedRef.current &&
-              !st.current?.isSetupPaused &&
-              p.getPlayerState?.() !== 1
-            ) {
-              p.playVideo?.();
-              setIsVideoPlaying(true);
-            }
-          } catch {
-            // ignore
-          }
-        }, 80);
-        // Second kick at 240ms: In case of delay or state transition
-        const resumeKick2 = setTimeout(() => {
-          try {
-            if (
-              !busy.current &&
-              !userExplicitlyPausedRef.current &&
-              !st.current?.isSetupPaused &&
-              p.getPlayerState?.() !== 1
-            ) {
-              p.playVideo?.();
-              setIsVideoPlaying(true);
-            }
-          } catch {
-            // ignore
-          }
-        }, 240);
-        playKickTimersRef.current.push(resumeKick1, resumeKick2);
-      };
 
       if (pauseMode && st.current.isTtsPlayEnabled) {
         if (idx >= 0) {
@@ -8418,6 +8737,7 @@ function Index() {
     }, 150);
     return () => {
       initPlayerRef.current = null;
+      triggerImmediateCurrentRowTtsRef.current = null;
       isPrimaryPlayerReadyRef.current = false;
       clearPlayKickTimers();
       clearInterval(iv);

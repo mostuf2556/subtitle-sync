@@ -229,7 +229,11 @@ export const FloatingDraggablePauseButton: React.FC<FloatingDraggablePauseButton
     useEffect(() => {
       if (!isOpen) return;
       const handleOutsidePress = (e: MouseEvent | TouchEvent | PointerEvent) => {
-        if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        if (
+          containerRef.current &&
+          e.target instanceof Node &&
+          !containerRef.current.contains(e.target)
+        ) {
           setIsOpen(false);
           setActiveExplanation(null);
         }
@@ -247,7 +251,8 @@ export const FloatingDraggablePauseButton: React.FC<FloatingDraggablePauseButton
     // Mouse drag handlers
     const handleMouseDown = (e: React.MouseEvent) => {
       if (e.button !== 0) return;
-      const targetEl = e.target as HTMLElement | null;
+      const targetEl =
+        (e.target instanceof Element ? e.target : (e.target as Node | null)?.parentElement) ?? null;
       if (
         targetEl?.closest?.(
           '[data-testid="floating-menu-dropdown"], [data-testid="floating-menu-toggle-btn"]',
@@ -303,7 +308,8 @@ export const FloatingDraggablePauseButton: React.FC<FloatingDraggablePauseButton
 
     // Touch drag handlers
     const handleTouchStart = (e: React.TouchEvent) => {
-      const targetEl = e.target as HTMLElement | null;
+      const targetEl =
+        (e.target instanceof Element ? e.target : (e.target as Node | null)?.parentElement) ?? null;
       if (
         targetEl?.closest?.(
           '[data-testid="floating-menu-dropdown"], [data-testid="floating-menu-toggle-btn"]',
@@ -610,11 +616,15 @@ export const FloatingDraggablePauseButton: React.FC<FloatingDraggablePauseButton
         <button
           type="button"
           data-testid="floating-menu-toggle-btn"
+          aria-haspopup="menu"
+          aria-expanded={isOpen}
           aria-label={`Floating settings (OpenRouter: ${getCredentialBadgeText(effectiveOpenRouterStatus)}, TTS Token: ${getCredentialBadgeText(effectiveTtsTokenStatus)})`}
           title={`Floating settings — OpenRouter Key: ${getCredentialBadgeText(effectiveOpenRouterStatus)} · TTS Token: ${getCredentialBadgeText(effectiveTtsTokenStatus)}. Click to configure.`}
           style={{ touchAction: "manipulation" }}
           onMouseDown={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
+          onPointerMove={(e) => e.stopPropagation()}
+          onPointerUp={(e) => e.stopPropagation()}
           onTouchStart={(e) => e.stopPropagation()}
           onTouchMove={(e) => e.stopPropagation()}
           onTouchEnd={(e) => e.stopPropagation()}
@@ -707,6 +717,8 @@ export const FloatingDraggablePauseButton: React.FC<FloatingDraggablePauseButton
             } ${alignsRight ? "right-0" : "left-0"}`}
             onMouseDown={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
+            onPointerMove={(e) => e.stopPropagation()}
+            onPointerUp={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
             onTouchMove={(e) => e.stopPropagation()}
             onTouchEnd={(e) => e.stopPropagation()}
