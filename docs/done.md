@@ -12246,3 +12246,22 @@
   - `npm run test:same-components-parity-policy` — PASS
   - `npm run test:agents-all` — PASS (24/24)
   - `npm run check-version` — PASS (`v2.1.134`)
+
+### Task 460 (Prompt 228): Fix Fetching Subtitles Menu Option Alternating in a Loop (Android)
+- **Changes**:
+  - `src/utils/subtitleRequestQueue.ts`: Added `isLangQueuedOrExecuting(videoId, lang)` and cleared `activeDelayTimer` + notified listeners in `resetVideo(videoId)`.
+  - `src/components/FloatingSubtitleRetryIndicator.tsx`: Subscribed to `subtitleRequestQueue`, added `triggerInFlightRef` guard and `isTargetAlreadyQueued`/`queueState.cooldownUntil` checks so retry scheduling and header state never compete with active queue execution or backoff cooldown; kept `export function FloatingSubtitleRetryIndicator` wrapper around `React.memo`.
+  - `src/components/NotificationsStatusTab.tsx`: Subscribed to `subtitleRequestQueue`, aligned countdown/buttons/badges with `effectiveFetching`, `effectiveIsPaused`, and `queueState.currentlyFetchingLang`, and removed duplicate background auto-trigger timer.
+  - `src/routes/index.tsx`: Tracked real async `isFetchingSubtitles` + `queueIsExecuting` for `FloatingSubtitleRetryIndicator`; guarded `fetchFavoriteLanguageSubtitles` against already-queued entries, separated deduplicated skips from HTTP failures (`didExecuteNetworkAttempt`), avoided pre-loop `"fetching"` flashes on cache hits, stabilized dependencies (`autoSpeakOnFetchRef`, `speakFetchedLanguageNameRef`), and filtered `pendingToAutoFetch` with `targetLanguagesKey` in Android auto-fetch `useEffect`.
+  - `scripts/verify-autofetch-no-loop-android.ts` (registered as `test:autofetch-no-loop-android` in `package.json` & `docs/files.md`): Added static contract checks and live Playwright Chromium Android touch emulation verifying rate-limited subtitle retries do not oscillate between status labels or re-trigger loop storms.
+- **Verification**:
+  - `npx tsc --noEmit` — PASS
+  - `npm run test:autofetch-no-loop-android` — PASS
+  - `npm run test:autofetch-and-log-hide-controls` — PASS
+  - `npm run test:youtube-docs-and-floating-retry` — PASS
+  - `npm run test:auto-retry-and-versioning` — PASS
+  - `npm run test:hotfix-maximum-update-depth-p153` — PASS
+  - `npm run test:android-menus-responsiveness` — PASS
+  - `npm run test:auto-speak-on-fetch` — PASS
+  - `npm run test:autospeak-init` — PASS
+  - `npm run test:reliable-subtitles-fetching` — PASS

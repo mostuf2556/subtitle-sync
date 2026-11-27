@@ -63,10 +63,15 @@ class SubtitleRequestQueue {
   /** Forget success/failure state so the video can be fetched from scratch. */
   public resetVideo(videoId: string) {
     if (this.currentVideoId !== videoId) return;
+    if (this.activeDelayTimer) {
+      clearTimeout(this.activeDelayTimer);
+      this.activeDelayTimer = null;
+    }
     this.succeededLanguages.clear();
     this.failedLanguages.clear();
     this.consecutiveErrors = 0;
     this.cooldownUntil = 0;
+    this.notifyState();
   }
 
   /**
@@ -132,6 +137,20 @@ class SubtitleRequestQueue {
    */
   public hasSucceeded(videoId: string, lang: string): boolean {
     return this.currentVideoId === videoId && this.succeededLanguages.has(lang);
+  }
+
+  /**
+   * Check if a language is currently queued or in-flight for the given video.
+   */
+  public isLangQueuedOrExecuting(videoId: string, lang: string): boolean {
+    if (
+      this.currentlyExecutingTask &&
+      this.currentlyExecutingTask.videoId === videoId &&
+      this.currentlyExecutingTask.lang === lang
+    ) {
+      return true;
+    }
+    return this.queue.some((item) => item.videoId === videoId && item.lang === lang);
   }
 
   /**

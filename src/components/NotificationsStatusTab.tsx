@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { Json3 } from "@/lib/subtitles";
 import { getRandomRetryDelayMs } from "@/lib/playback-preferences";
-import { subtitleRequestQueue } from "@/utils/subtitleRequestQueue";
+import { subtitleRequestQueue, type SubtitleQueueState } from "@/utils/subtitleRequestQueue";
 import {
   subscribeSubtitleNotification,
   dismissSubtitleNotification,
@@ -55,6 +55,13 @@ export const NotificationsStatusTab: React.FC<NotificationsStatusTabProps> = ({
   );
   const [notificationHistory, setNotificationHistory] = useState<SubtitleFetchNotification[]>([]);
   const [muted, setMuted] = useState<boolean>(() => isSubtitleNotificationMuted());
+  const [queueState, setQueueState] = useState<SubtitleQueueState>(() =>
+    subtitleRequestQueue.getState(),
+  );
+
+  useEffect(() => {
+    return subtitleRequestQueue.subscribe(setQueueState);
+  }, []);
 
   useEffect(() => {
     return subscribeSubtitleNotification((n) => {
@@ -96,7 +103,7 @@ export const NotificationsStatusTab: React.FC<NotificationsStatusTabProps> = ({
 
   const allFetched = targetLanguages.length > 0 && pendingLanguages.length === 0;
 
-  // 3. Retry timers & pacing
+  // 3. Retry timers & pacing (countdown display synced with queue; execution delegated to single queue/indicator owner)
   const [isPaused, setIsPaused] = useState<boolean>(!autoRetryEnabled);
   const [secondsRemaining, setSecondsRemaining] = useState<number>(minPacingSec);
   const [currentlyFetchingLang, setCurrentlyFetchingLang] = useState<string | null>(null);
@@ -104,12 +111,20 @@ export const NotificationsStatusTab: React.FC<NotificationsStatusTabProps> = ({
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  const effectiveFetching = Boolean(
+    isFetching ||
+      currentlyFetchingLang ||
+      queueState.isExecuting ||
+      queueState.currentlyFetchingLang,
+  );
+  const effectiveIsPaused = isPaused || queueState.isPaused;
+
   const onFetchLanguageRef = useRef(onFetchLanguage);
   onFetchLanguageRef.current = onFetchLanguage;
   const pendingLanguagesRef = useRef(pendingLanguages);
   pendingLanguagesRef.current = pendingLanguages;
-  const isFetchingRef = useRef(isFetching);
-  isFetchingRef.current = isFetching;
+  const isFetchingRef = useRef(effectiveFetching);
+  isFetchingRef.current = effectiveFetching;
 
   useEffect(() => {
     setIsPaused(!autoRetryEnabled);
@@ -129,6 +144,15 @@ export const NotificationsStatusTab: React.FC<NotificationsStatusTabProps> = ({
   const triggerNextFetch = useCallback(async () => {
     if (pendingLanguagesRef.current.length === 0 || isFetchingRef.current) return;
     const targetLang = pendingLanguagesRef.current[0]!;
+    const queueSnap = subtitleRequestQueue.getState();
+    if (
+      queueSnap.isPaused ||
+      queueSnap.isExecuting ||
+      queueSnap.currentlyFetchingLang ||
+      queueSnap.pendingLangs.includes(targetLang)
+    ) {
+      return;
+    }
     setCurrentlyFetchingLang(targetLang);
     clearTimers();
 
@@ -146,12 +170,14 @@ export const NotificationsStatusTab: React.FC<NotificationsStatusTabProps> = ({
       return;
     }
 
-    if (isPaused || isFetching) {
+    if (effectiveIsPaused || effectiveFetching) {
       clearTimers();
       return;
     }
 
-    const delayMs = getRandomRetryDelayMs(minPacingSec, maxPacingSec);
+    const jitterMs = getRandomRetryDelayMs(minPacingSec, maxPacingSec);
+    const cooldownRemainingMs = Math.max(0, queueState.cooldownUntil - Date.now());
+    const delayMs = Math.max(jitterMs, cooldownRemainingMs);
     const initialSeconds = Math.max(1, Math.round(delayMs / 1000));
     setSecondsRemaining(initialSeconds);
 
@@ -161,10 +187,8 @@ export const NotificationsStatusTab: React.FC<NotificationsStatusTabProps> = ({
       setSecondsRemaining((prev) => Math.max(0, prev - 1));
     }, 1000);
 
-    timerRef.current = setTimeout(() => {
-      clearTimers();
-      triggerNextFetch();
-    }, delayMs);
+    // Embedded FloatingSubtitleRetryIndicator already schedules the background retry loop when autoRetryEnabled=true;
+    // avoid double-triggering onFetchLanguage from a competing second timer.
 
     return () => {
       clearTimers();
@@ -172,16 +196,16 @@ export const NotificationsStatusTab: React.FC<NotificationsStatusTabProps> = ({
   }, [
     pendingKey,
     pendingLanguages.length,
-    isPaused,
-    isFetching,
+    effectiveIsPaused,
+    effectiveFetching,
+    queueState.cooldownUntil,
     minPacingSec,
     maxPacingSec,
-    triggerNextFetch,
     clearTimers,
   ]);
 
   const handleTogglePause = () => {
-    const nextState = !isPaused;
+    const nextState = !effectiveIsPaused;
     setIsPaused(nextState);
     subtitleRequestQueue.setPaused(nextState);
     onToggleAutoRetry?.(!nextState);
@@ -189,7 +213,7 @@ export const NotificationsStatusTab: React.FC<NotificationsStatusTabProps> = ({
 
   const handleManualRetryNow = () => {
     clearTimers();
-    triggerNextFetch();
+    void triggerNextFetch();
   };
 
   return (
@@ -239,7 +263,7 @@ export const NotificationsStatusTab: React.FC<NotificationsStatusTabProps> = ({
             <div className="flex items-center gap-2">
               {allFetched ? (
                 <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-              ) : isFetching || currentlyFetchingLang ? (
+              ) : effectiveFetching ? (
                 <Loader2 className="w-4 h-4 text-primary animate-spin" />
               ) : (
                 <Clock className="w-4 h-4 text-primary" />
@@ -250,12 +274,12 @@ export const NotificationsStatusTab: React.FC<NotificationsStatusTabProps> = ({
               className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
                 allFetched
                   ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
-                  : isPaused
+                  : effectiveIsPaused
                     ? "bg-amber-500/10 text-amber-500 border border-amber-500/20"
                     : "bg-primary/10 text-primary border border-primary/20"
               }`}
             >
-              {allFetched ? "All Loaded" : isPaused ? "Paced Paused" : "Active"}
+              {allFetched ? "All Loaded" : effectiveIsPaused ? "Paced Paused" : "Active"}
             </span>
           </div>
 
@@ -279,10 +303,10 @@ export const NotificationsStatusTab: React.FC<NotificationsStatusTabProps> = ({
                   <span className="text-xs text-muted-foreground">
                     {allFetched
                       ? "All tracks loaded"
-                      : isPaused
+                      : effectiveIsPaused
                         ? "Retry is paused"
-                        : isFetching
-                          ? `Fetching ${currentlyFetchingLang || "subtitles"}…`
+                        : effectiveFetching
+                          ? `Fetching ${queueState.currentlyFetchingLang || currentlyFetchingLang || "subtitles"}…`
                           : "Next automated request in:"}
                   </span>
                   <span
@@ -291,9 +315,9 @@ export const NotificationsStatusTab: React.FC<NotificationsStatusTabProps> = ({
                   >
                     {allFetched
                       ? "Done"
-                      : isPaused
+                      : effectiveIsPaused
                         ? "Paused"
-                        : isFetching
+                        : effectiveFetching
                           ? "Fetching…"
                           : `${secondsRemaining}s`}
                   </span>
@@ -350,7 +374,7 @@ export const NotificationsStatusTab: React.FC<NotificationsStatusTabProps> = ({
                 <button
                   type="button"
                   onClick={handleManualRetryNow}
-                  disabled={isFetching || pendingLanguages.length === 0}
+                  disabled={effectiveFetching || pendingLanguages.length === 0}
                   data-testid="tab-retry-now-btn"
                   className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-primary text-primary-foreground font-medium text-xs hover:bg-primary/90 disabled:opacity-50 transition active:scale-95 shadow-sm"
                 >
@@ -364,12 +388,12 @@ export const NotificationsStatusTab: React.FC<NotificationsStatusTabProps> = ({
                   data-testid="tab-retry-toggle-btn"
                   className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-background hover:bg-muted font-medium text-xs text-foreground transition active:scale-95"
                 >
-                  {isPaused ? (
+                  {effectiveIsPaused ? (
                     <Play className="w-3.5 h-3.5 text-emerald-500" />
                   ) : (
                     <Pause className="w-3.5 h-3.5 text-amber-500" />
                   )}
-                  <span>{isPaused ? "Resume" : "Pause"}</span>
+                  <span>{effectiveIsPaused ? "Resume" : "Pause"}</span>
                 </button>
               </div>
             </div>
@@ -482,7 +506,7 @@ export const NotificationsStatusTab: React.FC<NotificationsStatusTabProps> = ({
           targetLanguages={targetLanguages}
           tracks={tracks}
           onFetchLanguage={onFetchLanguage}
-          isFetching={isFetching}
+          isFetching={effectiveFetching}
           autoRetryEnabled={autoRetryEnabled}
           minPacingSec={minPacingSec}
           maxPacingSec={maxPacingSec}

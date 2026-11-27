@@ -24,6 +24,7 @@
     "test:tts-delay-and-no-spurious-pause-e2e": "tsx scripts/verify-tts-delay-and-no-spurious-pause-e2e.ts",
     "test:default-native-tts-and-ondemand-x7": "tsx scripts/verify-default-native-tts-and-ondemand-x7.ts",
     "test:android-menus-responsiveness": "tsx scripts/verify-android-menus-responsiveness.ts",
+    "test:autofetch-no-loop-android": "tsx scripts/verify-autofetch-no-loop-android.ts",
     "test:performance-level-graph": "tsx scripts/verify-performance-level-graph.ts",
     "test:learning-goals-profile-full-persistence": "tsx scripts/verify-learning-goals-profile-full-persistence.ts",
     "test:language-selector-manual-performance": "tsx scripts/verify-language-selector-manual-performance.ts",
