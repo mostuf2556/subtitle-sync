@@ -12,6 +12,7 @@
 import { useSyncExternalStore } from "react";
 import { trackNetworkRequest } from "@/utils/networkTracker";
 import { logStateMachineAction, logWarn } from "@/utils/logBuffer";
+import { getCachedVoices, matchesLanguageCode, setCachedVoices } from "@/utils/speechVoiceUtils";
 
 export const LOVABLE_TTS_BASE_URL = "https://tts3.lovable.app";
 export const LOVABLE_TTS_ENDPOINT = "https://tts3.lovable.app/api/public/tts";
@@ -3254,25 +3255,59 @@ export async function executeTtsFallbackSequence(
       } else if (typeof window !== "undefined" && "speechSynthesis" in window) {
         try {
           const synth = window.speechSynthesis;
-          const voices = synth.getVoices?.() || [];
-          const normalizedTarget = normalizeLanguageCode(lang).toLowerCase();
-          const targetBase = normalizedTarget.split(/[-_]/)[0];
-          const hasMatchingVoice = voices.some((v) => {
-            const vLang = (v.lang || "").toLowerCase();
-            return (
-              vLang === normalizedTarget ||
-              vLang.startsWith(`${targetBase}-`) ||
-              vLang === targetBase
-            );
-          });
-          // If browser has voices loaded and none match the target language, skip stalling on native when tts3 is still available
-          if (voices.length > 0 && !hasMatchingVoice && steps.includes("tts3")) {
+          let voices = synth.getVoices?.() || [];
+          if (voices.length === 0) {
+            const cachedVoices = getCachedVoices<SpeechSynthesisVoice>();
+            if (cachedVoices.length > 0) {
+              voices = cachedVoices;
+            } else if (typeof synth.addEventListener === "function") {
+              voices = await new Promise<SpeechSynthesisVoice[]>((resolveVoices) => {
+                let done = false;
+                const finishVoices = () => {
+                  if (done) return;
+                  done = true;
+                  clearTimeout(vTimer);
+                  try {
+                    synth.removeEventListener("voiceschanged", handleVChanged);
+                  } catch {
+                    // ignore
+                  }
+                  const loaded = synth.getVoices?.() || [];
+                  if (loaded.length > 0) setCachedVoices(loaded);
+                  resolveVoices(loaded);
+                };
+                const handleVChanged = () => {
+                  const next = synth.getVoices?.() || [];
+                  if (next.length > 0) finishVoices();
+                };
+                const vTimer = setTimeout(finishVoices, 450);
+                try {
+                  synth.addEventListener("voiceschanged", handleVChanged);
+                } catch {
+                  finishVoices();
+                }
+              });
+            }
+          } else {
+            setCachedVoices(voices);
+          }
+
+          const matchedVoice = voices.find((v) => matchesLanguageCode(v.lang, lang));
+          // Under tts3_native only: if browser has voices loaded and none match the target language, skip native directly to tts3
+          if (
+            order === "tts3_native" &&
+            voices.length > 0 &&
+            !matchedVoice &&
+            steps.includes("tts3")
+          ) {
             continue;
           }
           const nativeOk = await new Promise<boolean>((resolve) => {
             let settled = false;
             let hasStarted = false;
+            let pendingGraceUsed = false;
             let startWatchdog: ReturnType<typeof setTimeout> | null = null;
+            const speakQueuedAt = Date.now();
             const finish = (ok: boolean) => {
               if (settled) return;
               settled = true;
@@ -3296,8 +3331,16 @@ export async function executeTtsFallbackSequence(
               const speakNative = () => {
                 if (settled) return;
                 try {
+                  if (synth.paused) {
+                    synth.resume?.();
+                  }
                   const u = new SpeechSynthesisUtterance(text);
-                  u.lang = normalizeLanguageCode(lang);
+                  if (matchedVoice) {
+                    u.voice = matchedVoice;
+                    u.lang = matchedVoice.lang || normalizeLanguageCode(lang);
+                  } else {
+                    u.lang = normalizeLanguageCode(lang);
+                  }
                   u.rate = effectiveRate;
                   u.volume = volume;
                   u.onstart = () => {
@@ -3314,18 +3357,37 @@ export async function executeTtsFallbackSequence(
                       startWatchdog = null;
                     }
                   };
-                  u.onend = () => finish(hasStarted || !steps.includes("tts3"));
+                  u.onend = () => {
+                    const spokeDurationMs = Date.now() - speakQueuedAt;
+                    finish(
+                      hasStarted ||
+                        !steps.includes("tts3") ||
+                        Boolean(matchedVoice && spokeDurationMs >= 250) ||
+                        spokeDurationMs >= 250,
+                    );
+                  };
                   u.onerror = () => finish(false);
                   if (steps.includes("tts3")) {
-                    startWatchdog = setTimeout(() => {
-                      if (!hasStarted && !settled) {
+                    const baseWatchdogMs = order === "tts3_native" ? 1200 : 1800;
+                    const scheduleWatchdog = (waitMs: number) => {
+                      startWatchdog = setTimeout(() => {
+                        if (hasStarted || settled) return;
+                        if (synth?.speaking) {
+                          hasStarted = true;
+                          return;
+                        }
+                        if (synth?.pending && !pendingGraceUsed && order !== "tts3_native") {
+                          pendingGraceUsed = true;
+                          scheduleWatchdog(1400);
+                          return;
+                        }
                         logWarn(
                           "TTS-Play",
                           "TTS_UNJUSTIFIED_DELAY: Native WebSpeech start watchdog",
                           {
                             lang,
                             order,
-                            watchdogMs: 1200,
+                            watchdogMs: waitMs,
                             textLength: text.length,
                             textPreview: text.slice(0, 60),
                           },
@@ -3334,7 +3396,7 @@ export async function executeTtsFallbackSequence(
                           phase: "native-webspeech-start-timeout",
                           lang,
                           order,
-                          startDelayMs: 1200,
+                          startDelayMs: waitMs,
                           textLength: text.length,
                           textPreview: text.slice(0, 60),
                         });
@@ -3344,8 +3406,9 @@ export async function executeTtsFallbackSequence(
                           // ignore
                         }
                         finish(false);
-                      }
-                    }, 1200);
+                      }, waitMs);
+                    };
+                    scheduleWatchdog(baseWatchdogMs);
                   }
                   synth.speak(u);
                 } catch {

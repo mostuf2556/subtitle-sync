@@ -2880,3 +2880,10 @@ on tts-service usage use on-demand request (x=7)
 
 tts-play is no longer working and the floating button is not able to enable it
 ```
+
+---
+
+### Prompt 229: Fix Default Native TTS-Play Execution Failures (`v2.1.137`)
+```
+by default the app fails to execute tts-play based on native tts
+```

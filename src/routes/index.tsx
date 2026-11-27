@@ -651,6 +651,119 @@ const getFixturesUrl = (video: string, lang: string) => {
   return `./fixtures/${video}/${lang}.json`;
 };
 
+async function waitForAndroidTtsReady(
+  fallbackOrder: TtsFallbackOrder,
+  isCancelled: () => boolean,
+): Promise<boolean> {
+  if (typeof window === "undefined" || !window.AndroidNativeShell?.speak) {
+    return false;
+  }
+  const checkReady = window.AndroidNativeShell.isTtsReady;
+  if (typeof checkReady !== "function") {
+    return true;
+  }
+  try {
+    if (checkReady.call(window.AndroidNativeShell)) {
+      return true;
+    }
+  } catch {
+    return true;
+  }
+  const maxWaitMs = fallbackOrder === "tts3_native" ? 600 : 2200;
+  const deadline = Date.now() + maxWaitMs;
+  while (Date.now() < deadline) {
+    if (isCancelled()) return false;
+    await new Promise<void>((resolve) => setTimeout(resolve, 80));
+    if (isCancelled()) return false;
+    try {
+      if (window.AndroidNativeShell?.isTtsReady?.()) {
+        return true;
+      }
+    } catch {
+      return true;
+    }
+  }
+  return false;
+}
+
+async function waitForSpeechSynthesisVoices(
+  maxWaitMs: number = 450,
+  isCancelled?: () => boolean,
+): Promise<SpeechSynthesisVoice[]> {
+  if (typeof window === "undefined" || !("speechSynthesis" in window) || !window.speechSynthesis) {
+    return [];
+  }
+  const synth = window.speechSynthesis;
+  const cached = getCachedVoices<SpeechSynthesisVoice>();
+  const initialVoices = synth.getVoices?.() || [];
+  if (initialVoices.length > 0) {
+    setCachedVoices(initialVoices);
+    return initialVoices;
+  }
+  if (cached.length > 0) {
+    return cached;
+  }
+  if (isCancelled?.()) return [];
+
+  return new Promise<SpeechSynthesisVoice[]>((resolve) => {
+    let settled = false;
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
+    let timeoutTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const cleanup = () => {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+      if (timeoutTimer) {
+        clearTimeout(timeoutTimer);
+        timeoutTimer = null;
+      }
+      try {
+        synth.removeEventListener?.("voiceschanged", handleVoicesChanged);
+      } catch {
+        // ignore listener cleanup errors
+      }
+    };
+
+    const finish = (list: SpeechSynthesisVoice[]) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      if (list.length > 0) {
+        setCachedVoices(list);
+      }
+      resolve(list);
+    };
+
+    const checkNow = () => {
+      if (isCancelled?.()) {
+        finish([]);
+        return;
+      }
+      const next = synth.getVoices?.() || [];
+      if (next.length > 0) {
+        finish(next);
+      }
+    };
+
+    const handleVoicesChanged = () => {
+      checkNow();
+    };
+
+    try {
+      synth.addEventListener?.("voiceschanged", handleVoicesChanged);
+    } catch {
+      // ignore if addEventListener unsupported
+    }
+    pollTimer = setInterval(checkNow, 90);
+    timeoutTimer = setTimeout(() => {
+      const finalVoices = synth.getVoices?.() || [];
+      finish(finalVoices.length > 0 ? finalVoices : getCachedVoices<SpeechSynthesisVoice>());
+    }, maxWaitMs);
+  });
+}
+
 function speak(
   text: string,
   lang: string,
@@ -836,20 +949,37 @@ function executeSingleSpeech(
             return false;
           }
           if (isCancelled()) return false;
+          const isReady = await waitForAndroidTtsReady(fallbackOrder, isCancelled);
+          if (isCancelled()) return false;
+          if (!isReady) {
+            stallReason = "android-native-not-ready";
+            return false;
+          }
+          const utteranceId = `row-${row}-${lang}-${Date.now()}`;
+          let handled = false;
+          try {
+            handled = window.AndroidNativeShell.speak(text, lang, normalizedRate, utteranceId);
+            if (
+              !handled &&
+              typeof window.AndroidNativeShell.isTtsReady !== "function" &&
+              fallbackOrder !== "tts3_native" &&
+              !isCancelled()
+            ) {
+              await new Promise<void>((r) => setTimeout(r, 180));
+              if (!isCancelled()) {
+                handled = window.AndroidNativeShell.speak(text, lang, normalizedRate, utteranceId);
+              }
+            }
+          } catch (e) {
+            stallReason = e instanceof Error ? e.message : "android-bridge-exception";
+            return false;
+          }
+          if (!handled) {
+            stallReason = "android-native-not-ready";
+            return false;
+          }
           return new Promise<boolean>((resolveNative) => {
             try {
-              const utteranceId = `row-${row}-${lang}-${Date.now()}`;
-              const handled = window.AndroidNativeShell!.speak!(
-                text,
-                lang,
-                normalizedRate,
-                utteranceId,
-              );
-              if (!handled) {
-                stallReason = "android-native-not-ready";
-                resolveNative(false);
-                return;
-              }
               engineUsed = "android-native";
               safeProgress({
                 lang: lang.slice(0, 2),
@@ -1008,19 +1138,43 @@ function executeSingleSpeech(
         typeof window !== "undefined" && "speechSynthesis" in window
           ? window.speechSynthesis.getVoices?.() || []
           : [];
-      const voices = cached.length > 0 ? cached : systemVoices;
+      let voices = cached.length > 0 ? cached : systemVoices;
+      if (systemVoices.length > 0 && cached.length === 0) {
+        setCachedVoices(systemVoices);
+        voices = systemVoices;
+      }
 
-      const rawChosenVoice =
+      let rawChosenVoice =
         voiceURI && voices.length > 0 ? findVoiceByUriOrName(voices, voiceURI) : undefined;
-      const chosenVoice =
+      let chosenVoice =
         rawChosenVoice && matchesLanguageCode(rawChosenVoice.lang, lang)
           ? rawChosenVoice
           : undefined;
 
       if (typeof window !== "undefined" && window.AndroidNativeShell?.speak) {
         try {
+          const isReady = await waitForAndroidTtsReady(fallbackOrder, isCancelled);
+          if (isCancelled()) {
+            finalizeStepTelemetry("cancelled");
+            safeProgress(null);
+            return res();
+          }
           const utteranceId = `row-${row}-${lang}-${Date.now()}`;
-          const handled = window.AndroidNativeShell.speak(text, lang, normalizedRate, utteranceId);
+          let handled = isReady
+            ? window.AndroidNativeShell.speak(text, lang, normalizedRate, utteranceId)
+            : false;
+          if (
+            !handled &&
+            isReady &&
+            typeof window.AndroidNativeShell.isTtsReady !== "function" &&
+            fallbackOrder !== "tts3_native" &&
+            !isCancelled()
+          ) {
+            await new Promise<void>((r) => setTimeout(r, 180));
+            if (!isCancelled()) {
+              handled = window.AndroidNativeShell.speak(text, lang, normalizedRate, utteranceId);
+            }
+          }
           if (handled) {
             engineUsed = "android-native";
             safeProgress({
@@ -1080,8 +1234,11 @@ function executeSingleSpeech(
               if (uid === utteranceId) {
                 console.warn("Android native TTS error, falling back to Google TTS audio:", err);
                 stallReason = err || "android-native-error";
+                if (!canFallbackToTts3) {
+                  finish("android-error-no-audio", stallReason);
+                  return;
+                }
                 void (async () => {
-                  markTtsServiceSessionActive(true);
                   try {
                     const played = await playAlternativeTtsAudio(
                       text,
@@ -1105,6 +1262,9 @@ function executeSingleSpeech(
                         auditSource: "playback",
                       },
                     );
+                    if (played) {
+                      markTtsServiceSessionActive(true);
+                    }
                     finish(
                       played ? "android-error-alt-fallback" : "android-error-no-audio",
                       stallReason,
@@ -1141,7 +1301,6 @@ function executeSingleSpeech(
                   // ignore stop error
                 }
                 void (async () => {
-                  markTtsServiceSessionActive(true);
                   try {
                     const played = await playAlternativeTtsAudio(
                       text,
@@ -1165,6 +1324,9 @@ function executeSingleSpeech(
                         auditSource: "playback",
                       },
                     );
+                    if (played) {
+                      markTtsServiceSessionActive(true);
+                    }
                     finish(
                       played ? "android-stall-alt-fallback" : "android-stall-no-audio",
                       stallReason,
@@ -1190,50 +1352,54 @@ function executeSingleSpeech(
             return;
           } else {
             stallReason = "android-native-not-ready";
-            markTtsServiceSessionActive(true);
             console.warn(
               "Android native TTS unhandled/not ready, falling back to Google TTS audio",
             );
-            try {
-              safeProgress({
-                lang: lang.slice(0, 2),
-                row,
-                start: 0,
-                end: text.length,
-              });
-              const played = await playAlternativeTtsAudio(
-                text,
-                lang,
-                altSpeed,
-                (pct) => {
-                  markSpeechStarted("alternative-tts");
-                  safeProgress({
-                    lang: lang.slice(0, 2),
-                    row,
-                    start: 0,
-                    end: Math.round((pct / 100) * text.length),
-                  });
-                },
-                altEngine,
-                {
-                  provider: altProvider || "auto",
-                  speed: altSpeed,
-                  volume: normalizedVolume,
-                  skipInternalWebSpeechFallback: true,
-                  auditSource: "playback",
-                },
-              );
-              if (played || isCancelled()) {
-                engineUsed = played ? "alternative-tts" : "none";
-                finalizeStepTelemetry(
-                  isCancelled() ? "cancelled" : "android-not-ready-alt-fallback",
-                  stallReason,
+            if (canFallbackToTts3 && !isCancelled()) {
+              try {
+                safeProgress({
+                  lang: lang.slice(0, 2),
+                  row,
+                  start: 0,
+                  end: text.length,
+                });
+                const played = await playAlternativeTtsAudio(
+                  text,
+                  lang,
+                  altSpeed,
+                  (pct) => {
+                    markSpeechStarted("alternative-tts");
+                    safeProgress({
+                      lang: lang.slice(0, 2),
+                      row,
+                      start: 0,
+                      end: Math.round((pct / 100) * text.length),
+                    });
+                  },
+                  altEngine,
+                  {
+                    provider: altProvider || "auto",
+                    speed: altSpeed,
+                    volume: normalizedVolume,
+                    skipInternalWebSpeechFallback: true,
+                    auditSource: "playback",
+                  },
                 );
-                safeProgress(null);
-                return res();
+                if (played) {
+                  markTtsServiceSessionActive(true);
+                }
+                if (played || isCancelled()) {
+                  engineUsed = played ? "alternative-tts" : "none";
+                  finalizeStepTelemetry(
+                    isCancelled() ? "cancelled" : "android-not-ready-alt-fallback",
+                    stallReason,
+                  );
+                  safeProgress(null);
+                  return res();
+                }
+              } catch (fallbackErr) {
+                console.warn("Direct Google TTS fallback failed:", fallbackErr);
               }
-            } catch (fallbackErr) {
-              console.warn("Direct Google TTS fallback failed:", fallbackErr);
             }
           }
         } catch (e) {
@@ -1248,7 +1414,6 @@ function executeSingleSpeech(
         altFallbackAttempted = true;
         if (reason) stallReason = reason;
         if (canFallbackToTts3) {
-          markTtsServiceSessionActive(true);
           try {
             safeProgress({
               lang: lang.slice(0, 2),
@@ -1279,6 +1444,7 @@ function executeSingleSpeech(
               },
             );
             if (played) {
+              markTtsServiceSessionActive(true);
               engineUsed = "alternative-tts";
               finalizeStepTelemetry("alternative-tts-fallback", stallReason || undefined);
               safeProgress(null);
@@ -1301,6 +1467,23 @@ function executeSingleSpeech(
         finalizeStepTelemetry("no-tts-engine", "no-speech-synthesis");
         safeProgress(null);
         return res();
+      }
+
+      if (voices.length === 0) {
+        const loadedVoices = await waitForSpeechSynthesisVoices(450, isCancelled);
+        if (isCancelled()) {
+          finalizeStepTelemetry("cancelled");
+          safeProgress(null);
+          return res();
+        }
+        if (loadedVoices.length > 0) {
+          voices = loadedVoices;
+          rawChosenVoice = voiceURI ? findVoiceByUriOrName(voices, voiceURI) : undefined;
+          chosenVoice =
+            rawChosenVoice && matchesLanguageCode(rawChosenVoice.lang, lang)
+              ? rawChosenVoice
+              : undefined;
+        }
       }
 
       // When the browser has 0 local voices (e.g. headless Chromium / devices without voice packs)
@@ -1335,6 +1518,7 @@ function executeSingleSpeech(
         let hasStarted = false;
         let cancelRaceRetried = false;
         let resolved = false;
+        let pendingGraceUsed = false;
         let safetyTimer: ReturnType<typeof setTimeout> | null = null;
         let startWatchdogTimer: ReturnType<typeof setTimeout> | null = null;
         let activeUtteranceRef: SpeechSynthesisUtterance | null = null;
@@ -1346,18 +1530,40 @@ function executeSingleSpeech(
           }
         };
 
-        const armStartWatchdog = () => {
+        const armStartWatchdog = (overrideMs?: number) => {
           clearStartWatchdog();
           if (!canFallbackToTts3) return;
+          const watchdogMs =
+            overrideMs ?? (fallbackOrder === "tts3_native" ? 1200 : 1800);
           startWatchdogTimer = setTimeout(() => {
+            if (typeof window !== "undefined" && "speechSynthesis" in window) {
+              if (window.speechSynthesis?.speaking) {
+                hasStarted = true;
+                markSpeechStarted("webspeech");
+                return;
+              }
+              if (
+                window.speechSynthesis?.pending &&
+                !pendingGraceUsed &&
+                fallbackOrder !== "tts3_native" &&
+                !hasStarted &&
+                !resolved &&
+                !isCancelled()
+              ) {
+                pendingGraceUsed = true;
+                armStartWatchdog(1400);
+                return;
+              }
+            }
             if (!hasStarted && !resolved && !isCancelled()) {
               void done(true, "native-start-timeout");
             }
-          }, 1200);
+          }, watchdogMs);
         };
 
         const createSpeechUtterance = () => {
           const utterance = new SpeechSynthesisUtterance(text);
+          const utteranceQueuedAt = Date.now();
           utterance.rate = normalizedRate;
           utterance.volume = normalizedVolume;
 
@@ -1397,7 +1603,14 @@ function executeSingleSpeech(
             });
           };
           utterance.onend = () => {
-            if (!hasStarted && !matchedVoice && canFallbackToTts3 && !isCancelled()) {
+            const spokeDurationMs = Date.now() - utteranceQueuedAt;
+            if (
+              !hasStarted &&
+              !matchedVoice &&
+              spokeDurationMs < 250 &&
+              canFallbackToTts3 &&
+              !isCancelled()
+            ) {
               void done(true, "native-ended-without-starting");
               return;
             }

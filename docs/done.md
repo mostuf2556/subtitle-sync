@@ -12288,3 +12288,24 @@
   - `npm run test:agents-all` — PASS (24/24)
   - `npm run test:no-duplicate-md` — PASS
   - `npm run test:lean-tokens` — PASS
+
+
+### Task 462 (Prompt 229) — Sub-task 462.1: Fix Android Native TTS Cold-Init Queueing & Readiness Wait
+- **Changes**:
+  - `android-shell/app/src/main/java/com/ytviewer/app/MainActivity.kt`: Added `isTtsInitializing` + `pendingSpeakRequest` queueing during cold `TextToSpeech` initialization so pre-`onInit` `AndroidNativeShell.speak` calls flush cleanly on `TextToSpeech.SUCCESS` (and emit `onNativeTTSError` on failure); escaped JS callback strings with `JSONObject.quote(...)`; extracted `resolveTtsLocale` / `executeNativeSpeak`; cleared pending queue on `stopNativeTTS()` / `stopSpeaking()`.
+  - `src/routes/index.tsx`: Added `waitForAndroidTtsReady` before invoking `AndroidNativeShell.speak(...)`, added single `180ms` retry for legacy cold shells without `isTtsReady`, guarded Android fallbacks with `canFallbackToTts3`, and moved `markTtsServiceSessionActive(true)` inside `if (played)`.
+- **Verification**:
+  - `npm run test:tts-play-and-floating-enable-android` — PASS (Static + Scenarios 1, 1B, 2, 3)
+  - `npm run test:tts-delay-and-no-spurious-pause-e2e` — PASS
+
+
+### Task 462 (Prompt 229) — Sub-task 462.2: Fix Web Speech Cold-Start Voice Load, Watchdog & Session Flag
+- **Changes**:
+  - `src/routes/index.tsx`: Added `waitForSpeechSynthesisVoices(450)` so cold empty `getVoices()` waits briefly for `voiceschanged` and populates cache before speaking; updated `armStartWatchdog()` to use `1800ms` base + `1400ms` `speechSynthesis.pending` grace under `native_tts3` and treat `speechSynthesis.speaking === true` as active native speech; added `spokeDurationMs < 250` guard to `native-ended-without-starting`; moved `markTtsServiceSessionActive(true)` inside `if (played)` in `fallbackToAlternative`.
+  - `src/lib/alternative-tts.ts`: Updated `executeTtsFallbackSequence` to wait briefly for `voiceschanged`, match voices via ISO-639-aware `matchesLanguageCode`, attach `u.voice`, only skip unvoiced tracks when `order === "tts3_native"`, and add `synth.speaking` + single `pending` grace in its watchdog.
+  - `src/components/beginner/tabs/BeginnerPreferencesTab.tsx`: Set `utterance.lang` fallback in `handleTestVoice`.
+- **Verification**:
+  - `npm run test:tts-play-latency-and-floating-single-press` — PASS
+  - `npm run test:default-native-tts-and-ondemand-x7` — PASS
+  - `npm run test:floating-tts-play-active-during-video` — PASS (Static + Scenarios A, B, C, D1, D2)
+  - `npm run test:tts-playback-coordination` — PASS

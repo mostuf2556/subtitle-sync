@@ -78,7 +78,18 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private val anonUserAgent = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36"
     private val mainHandler = Handler(Looper.getMainLooper())
     private var textToSpeech: TextToSpeech? = null
+    @Volatile
     private var isTtsReady: Boolean = false
+    @Volatile
+    private var isTtsInitializing: Boolean = false
+    private data class PendingSpeakRequest(
+        val text: String,
+        val lang: String,
+        val rate: Float,
+        val utteranceId: String,
+    )
+    @Volatile
+    private var pendingSpeakRequest: PendingSpeakRequest? = null
     @Volatile
     private var isBackgroundAudioEnabled: Boolean = false
     @Volatile
@@ -294,8 +305,10 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         // Initialize Android TextToSpeech engine
         try {
+            isTtsInitializing = true
             textToSpeech = TextToSpeech(this, this)
         } catch (e: Exception) {
+            isTtsInitializing = false
             Log.e(TAG, "Error creating TextToSpeech: ${e.message}", e)
         }
 
@@ -877,7 +890,86 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }.start()
     }
 
+    private fun resolveTtsLocale(lang: String): Locale {
+        val cleanLang = lang.trim().replace("_", "-")
+        return when {
+            cleanLang.equals("en", ignoreCase = true) -> Locale.ENGLISH
+            cleanLang.equals("es", ignoreCase = true) -> Locale("es", "ES")
+            cleanLang.equals("fr", ignoreCase = true) -> Locale.FRENCH
+            cleanLang.equals("de", ignoreCase = true) -> Locale.GERMAN
+            cleanLang.equals("it", ignoreCase = true) -> Locale.ITALIAN
+            cleanLang.equals("pt", ignoreCase = true) || cleanLang.equals("pt-br", ignoreCase = true) -> Locale("pt", "BR")
+            cleanLang.equals("ru", ignoreCase = true) -> Locale("ru", "RU")
+            cleanLang.equals("ja", ignoreCase = true) -> Locale.JAPANESE
+            cleanLang.equals("ko", ignoreCase = true) -> Locale.KOREAN
+            cleanLang.equals("zh", ignoreCase = true) || cleanLang.equals("zh-cn", ignoreCase = true) -> Locale.SIMPLIFIED_CHINESE
+            cleanLang.equals("zh-tw", ignoreCase = true) -> Locale.TRADITIONAL_CHINESE
+            cleanLang.equals("ar", ignoreCase = true) -> Locale("ar")
+            cleanLang.equals("he", ignoreCase = true) || cleanLang.equals("iw", ignoreCase = true) -> Locale("iw", "IL")
+            cleanLang.equals("hi", ignoreCase = true) -> Locale("hi", "IN")
+            cleanLang.equals("tr", ignoreCase = true) -> Locale("tr", "TR")
+            cleanLang.equals("nl", ignoreCase = true) -> Locale("nl", "NL")
+            cleanLang.equals("pl", ignoreCase = true) -> Locale("pl", "PL")
+            cleanLang.equals("sv", ignoreCase = true) -> Locale("sv", "SE")
+            cleanLang.equals("vi", ignoreCase = true) -> Locale("vi", "VN")
+            cleanLang.equals("th", ignoreCase = true) -> Locale("th", "TH")
+            cleanLang.equals("el", ignoreCase = true) -> Locale("el", "GR")
+            cleanLang.equals("uk", ignoreCase = true) -> Locale("uk", "UA")
+            cleanLang.contains("-") -> Locale.forLanguageTag(cleanLang)
+            else -> Locale(cleanLang)
+        }
+    }
+
+    private fun dispatchNativeTtsError(utteranceId: String, message: String) {
+        val uidLiteral = JSONObject.quote(utteranceId)
+        val msgLiteral = JSONObject.quote(message)
+        mainHandler.post {
+            webView.evaluateJavascript("if (window.onNativeTTSError) { window.onNativeTTSError($uidLiteral, $msgLiteral); }", null)
+        }
+    }
+
+    private fun executeNativeSpeak(text: String, lang: String, rate: Float, utteranceId: String) {
+        mainHandler.post {
+            try {
+                val tts = textToSpeech
+                if (tts == null || !isTtsReady) {
+                    dispatchNativeTtsError(utteranceId, "TTS engine not ready")
+                    return@post
+                }
+                val cleanLang = lang.trim().replace("_", "-")
+                val locale = resolveTtsLocale(lang)
+
+                var res = tts.setLanguage(locale)
+                if (res == TextToSpeech.LANG_MISSING_DATA || res == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    if (cleanLang.lowercase().startsWith("he") || cleanLang.lowercase().startsWith("iw")) {
+                        res = tts.setLanguage(Locale("iw", "IL"))
+                        if (res == TextToSpeech.LANG_MISSING_DATA || res == TextToSpeech.LANG_NOT_SUPPORTED) {
+                            res = tts.setLanguage(Locale("he"))
+                        }
+                    } else if (cleanLang.lowercase().startsWith("id") || cleanLang.lowercase().startsWith("in")) {
+                        res = tts.setLanguage(Locale("in", "ID"))
+                    } else if (cleanLang.contains("-")) {
+                        val baseCode = cleanLang.split("-")[0]
+                        res = tts.setLanguage(Locale(baseCode))
+                    }
+                }
+
+                tts.setSpeechRate(rate)
+                val params = Bundle()
+                val speakResult = tts.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId)
+                if (speakResult != TextToSpeech.SUCCESS) {
+                    Log.w(TAG, "textToSpeech.speak failed with code $speakResult, notifying error")
+                    dispatchNativeTtsError(utteranceId, "Speak code: $speakResult")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error speaking text with native TTS: ${e.message}", e)
+                dispatchNativeTtsError(utteranceId, e.message ?: "Native TTS speak exception")
+            }
+        }
+    }
+
     override fun onInit(status: Int) {
+        isTtsInitializing = false
         if (status == TextToSpeech.SUCCESS) {
             isTtsReady = true
             try {
@@ -893,8 +985,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 override fun onStart(utteranceId: String?) {
                     Log.d(TAG, "Native TTS started utterance: $utteranceId")
                     if (utteranceId != null) {
+                        val uidLiteral = JSONObject.quote(utteranceId)
                         mainHandler.post {
-                            webView.evaluateJavascript("if (window.onNativeTTSStart) { window.onNativeTTSStart('$utteranceId'); }", null)
+                            webView.evaluateJavascript("if (window.onNativeTTSStart) { window.onNativeTTSStart($uidLiteral); }", null)
                         }
                     }
                 }
@@ -902,8 +995,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 override fun onDone(utteranceId: String?) {
                     Log.d(TAG, "Native TTS finished utterance: $utteranceId")
                     if (utteranceId != null) {
+                        val uidLiteral = JSONObject.quote(utteranceId)
                         mainHandler.post {
-                            webView.evaluateJavascript("if (window.onNativeTTSDone) { window.onNativeTTSDone('$utteranceId'); }", null)
+                            webView.evaluateJavascript("if (window.onNativeTTSDone) { window.onNativeTTSDone($uidLiteral); }", null)
                         }
                     }
                 }
@@ -912,29 +1006,37 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 override fun onError(utteranceId: String?) {
                     Log.e(TAG, "Native TTS error on utterance: $utteranceId")
                     if (utteranceId != null) {
-                        mainHandler.post {
-                            webView.evaluateJavascript("if (window.onNativeTTSError) { window.onNativeTTSError('$utteranceId', 'TTS execution error'); }", null)
-                        }
+                        dispatchNativeTtsError(utteranceId, "TTS execution error")
                     }
                 }
 
                 override fun onError(utteranceId: String?, errorCode: Int) {
                     Log.e(TAG, "Native TTS error on utterance: $utteranceId (code: $errorCode)")
                     if (utteranceId != null) {
-                        mainHandler.post {
-                            webView.evaluateJavascript("if (window.onNativeTTSError) { window.onNativeTTSError('$utteranceId', 'Error code: $errorCode'); }", null)
-                        }
+                        dispatchNativeTtsError(utteranceId, "Error code: $errorCode")
                     }
                 }
             })
             Log.i(TAG, "Android TextToSpeech engine initialized successfully")
+            val pending = pendingSpeakRequest
+            pendingSpeakRequest = null
+            if (pending != null) {
+                Log.i(TAG, "Flushing queued native TTS utterance after cold init: ${pending.utteranceId}")
+                executeNativeSpeak(pending.text, pending.lang, pending.rate, pending.utteranceId)
+            }
         } else {
             Log.e(TAG, "Failed to initialize Android TextToSpeech, status=$status")
             isTtsReady = false
+            val pending = pendingSpeakRequest
+            pendingSpeakRequest = null
+            if (pending != null) {
+                dispatchNativeTtsError(pending.utteranceId, "TTS init failed: $status")
+            }
         }
     }
 
     fun stopNativeTTS() {
+        pendingSpeakRequest = null
         mainHandler.post {
             try {
                 textToSpeech?.stop()
@@ -1145,85 +1247,33 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         @JavascriptInterface
         fun speak(text: String, lang: String, rate: Float, utteranceId: String): Boolean {
-            if (textToSpeech == null) {
+            if (textToSpeech == null && !isTtsInitializing) {
                 try {
+                    isTtsInitializing = true
                     textToSpeech = TextToSpeech(context, this@MainActivity)
                 } catch (e: Exception) {
+                    isTtsInitializing = false
                     Log.e(TAG, "Error creating TextToSpeech on demand: ${e.message}", e)
                 }
             }
 
             if (!isTtsReady || textToSpeech == null) {
-                Log.w(TAG, "TTS requested but engine is not ready (isTtsReady=$isTtsReady)")
+                if (isTtsInitializing || textToSpeech != null) {
+                    Log.i(TAG, "TTS still initializing; queuing utterance $utteranceId until onInit")
+                    pendingSpeakRequest = PendingSpeakRequest(text, lang, rate, utteranceId)
+                    return true
+                }
+                Log.w(TAG, "TTS requested but engine failed to initialize (isTtsReady=$isTtsReady)")
                 return false
             }
 
-            mainHandler.post {
-                try {
-                    val cleanLang = lang.trim().replace("_", "-")
-                    val locale = when {
-                        cleanLang.equals("en", ignoreCase = true) -> Locale.ENGLISH
-                        cleanLang.equals("es", ignoreCase = true) -> Locale("es", "ES")
-                        cleanLang.equals("fr", ignoreCase = true) -> Locale.FRENCH
-                        cleanLang.equals("de", ignoreCase = true) -> Locale.GERMAN
-                        cleanLang.equals("it", ignoreCase = true) -> Locale.ITALIAN
-                        cleanLang.equals("pt", ignoreCase = true) || cleanLang.equals("pt-br", ignoreCase = true) -> Locale("pt", "BR")
-                        cleanLang.equals("ru", ignoreCase = true) -> Locale("ru", "RU")
-                        cleanLang.equals("ja", ignoreCase = true) -> Locale.JAPANESE
-                        cleanLang.equals("ko", ignoreCase = true) -> Locale.KOREAN
-                        cleanLang.equals("zh", ignoreCase = true) || cleanLang.equals("zh-cn", ignoreCase = true) -> Locale.SIMPLIFIED_CHINESE
-                        cleanLang.equals("zh-tw", ignoreCase = true) -> Locale.TRADITIONAL_CHINESE
-                        cleanLang.equals("ar", ignoreCase = true) -> Locale("ar")
-                        cleanLang.equals("he", ignoreCase = true) || cleanLang.equals("iw", ignoreCase = true) -> Locale("iw", "IL")
-                        cleanLang.equals("hi", ignoreCase = true) -> Locale("hi", "IN")
-                        cleanLang.equals("tr", ignoreCase = true) -> Locale("tr", "TR")
-                        cleanLang.equals("nl", ignoreCase = true) -> Locale("nl", "NL")
-                        cleanLang.equals("pl", ignoreCase = true) -> Locale("pl", "PL")
-                        cleanLang.equals("sv", ignoreCase = true) -> Locale("sv", "SE")
-                        cleanLang.equals("vi", ignoreCase = true) -> Locale("vi", "VN")
-                        cleanLang.equals("th", ignoreCase = true) -> Locale("th", "TH")
-                        cleanLang.equals("el", ignoreCase = true) -> Locale("el", "GR")
-                        cleanLang.equals("uk", ignoreCase = true) -> Locale("uk", "UA")
-                        cleanLang.contains("-") -> Locale.forLanguageTag(cleanLang)
-                        else -> Locale(cleanLang)
-                    }
-
-                    var res = textToSpeech?.setLanguage(locale)
-                    if (res == TextToSpeech.LANG_MISSING_DATA || res == TextToSpeech.LANG_NOT_SUPPORTED) {
-                        if (cleanLang.lowercase().startsWith("he") || cleanLang.lowercase().startsWith("iw")) {
-                            res = textToSpeech?.setLanguage(Locale("iw", "IL"))
-                            if (res == TextToSpeech.LANG_MISSING_DATA || res == TextToSpeech.LANG_NOT_SUPPORTED) {
-                                res = textToSpeech?.setLanguage(Locale("he"))
-                            }
-                        } else if (cleanLang.lowercase().startsWith("id") || cleanLang.lowercase().startsWith("in")) {
-                            res = textToSpeech?.setLanguage(Locale("in", "ID"))
-                        } else if (cleanLang.contains("-")) {
-                            val baseCode = cleanLang.split("-")[0]
-                            res = textToSpeech?.setLanguage(Locale(baseCode))
-                        }
-                    }
-
-                    textToSpeech?.setSpeechRate(rate)
-                    val params = Bundle()
-                    val speakResult = textToSpeech?.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId)
-                    if (speakResult != TextToSpeech.SUCCESS) {
-                        Log.w(TAG, "textToSpeech.speak failed with code $speakResult, notifying error")
-                        mainHandler.post {
-                            webView.evaluateJavascript("if (window.onNativeTTSError) { window.onNativeTTSError('$utteranceId', 'Speak code: $speakResult'); }", null)
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error speaking text with native TTS: ${e.message}", e)
-                    mainHandler.post {
-                        webView.evaluateJavascript("if (window.onNativeTTSError) { window.onNativeTTSError('$utteranceId', '${e.message}'); }", null)
-                    }
-                }
-            }
+            executeNativeSpeak(text, lang, rate, utteranceId)
             return true
         }
 
         @JavascriptInterface
         fun stopSpeaking() {
+            pendingSpeakRequest = null
             mainHandler.post {
                 try {
                     textToSpeech?.stop()

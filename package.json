@@ -1,6 +1,6 @@
 {
   "name": "subtitle-sync",
-  "version": "2.1.136",
+  "version": "2.1.137",
   "private": true,
   "sideEffects": false,
   "type": "module",
@@ -24,6 +24,7 @@
     "test:tts-delay-logging-and-no-spurious-pause": "tsx scripts/verify-tts-delay-logging-and-no-spurious-pause.ts",
     "test:tts-delay-and-no-spurious-pause-e2e": "tsx scripts/verify-tts-delay-and-no-spurious-pause-e2e.ts",
     "test:default-native-tts-and-ondemand-x7": "tsx scripts/verify-default-native-tts-and-ondemand-x7.ts",
+    "test:default-native-tts-cold-start": "tsx scripts/verify-default-native-tts-cold-start.ts",
     "test:android-menus-responsiveness": "tsx scripts/verify-android-menus-responsiveness.ts",
     "test:autofetch-no-loop-android": "tsx scripts/verify-autofetch-no-loop-android.ts",
     "test:performance-level-graph": "tsx scripts/verify-performance-level-graph.ts",
