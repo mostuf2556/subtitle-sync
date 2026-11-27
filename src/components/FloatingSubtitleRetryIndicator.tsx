@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Json3 } from "../lib/subtitles";
 import { getRandomRetryDelayMs } from "../lib/playback-preferences";
-import { subtitleRequestQueue } from "../utils/subtitleRequestQueue";
+import { subtitleRequestQueue, type SubtitleQueueState } from "../utils/subtitleRequestQueue";
 import { isDeveloperModeEnabled } from "../utils/developerMode";
 import {
   getFetchStrategyConfig,
@@ -44,7 +44,7 @@ export interface FloatingSubtitleRetryIndicatorProps {
   isVisible?: boolean;
 }
 
-export const FloatingSubtitleRetryIndicator = React.memo(function FloatingSubtitleRetryIndicator({
+const MemoFloatingSubtitleRetryIndicator = React.memo(function FloatingSubtitleRetryIndicator({
   targetLanguages,
   tracks,
   onFetchLanguage,
@@ -67,6 +67,13 @@ export const FloatingSubtitleRetryIndicator = React.memo(function FloatingSubtit
     getFetchStrategyConfig(),
   );
   const [attempts, setAttempts] = useState<FetchAttempt[]>(() => getAttemptOrder());
+  const [queueState, setQueueState] = useState<SubtitleQueueState>(() =>
+    subtitleRequestQueue.getState(),
+  );
+
+  useEffect(() => {
+    return subtitleRequestQueue.subscribe(setQueueState);
+  }, []);
 
   // Keep state synced with localStorage/settings
   const refreshFetchConfig = useCallback(() => {
@@ -88,6 +95,10 @@ export const FloatingSubtitleRetryIndicator = React.memo(function FloatingSubtit
   }, [targetLanguages, tracks]);
 
   const pendingKey = useMemo(() => pendingLanguages.join(","), [pendingLanguages]);
+  const queuePendingKey = useMemo(
+    () => queueState.pendingLangs.join(","),
+    [queueState.pendingLangs],
+  );
 
   // Default to retrying by default as requested, folded by default
   const [isPaused, setIsPaused] = useState<boolean>(!autoRetryEnabled);
@@ -98,13 +109,28 @@ export const FloatingSubtitleRetryIndicator = React.memo(function FloatingSubtit
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const nextScheduledDelayMs = useRef<number>(minPacingSec * 1000);
+  const triggerInFlightRef = useRef<boolean>(false);
+
+  const effectiveIsPaused = isPaused || queueState.isPaused;
+  const effectiveFetching = Boolean(
+    isFetching ||
+      currentlyFetchingLang ||
+      queueState.isExecuting ||
+      queueState.currentlyFetchingLang,
+  );
+  const effectiveFetchingLang =
+    queueState.currentlyFetchingLang || currentlyFetchingLang || pendingLanguages[0] || "subtitles";
+  const nextTargetLang = pendingLanguages[0] || "";
+  const isTargetAlreadyQueued = Boolean(
+    nextTargetLang && queueState.pendingLangs.includes(nextTargetLang),
+  );
 
   const onFetchLanguageRef = useRef(onFetchLanguage);
   onFetchLanguageRef.current = onFetchLanguage;
   const pendingLanguagesRef = useRef(pendingLanguages);
   pendingLanguagesRef.current = pendingLanguages;
-  const isFetchingRef = useRef(isFetching);
-  isFetchingRef.current = isFetching;
+  const isFetchingRef = useRef(effectiveFetching);
+  isFetchingRef.current = effectiveFetching;
 
   // Sync isPaused with external autoRetryEnabled changes if provided
   useEffect(() => {
@@ -123,14 +149,31 @@ export const FloatingSubtitleRetryIndicator = React.memo(function FloatingSubtit
   }, []);
 
   const triggerNextFetch = useCallback(async () => {
-    if (pendingLanguagesRef.current.length === 0 || isFetchingRef.current) return;
+    if (
+      pendingLanguagesRef.current.length === 0 ||
+      isFetchingRef.current ||
+      triggerInFlightRef.current
+    ) {
+      return;
+    }
     const targetLang = pendingLanguagesRef.current[0]!;
+    const queueSnap = subtitleRequestQueue.getState();
+    if (
+      queueSnap.isPaused ||
+      queueSnap.isExecuting ||
+      queueSnap.currentlyFetchingLang ||
+      queueSnap.pendingLangs.includes(targetLang)
+    ) {
+      return;
+    }
+    triggerInFlightRef.current = true;
     setCurrentlyFetchingLang(targetLang);
     clearTimers();
 
     try {
       await onFetchLanguageRef.current(targetLang);
     } finally {
+      triggerInFlightRef.current = false;
       setCurrentlyFetchingLang(null);
     }
   }, [clearTimers]);
@@ -144,14 +187,21 @@ export const FloatingSubtitleRetryIndicator = React.memo(function FloatingSubtit
       return;
     }
 
-    // If not visible, or user paused, or auto-retry disabled, or already actively fetching, hold off
-    if (!isVisible || isPaused || isFetching) {
+    // If not visible, paused, already fetching, or queued in subtitleRequestQueue, hold off without competing timers
+    if (
+      !isVisible ||
+      effectiveIsPaused ||
+      effectiveFetching ||
+      isTargetAlreadyQueued
+    ) {
       clearTimers();
       return;
     }
 
-    // Pick randomized delay between minPacingSec and maxPacingSec to avoid YouTube API bursts
-    const delayMs = getRandomRetryDelayMs(minPacingSec, maxPacingSec);
+    // Pick randomized delay between minPacingSec and maxPacingSec and respect queue backoff cooldown
+    const jitterMs = getRandomRetryDelayMs(minPacingSec, maxPacingSec);
+    const cooldownRemainingMs = Math.max(0, queueState.cooldownUntil - Date.now());
+    const delayMs = Math.max(jitterMs, cooldownRemainingMs);
     nextScheduledDelayMs.current = delayMs;
     const initialSeconds = Math.max(1, Math.round(delayMs / 1000));
     setSecondsRemaining(initialSeconds);
@@ -166,7 +216,7 @@ export const FloatingSubtitleRetryIndicator = React.memo(function FloatingSubtit
     // Primary timeout executing next paced fetch
     timerRef.current = setTimeout(() => {
       clearTimers();
-      triggerNextFetch();
+      void triggerNextFetch();
     }, delayMs);
 
     return () => {
@@ -175,8 +225,11 @@ export const FloatingSubtitleRetryIndicator = React.memo(function FloatingSubtit
   }, [
     pendingKey,
     pendingLanguages.length,
-    isPaused,
-    isFetching,
+    queuePendingKey,
+    effectiveIsPaused,
+    effectiveFetching,
+    isTargetAlreadyQueued,
+    queueState.cooldownUntil,
     isVisible,
     minPacingSec,
     maxPacingSec,
@@ -192,7 +245,7 @@ export const FloatingSubtitleRetryIndicator = React.memo(function FloatingSubtit
   const allFetched = pendingLanguages.length === 0;
 
   const handleTogglePause = () => {
-    const nextState = !isPaused;
+    const nextState = !effectiveIsPaused;
     setIsPaused(nextState);
     subtitleRequestQueue.setPaused(nextState);
     onToggleAutoRetry?.(!nextState);
@@ -200,7 +253,7 @@ export const FloatingSubtitleRetryIndicator = React.memo(function FloatingSubtit
 
   const handleManualRetryNow = () => {
     clearTimers();
-    triggerNextFetch();
+    void triggerNextFetch();
   };
 
   // Experimental debug toggle handlers
@@ -243,7 +296,7 @@ export const FloatingSubtitleRetryIndicator = React.memo(function FloatingSubtit
         className={`overflow-hidden rounded-xl border bg-background/95 shadow-xl backdrop-blur-md transition-all ${
           allFetched
             ? "border-emerald-500/40 shadow-emerald-500/5"
-            : isPaused
+            : effectiveIsPaused
               ? "border-amber-500/40 shadow-amber-500/5"
               : "border-primary/50 shadow-primary/10"
         }`}
@@ -253,7 +306,7 @@ export const FloatingSubtitleRetryIndicator = React.memo(function FloatingSubtit
           <div className="flex items-center gap-1.5 min-w-0">
             {allFetched ? (
               <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-            ) : isFetching || currentlyFetchingLang ? (
+            ) : effectiveFetching ? (
               <Loader2 className="h-4 w-4 text-primary animate-spin shrink-0" />
             ) : (
               <Clock className="h-4 w-4 text-primary shrink-0" />
@@ -261,9 +314,9 @@ export const FloatingSubtitleRetryIndicator = React.memo(function FloatingSubtit
             <span className="text-xs font-semibold text-foreground truncate">
               {allFetched
                 ? "Subtitles Loaded"
-                : isFetching
-                  ? `Fetching ${currentlyFetchingLang ?? "subtitles"}…`
-                  : isPaused
+                : effectiveFetching
+                  ? `Fetching ${effectiveFetchingLang}…`
+                  : effectiveIsPaused
                     ? "Retry Paused"
                     : "Auto-Fetching Subtitles"}
             </span>
@@ -274,16 +327,18 @@ export const FloatingSubtitleRetryIndicator = React.memo(function FloatingSubtit
               <button
                 type="button"
                 onClick={handleTogglePause}
-                data-testid={isPaused ? "floating-retry-resume-btn" : "floating-retry-pause-btn"}
+                data-testid={
+                  effectiveIsPaused ? "floating-retry-resume-btn" : "floating-retry-pause-btn"
+                }
                 className={`p-1 rounded-md text-xs transition ${
-                  isPaused
+                  effectiveIsPaused
                     ? "bg-primary text-primary-foreground hover:bg-primary/90"
                     : "bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground"
                 }`}
-                title={isPaused ? "Resume auto-fetching" : "Pause auto-fetching"}
-                aria-label={isPaused ? "Resume auto-retry" : "Pause auto-retry"}
+                title={effectiveIsPaused ? "Resume auto-fetching" : "Pause auto-fetching"}
+                aria-label={effectiveIsPaused ? "Resume auto-retry" : "Pause auto-retry"}
               >
-                {isPaused ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
+                {effectiveIsPaused ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
               </button>
             )}
 
@@ -338,17 +393,25 @@ export const FloatingSubtitleRetryIndicator = React.memo(function FloatingSubtit
                 <div className="rounded-lg bg-muted/40 p-2 space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] text-muted-foreground">
-                      {isPaused
+                      {effectiveIsPaused
                         ? "Paced retry is paused"
-                        : isFetching
+                        : effectiveFetching
                           ? "Request in progress…"
-                          : "Next request in:"}
+                          : isTargetAlreadyQueued
+                            ? "Queued in fetch queue…"
+                            : "Next request in:"}
                     </span>
                     <span
                       data-testid="floating-retry-countdown"
                       className="font-mono text-xs font-bold text-primary"
                     >
-                      {isPaused ? "Paused" : isFetching ? "Fetching…" : `${secondsRemaining}s`}
+                      {effectiveIsPaused
+                        ? "Paused"
+                        : effectiveFetching
+                          ? "Fetching…"
+                          : isTargetAlreadyQueued
+                            ? "Queued"
+                            : `${secondsRemaining}s`}
                     </span>
                   </div>
 
@@ -365,7 +428,7 @@ export const FloatingSubtitleRetryIndicator = React.memo(function FloatingSubtit
                   <button
                     type="button"
                     onClick={handleManualRetryNow}
-                    disabled={isFetching || pendingLanguages.length === 0}
+                    disabled={effectiveFetching || isTargetAlreadyQueued || pendingLanguages.length === 0}
                     data-testid="floating-retry-now-btn"
                     className="flex-1 inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-primary text-primary-foreground font-medium text-xs hover:bg-primary/90 disabled:opacity-50 transition active:scale-95 shadow-xs"
                   >
@@ -379,7 +442,7 @@ export const FloatingSubtitleRetryIndicator = React.memo(function FloatingSubtit
                     data-testid="floating-retry-toggle-btn"
                     className="px-2.5 py-1.5 rounded-lg border border-border bg-background hover:bg-muted font-medium text-xs text-foreground transition active:scale-95"
                   >
-                    {isPaused ? "Resume" : "Pause"}
+                    {effectiveIsPaused ? "Resume" : "Pause"}
                   </button>
                 </div>
 
@@ -521,3 +584,7 @@ export const FloatingSubtitleRetryIndicator = React.memo(function FloatingSubtit
     </div>
   );
 });
+
+export function FloatingSubtitleRetryIndicator(props: FloatingSubtitleRetryIndicatorProps) {
+  return <MemoFloatingSubtitleRetryIndicator {...props} />;
+}

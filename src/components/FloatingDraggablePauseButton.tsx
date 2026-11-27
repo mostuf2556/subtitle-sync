@@ -225,22 +225,36 @@ export const FloatingDraggablePauseButton: React.FC<FloatingDraggablePauseButton
       }
     }, [position]);
 
-    // Click outside listener to close dropdown
+    // Click / touch outside listener to close dropdown
     useEffect(() => {
       if (!isOpen) return;
-      const handleOutsideClick = (e: MouseEvent) => {
+      const handleOutsidePress = (e: MouseEvent | TouchEvent | PointerEvent) => {
         if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
           setIsOpen(false);
           setActiveExplanation(null);
         }
       };
-      document.addEventListener("mousedown", handleOutsideClick);
-      return () => document.removeEventListener("mousedown", handleOutsideClick);
+      document.addEventListener("mousedown", handleOutsidePress);
+      document.addEventListener("touchstart", handleOutsidePress, { passive: true });
+      document.addEventListener("pointerdown", handleOutsidePress, { passive: true });
+      return () => {
+        document.removeEventListener("mousedown", handleOutsidePress);
+        document.removeEventListener("touchstart", handleOutsidePress);
+        document.removeEventListener("pointerdown", handleOutsidePress);
+      };
     }, [isOpen]);
 
     // Mouse drag handlers
     const handleMouseDown = (e: React.MouseEvent) => {
       if (e.button !== 0) return;
+      const targetEl = e.target as HTMLElement | null;
+      if (
+        targetEl?.closest?.(
+          '[data-testid="floating-menu-dropdown"], [data-testid="floating-menu-toggle-btn"]',
+        )
+      ) {
+        return;
+      }
       dragStartRef.current = { clientX: e.clientX, clientY: e.clientY };
       startPosRef.current = { ...position };
       hasMovedRef.current = false;
@@ -289,6 +303,14 @@ export const FloatingDraggablePauseButton: React.FC<FloatingDraggablePauseButton
 
     // Touch drag handlers
     const handleTouchStart = (e: React.TouchEvent) => {
+      const targetEl = e.target as HTMLElement | null;
+      if (
+        targetEl?.closest?.(
+          '[data-testid="floating-menu-dropdown"], [data-testid="floating-menu-toggle-btn"]',
+        )
+      ) {
+        return;
+      }
       const touch = e.touches[0];
       if (!touch) return;
       dragStartRef.current = { clientX: touch.clientX, clientY: touch.clientY };
@@ -374,22 +396,25 @@ export const FloatingDraggablePauseButton: React.FC<FloatingDraggablePauseButton
       }
     };
 
-    const handleToggleSetupPauseOption = (e: React.MouseEvent) => {
+    const handleToggleSetupPauseOption = (e: React.SyntheticEvent) => {
       e.stopPropagation();
+      hasMovedRef.current = false;
       onToggleSetupPause();
       setActiveExplanation("setup-pause");
     };
 
-    const handleToggleAutoScrollOption = (e: React.MouseEvent) => {
+    const handleToggleAutoScrollOption = (e: React.SyntheticEvent) => {
       e.stopPropagation();
+      hasMovedRef.current = false;
       if (onToggleAutoScroll) {
         onToggleAutoScroll();
       }
       setActiveExplanation("auto-scroll");
     };
 
-    const handleToggleTtsPlayOption = (e: React.MouseEvent) => {
+    const handleToggleTtsPlayOption = (e: React.SyntheticEvent) => {
       e.stopPropagation();
+      hasMovedRef.current = false;
       if (!isTtsPlayEnabled) {
         unlockTtsAudioPlayback();
       }
@@ -587,10 +612,16 @@ export const FloatingDraggablePauseButton: React.FC<FloatingDraggablePauseButton
           data-testid="floating-menu-toggle-btn"
           aria-label={`Floating settings (OpenRouter: ${getCredentialBadgeText(effectiveOpenRouterStatus)}, TTS Token: ${getCredentialBadgeText(effectiveTtsTokenStatus)})`}
           title={`Floating settings — OpenRouter Key: ${getCredentialBadgeText(effectiveOpenRouterStatus)} · TTS Token: ${getCredentialBadgeText(effectiveTtsTokenStatus)}. Click to configure.`}
+          style={{ touchAction: "manipulation" }}
           onMouseDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
           onTouchStart={(e) => e.stopPropagation()}
+          onTouchMove={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
+          onTouchCancel={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();
+            hasMovedRef.current = false;
             setIsOpen((prev) => !prev);
           }}
           className={`absolute -top-3 ${alignsRight ? "-right-1" : "-left-1"} flex items-center gap-1 rounded-full bg-background/95 border border-border/90 px-1.5 py-0.5 text-[9px] font-semibold text-foreground shadow-md backdrop-blur-sm hover:bg-muted transition-transform active:scale-95 whitespace-nowrap cursor-pointer`}
@@ -599,8 +630,12 @@ export const FloatingDraggablePauseButton: React.FC<FloatingDraggablePauseButton
           <span
             data-testid="floating-openrouter-status-indicator"
             data-status={effectiveOpenRouterStatus}
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchEnd={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
+              hasMovedRef.current = false;
               openCredentialEditor("openrouter");
             }}
             className={`inline-flex items-center gap-1 rounded-full border px-1 py-0.2 leading-tight cursor-pointer ${getCredentialPillClasses(effectiveOpenRouterStatus)}`}
@@ -614,8 +649,12 @@ export const FloatingDraggablePauseButton: React.FC<FloatingDraggablePauseButton
           <span
             data-testid="floating-tts-token-status-indicator"
             data-status={effectiveTtsTokenStatus}
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchEnd={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
+              hasMovedRef.current = false;
               openCredentialEditor("tts-token");
             }}
             className={`inline-flex items-center gap-1 rounded-full border px-1 py-0.2 leading-tight cursor-pointer ${getCredentialPillClasses(effectiveTtsTokenStatus)}`}
@@ -662,11 +701,16 @@ export const FloatingDraggablePauseButton: React.FC<FloatingDraggablePauseButton
             data-testid="floating-menu-dropdown"
             role="menu"
             aria-label="Floating Options Menu"
+            style={{ touchAction: "auto" }}
             className={`absolute w-80 max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-y-auto rounded-xl border border-border/80 bg-popover/95 p-3.5 text-popover-foreground shadow-2xl backdrop-blur-md transition-all duration-150 ${
               opensUpward ? "bottom-full mb-4" : "top-full mt-2"
             } ${alignsRight ? "right-0" : "left-0"}`}
             onMouseDown={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
+            onTouchEnd={(e) => e.stopPropagation()}
+            onTouchCancel={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -703,12 +747,21 @@ export const FloatingDraggablePauseButton: React.FC<FloatingDraggablePauseButton
               {/* Option 1: Pause for Setup */}
               <div
                 data-testid="menu-option-setup-pause"
+                role="menuitem"
+                tabIndex={0}
+                style={{ touchAction: "manipulation" }}
                 className={`rounded-lg border p-2.5 transition-colors cursor-pointer ${
                   isSetupPaused
                     ? "border-rose-400/80 bg-rose-500/10 text-foreground"
                     : "border-emerald-500/30 hover:border-emerald-500/60 hover:bg-emerald-500/5"
                 }`}
                 onClick={handleToggleSetupPauseOption}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleToggleSetupPauseOption(e);
+                  }
+                }}
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
@@ -779,12 +832,21 @@ export const FloatingDraggablePauseButton: React.FC<FloatingDraggablePauseButton
               {/* Option 2: Auto Scroll */}
               <div
                 data-testid="menu-option-auto-scroll"
+                role="menuitem"
+                tabIndex={0}
+                style={{ touchAction: "manipulation" }}
                 className={`rounded-lg border p-2.5 transition-colors cursor-pointer ${
                   isAutoScrollEnabled
                     ? "border-emerald-500/80 bg-emerald-500/10 text-foreground"
                     : "border-rose-400/50 bg-rose-500/5 hover:border-rose-400 hover:bg-rose-500/10"
                 }`}
                 onClick={handleToggleAutoScrollOption}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleToggleAutoScrollOption(e);
+                  }
+                }}
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
@@ -855,12 +917,21 @@ export const FloatingDraggablePauseButton: React.FC<FloatingDraggablePauseButton
               {/* Option 3: TTS-Play */}
               <div
                 data-testid="menu-option-tts-play"
+                role="menuitem"
+                tabIndex={0}
+                style={{ touchAction: "manipulation" }}
                 className={`rounded-lg border p-2.5 transition-colors cursor-pointer ${
                   isTtsPlayEnabled
                     ? "border-emerald-500/80 bg-emerald-500/10 text-foreground"
                     : "border-rose-400/50 bg-rose-500/5 hover:border-rose-400 hover:bg-rose-500/10"
                 }`}
                 onClick={handleToggleTtsPlayOption}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleToggleTtsPlayOption(e);
+                  }
+                }}
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">

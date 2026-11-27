@@ -2861,3 +2861,22 @@ by default use native tts
 
 on tts-service usage use on-demand request (x=7)
 ```
+
+---
+
+### Prompt 227: Android Menus Responsiveness, Performance Level Graph, Manual Language Selector Filtering, & Full Learning Goals Profile Persistence (`v2.1.135`)
+```
+1. on android - the menus screen becomes not responsive
+2. add a performance level view button - when clicking it it will show a small/draggable/resizable performance graph. the user will be able to check which option trigger the performance defection
+3. the language selector has performance issue - allow the user to filter and manaully select a language from a list (dont do it automaticly)
+4. the language configuration profile doesnt seems to remember the list of langauges and all the other settings on the learning goals stage
+```
+
+---
+
+### Prompt 228: Fix Fetching Subtitles Menu Alternating Loop on Android, Broken TTS-Play, & Floating Button Enablement (`v2.1.136`)
+```
+1. fix: the menu option (fetching subtitles) is alternating in a loop (tested on android)
+
+tts-play is no longer working and the floating button is not able to enable it
+```
