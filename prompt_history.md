@@ -2899,3 +2899,11 @@ the app log viewer is no longer visible (even after toggling the relevant toggle
 
 2.the app stopped from tts-play sentences in different langauges since the commit related to the performance (the issue appeared also for the default video and it partly works only for hebrew)
 ```
+
+---
+
+### Prompt 231: Go On
+```
+go on
+```
+
