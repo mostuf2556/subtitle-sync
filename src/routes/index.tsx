@@ -16766,7 +16766,20 @@ function Index() {
         data-testid="bottom-log-viewer-container"
         className={showBottomLogViewer ? "block" : "hidden"}
       >
-        <BottomLogViewer isVisible={showBottomLogViewer} />
+        <BottomLogViewer
+          isVisible={showBottomLogViewer}
+          dockToViewport={true}
+          defaultExpanded={true}
+          onClose={() => {
+            setShowBottomLogViewer(false);
+            try {
+              sessionStorage.setItem("yt_show_bottom_log", "false");
+              localStorage.setItem("yt_show_bottom_log", "false");
+            } catch {
+              // ignore storage errors
+            }
+          }}
+        />
       </div>
 
       {isDeveloperMode && debugMode && networkInspectorOpen && (

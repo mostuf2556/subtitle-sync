@@ -12309,3 +12309,38 @@
   - `npm run test:default-native-tts-and-ondemand-x7` — PASS
   - `npm run test:floating-tts-play-active-during-video` — PASS (Static + Scenarios A, B, C, D1, D2)
   - `npm run test:tts-playback-coordination` — PASS
+
+
+### Task 462 (Prompt 229) — Sub-task 462.3: Default Native TTS Cold-Start Regression Tests & `v2.1.137` Closure
+- **Changes**:
+  - `scripts/verify-default-native-tts-cold-start.ts`, `package.json`, `docs/files.md`: Added & registered `test:default-native-tts-cold-start` covering cold `voiceschanged`, >1200ms `pending`/`speaking` `onstart`, `he`<->`iw` ISO alias voice matching, Android `isTtsReady()` readiness wait & `MainActivity.kt` queueing, and live Chromium clean `/` Expert/Beginner/Android parity; synced `v2.1.137`.
+- **Verification**:
+  - `npm run test:default-native-tts-cold-start` — PASS (Unit/Contracts + Live Chromium E2E across Expert, Beginner, and Android)
+
+
+### Task 463 (Prompt 230 Ch. 0): Strict Task Management Staging & Sub-task 462.3 Closure Audit
+- **Changes**:
+  - Updated `AGENTS.md` (`## Last raw prompt`), `prompt_history.md` (Prompt 230), `docs/git.md`, and archived dangling `Sub-task 462.3` into `docs/done.md`; staged Prompt 230 Chapters 1–2 serially as Tasks 464 and 465 in `docs/tasks.md`, `current-sub-task.md`, and `docs/todo.md`.
+- **Verification**:
+  - Verified `npm run test:default-native-tts-cold-start` (PASS) and updated tracking files prior to any Chapter 1/2 code edits.
+
+
+### Task 464 (Prompt 230 Ch. 1): Fix App Log Viewer Visibility When Toggled
+- **Root Cause**:
+  - Toggling `#header-toggle-log-button` switched `#bottom-log-viewer-container` from `hidden` to `block`, but `<BottomLogViewer>` rendered in static document flow below the fold (`top: 848px–1393px`, outside viewport in Expert, Beginner, and Android) while defaulting `isExpanded` to `false`, leaving the toggled log viewer invisible in the viewport.
+- **Changes**:
+  - `src/components/BottomLogViewer.tsx`: Added `dockToViewport?: boolean` (`fixed bottom-0 left-0 right-0 z-40` + solid `bg-card shadow-2xl`), auto-expand `useEffect` on `isVisible` `false -> true`, optional `onClose` header `X` button (`data-testid="bottom-log-close-btn"`), and responsive `max-h-[45vh] sm:max-h-96` on `#bottom-log-content`.
+  - `src/routes/index.tsx`: Passed `dockToViewport={true}`, `defaultExpanded={true}`, and `onClose` on `<BottomLogViewer>` inside `#bottom-log-viewer-container`.
+  - `scripts/verify-universal-bottom-log.ts`: Updated `<BottomLogViewer />` JSX match regex to support multiline props with arrow functions.
+  - `scripts/verify-log-viewer-toggle-visibility.ts`, `package.json`, `docs/files.md`: Added & registered `test:log-viewer-toggle-visibility` covering source contracts and live Chromium E2E across Expert desktop (`1280x720`), Beginner desktop (`1280x720`), and Android mobile (`390x844`).
+- **Verification**:
+  - `npx tsc --noEmit` — PASS
+  - `npm run test:log-viewer-toggle-visibility` — PASS (Expert, Beginner, Android)
+  - `npm run test:universal-bottom-log` — PASS
+  - `npm run test:autofetch-and-log-hide-controls` — PASS
+  - `npm run test:top-menu-show-hide-and-folded-accordion` — PASS
+  - `npm run test:floating-alert-leads-to-log` — PASS
+  - `npm run test:state-machine-log-actions-copy-clear` — PASS
+  - `npm run test:log-error-copy-modes` — PASS
+
+

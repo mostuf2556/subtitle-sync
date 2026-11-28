@@ -2887,3 +2887,15 @@ tts-play is no longer working and the floating button is not able to enable it
 ```
 by default the app fails to execute tts-play based on native tts
 ```
+
+---
+
+### Prompt 230: Task Management Discipline, Log Viewer Visibility Fix, & Multi-Language TTS-Play Regression Fix
+```
+0. use task managment to ensure on progress is computed without noting the steps down. most recent aistudio work ends up with no progress at all
+
+1.
+the app log viewer is no longer visible (even after toggling the relevant toggle button)
+
+2.the app stopped from tts-play sentences in different langauges since the commit related to the performance (the issue appeared also for the default video and it partly works only for hebrew)
+```

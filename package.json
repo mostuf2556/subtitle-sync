@@ -27,6 +27,7 @@
     "test:default-native-tts-cold-start": "tsx scripts/verify-default-native-tts-cold-start.ts",
     "test:android-menus-responsiveness": "tsx scripts/verify-android-menus-responsiveness.ts",
     "test:autofetch-no-loop-android": "tsx scripts/verify-autofetch-no-loop-android.ts",
+    "test:log-viewer-toggle-visibility": "tsx scripts/verify-log-viewer-toggle-visibility.ts",
     "test:performance-level-graph": "tsx scripts/verify-performance-level-graph.ts",
     "test:learning-goals-profile-full-persistence": "tsx scripts/verify-learning-goals-profile-full-persistence.ts",
     "test:language-selector-manual-performance": "tsx scripts/verify-language-selector-manual-performance.ts",

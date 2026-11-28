@@ -1,5 +1,15 @@
 import React, { useState, useEffect, useRef, useSyncExternalStore, useMemo, memo } from "react";
-import { Activity, AlertTriangle, Check, Copy, Trash2, ChevronUp, ChevronDown, ListFilter, Workflow } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  Check,
+  Copy,
+  Trash2,
+  ChevronUp,
+  ChevronDown,
+  Workflow,
+  X,
+} from "lucide-react";
 import {
   getLogEntriesSnapshot,
   logBuffer,
@@ -34,12 +44,16 @@ interface BottomLogViewerProps {
   className?: string;
   defaultExpanded?: boolean;
   isVisible?: boolean;
+  dockToViewport?: boolean;
+  onClose?: () => void;
 }
 
 export const BottomLogViewer: React.FC<BottomLogViewerProps> = memo(({
   className = "",
   defaultExpanded = false,
   isVisible = true,
+  dockToViewport = false,
+  onClose,
 }) => {
   const entries = useSyncExternalStore(
     subscribeToLogEntries,
@@ -52,6 +66,15 @@ export const BottomLogViewer: React.FC<BottomLogViewerProps> = memo(({
   const [filterLevel, setFilterLevel] = useState<"ALL" | "ACTIONS_ERRORS">("ALL");
   const [focusedEntryId, setFocusedEntryId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const prevVisibleRef = useRef<boolean>(isVisible);
+
+  // Auto-expand when toggled visible from hidden
+  useEffect(() => {
+    if (isVisible && !prevVisibleRef.current) {
+      setIsExpanded(true);
+    }
+    prevVisibleRef.current = isVisible;
+  }, [isVisible]);
 
   // Listen for lead-to-log-record event from floating alert button or modals
   useEffect(() => {
@@ -158,7 +181,9 @@ export const BottomLogViewer: React.FC<BottomLogViewerProps> = memo(({
     <footer
       id="bottom-log-viewer"
       data-testid="bottom-log-viewer"
-      className={`w-full border-t border-border bg-card/95 backdrop-blur shadow-md transition-all duration-200 text-foreground ${className}`}
+      className={`w-full border-t border-border bg-card shadow-2xl transition-all duration-200 text-foreground ${
+        dockToViewport ? "fixed bottom-0 left-0 right-0 z-40" : ""
+      } ${className}`}
     >
       {/* Collapsed / Header Bar */}
       <div className="flex items-center justify-between px-3 py-2 sm:px-4 text-xs">
@@ -326,6 +351,20 @@ export const BottomLogViewer: React.FC<BottomLogViewerProps> = memo(({
             <Trash2 className="h-3 w-3" />
             <span className="hidden sm:inline">Clear</span>
           </Button>
+          {onClose && (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              data-testid="bottom-log-close-btn"
+              onClick={onClose}
+              className="h-7 px-1.5 text-[11px] text-muted-foreground hover:text-foreground flex items-center"
+              title="Hide Activity & State Log"
+              aria-label="Hide Activity & State Log"
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          )}
         </div>
       </div>
 
@@ -335,7 +374,7 @@ export const BottomLogViewer: React.FC<BottomLogViewerProps> = memo(({
           id="bottom-log-content"
           ref={containerRef}
           data-testid="bottom-log-content"
-          className="border-t border-border/60 bg-muted/20 max-h-80 sm:max-h-96 overflow-y-auto p-2 sm:p-3 space-y-2 text-xs font-mono"
+          className="border-t border-border/60 bg-muted/20 max-h-[45vh] sm:max-h-96 overflow-y-auto p-2 sm:p-3 space-y-2 text-xs font-mono"
         >
           {visibleEntries.length === 0 ? (
             <p className="text-center py-4 text-xs text-muted-foreground" data-testid="bottom-log-empty">
