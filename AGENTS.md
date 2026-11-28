@@ -110,6 +110,11 @@ Sequential subtitle pipeline:
 
 ## Last raw prompt
 ```
-by default the app fails to execute tts-play based on native tts
+0. use task managment to ensure on progress is computed without noting the steps down. most recent aistudio work ends up with no progress at all
+
+1.
+the app log viewer is no longer visible (even after toggling the relevant toggle button)
+
+2.the app stopped from tts-play sentences in different langauges since the commit related to the performance (the issue appeared also for the default video and it partly works only for hebrew)
 ```
 

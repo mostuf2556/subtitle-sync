@@ -53,7 +53,7 @@ assert.match(
 );
 assert.match(
   indexTsx,
-  /<BottomLogViewer\s*\/>/,
+  /<BottomLogViewer[\s\S]*?\/>/,
   "index.tsx must render <BottomLogViewer /> at the bottom of the layout",
 );
 

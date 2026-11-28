@@ -1,4 +1,4 @@
 # Current Sub-Task
 
-- **Active**: Sub-task 462.3 — Add realistic E2E + unit regression tests (`scripts/verify-default-native-tts-cold-start.ts`), register in `package.json` & `docs/files.md`, bump patch version (`2.1.137`), verify builds/lint/parity/tests, commit/push log in `docs/git.md`, and archive to `docs/done.md`.
-- **Goal**: Cover cold `voiceschanged`, slow cold `onstart` (>1200ms with `pending`/`speaking`), `he`<->`iw` aliases, Android `isTtsReady: false -> true`, clean `/` & Expert/Beginner parity, sync version `2.1.137`, and complete all build/lint/test/git/done checks.
+- **Active**: Sub-task 465.1 — Diagnose why `tts-play` stopped speaking sentences in different languages since the performance commit (including default video `L2Ryrr6txwA`, why `ru` is unchecked, and why non-Hebrew languages get skipped/cancelled).
+- **Goal**: Identify exact root cause(s) via code inspection + live Playwright/Node reproduction before applying fixes in Sub-task 465.2.
